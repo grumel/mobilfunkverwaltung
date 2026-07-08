@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Neuer Teilnehmer' if is_new else 'Teilnehmer bearbeiten' }} · Mobilfunkverwaltung{% endblock %}
+{% set ro = not can('write') %}
+{% block content %}
+<div class="editwrap">
+  <div class="editcard">
+    <div class="edithead">
+      <h2>{{ 'Neuer Teilnehmer' if is_new else ('Bearbeiten: ' ~ (p.name or ('ID ' ~ p.id))) }}</h2>
+      <a class="btn" href="#" onclick="history.back();return false;">Zurück</a>
+    </div>
+
+    {% if not is_new %}
+    <div class="meta">
+      <span>Master-Nr.: <b>{{ p.master_id if p.master_id not in (None,'') else '—' }}</b></span>
+      <span>Angelegt: {{ p.created_at or '—' }}</span>
+      <span>Geändert: {{ p.updated_at or '—' }}</span>
+    </div>
+    {% endif %}
+
+    <form method="post"
+          action="{{ url_for('participants.new_participant') if is_new else url_for('participants.edit_participant', pid=p.id) }}">
+      <div class="grid">
+        <label class="field">
+          <span>Register (Provider)</span>
+          <select name="provider" {{ 'disabled' if ro else '' }}>
+            {% set cur = (p.provider if p else 'Vodafone') or 'Vodafone' %}
+            {% for pr in providers %}
+              <option value="{{ pr }}" {{ 'selected' if pr == cur else '' }}>{{ pr }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        {% for key, label, typ in fields %}
+          {% set raw = (p | attr(key)) if p else '' %}
+          <label class="field">
+            <span>{{ label }}{% if typ == 'date' %} <em>(TT.MM.JJJJ)</em>{% endif %}</span>
+            <input type="text" name="{{ key }}"
+                   value="{{ to_display_date(raw) if typ == 'date' else (raw or '') }}"
+                   {{ 'readonly' if ro else '' }}>
+          </label>
+        {% endfor %}
+      </div>
+
+      <label class="field wide">
+        <span>Bemerkung</span>
+        <textarea name="bemerkung" rows="2" {{ 'readonly' if ro else '' }}>{{ (p.bemerkung if p else '') or '' }}</textarea>
+      </label>
+
+      <label class="field wide">
+        <span>Prüfungsnotiz</span>
+        <input type="text" name="pruefung_grund"
+               value="{{ (p.pruefung_grund if p else '') or '' }}" {{ 'readonly' if ro else '' }}>
+      </label>
+
+      <label class="check">
+        <input type="checkbox" name="verified"
+               {{ 'checked' if (p.verified if p else 1) == 1 else '' }} {{ 'disabled' if ro else '' }}>
+        Verifiziert (geprüft)
+      </label>
+
+      {% if not ro %}
+      <div class="editactions">
+        <button type="submit" class="btn accent">Speichern</button>
+        <a class="btn" href="#" onclick="history.back();return false;">Abbrechen</a>
+      </div>
+      {% else %}
+      <p class="hint-dim">Nur-Lese-Zugriff – Bearbeiten erfordert Schreibrechte.</p>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}

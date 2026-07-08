@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Mobilfunkverwaltung{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <span class="dot"></span>
+    <span class="appname">Mobilfunkverwaltung</span>
+    <span class="webtag">Web</span>
+    <nav class="tabs">
+      {% for slug, label in nav_providers %}
+        <a class="tab {{ 'active' if active_provider|default('') == slug else '' }}"
+           href="{{ url_for('participants.provider_list', slug=slug) }}">{{ label }}</a>
+      {% endfor %}
+      <span class="tabsep"></span>
+      <a class="tab {{ 'active' if active_tab|default('') == 'offen' else '' }}"
+         href="{{ url_for('tabs.derived', key='offen') }}">Prüfungen</a>
+      <a class="tab {{ 'active' if active_tab|default('') == 'unvollstaendig' else '' }}"
+         href="{{ url_for('tabs.derived', key='unvollstaendig') }}">Unvollständig</a>
+      <a class="tab {{ 'active' if active_tab|default('') == 'duplikate' else '' }}"
+         href="{{ url_for('tabs.derived', key='duplikate') }}">Duplikate</a>
+      <a class="tab {{ 'active' if active_tab|default('') == 'unmatched' else '' }}"
+         href="{{ url_for('tabs.unmatched') }}">Nicht zugeordnet</a>
+      <a class="tab {{ 'active' if active_tab|default('') == 'werke' else '' }}"
+         href="{{ url_for('tabs.werke') }}">Werke</a>
+      <span class="tabsep"></span>
+      <a class="tab {{ 'active' if active_tab|default('') == 'aufgaben' else '' }}"
+         href="{{ url_for('tasks.list_tasks') }}">Aufgaben{% if open_task_count %}
+         <span class="badgecount">{{ open_task_count }}</span>{% endif %}</a>
+      <a class="tab {{ 'active' if active_tab|default('') == 'statistik' else '' }}"
+         href="{{ url_for('reports.statistik') }}">Statistik</a>
+      <a class="tab {{ 'active' if active_tab|default('') == 'protokoll' else '' }}"
+         href="{{ url_for('reports.import_log') }}">Protokoll</a>
+    </nav>
+    <span class="spacer"></span>
+    {% if can('admin') %}
+      <a class="tab {{ 'active' if active_tab|default('') == 'audit' else '' }}"
+         href="{{ url_for('reports.audit_log') }}">Audit</a>
+      <a class="tab import {{ 'active' if active_tab|default('') == 'import' else '' }}"
+         href="{{ url_for('imports.index') }}">Import ▾</a>
+      <a class="tab {{ 'active' if active_tab|default('') == 'einstellungen' else '' }}"
+         href="{{ url_for('settings.index') }}">⚙ Einstellungen</a>
+    {% endif %}
+    {% if current_user %}
+      <span class="user">{{ current_user.username }} · {{ current_user.role }}</span>
+      <a class="logout" href="{{ url_for('auth.logout') }}">Abmelden</a>
+    {% endif %}
+  </header>
+
+  {% with msgs = get_flashed_messages() %}
+    {% if msgs %}<div class="flash">{{ msgs | join(' · ') }}</div>{% endif %}
+  {% endwith %}
+
+  <main>{% block content %}{% endblock %}</main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

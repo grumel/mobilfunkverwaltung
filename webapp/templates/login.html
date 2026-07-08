@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anmelden · Mobilfunkverwaltung</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body class="login-body">
+  <form class="login-card" method="post" action="{{ url_for('auth.login') }}">
+    <div class="login-head"><span class="dot"></span> Mobilfunkverwaltung</div>
+    <p class="login-sub">Bitte anmelden</p>
+    {% with msgs = get_flashed_messages() %}
+      {% if msgs %}<div class="flash">{{ msgs | join(' · ') }}</div>{% endif %}
+    {% endwith %}
+    <label>Benutzername
+      <input name="username" autocomplete="username" autofocus required>
+    </label>
+    <label>Passwort
+      <input name="password" type="password" autocomplete="current-password" required>
+    </label>
+    <button type="submit">Anmelden</button>
+    <p class="hint">Gleiche Zugangsdaten wie in der Desktop-App.</p>
+  </form>
+</body>
+</html>

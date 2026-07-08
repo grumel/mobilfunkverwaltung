@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Aufgaben · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="bar">
+    <a class="btn {{ 'accent' if show != 'alle' else '' }}" href="{{ url_for('tasks.list_tasks', show='offen') }}">Offene</a>
+    <a class="btn {{ 'accent' if show == 'alle' else '' }}" href="{{ url_for('tasks.list_tasks', show='alle') }}">Alle</a>
+    <span id="count">{{ tasks|length }} Aufgaben</span>
+  </div>
+
+  <div class="tablecard">
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Prio</th><th>Name</th><th>GSM</th><th>Werk</th><th>Kommentar</th>
+          <th>Fällig</th><th>Von</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody>
+          {% for t in tasks %}
+          {% set overdue = t.faellig_am and t.faellig_am < today and not t.erledigt %}
+          {% set duetoday = t.faellig_am == today and not t.erledigt %}
+          <tr class="{{ 'overdue' if overdue else ('duetoday' if duetoday else '') }} {{ 'done' if t.erledigt else '' }}">
+            <td>{% if t.prioritaet %}<span class="badge open">hoch</span>{% else %}—{% endif %}</td>
+            <td>
+              {% if t.participant_id %}
+                <a class="rowlink" href="{{ url_for('participants.edit_participant', pid=t.participant_id) }}">{{ t.name or ('ID ' ~ t.participant_id) }}</a>
+              {% else %}{{ t.name or '—' }}{% endif %}
+            </td>
+            <td>{{ t.gsm or '—' }}</td>
+            <td>{{ t.plant or '—' }}</td>
+            <td>{{ t.kommentar or '—' }}</td>
+            <td>{{ t.faellig_am or '—' }}</td>
+            <td>{{ t.created_by or '—' }}</td>
+            <td>{% if t.erledigt %}<span class="badge ok">erledigt</span>{% else %}<span class="badge open">offen</span>{% endif %}</td>
+            <td class="rowactions">
+              {% if t.participant_id %}
+              <a class="linkbtn" href="{{ url_for('participants.edit_participant', pid=t.participant_id) }}">öffnen</a>
+              {% endif %}
+              {% if can('write') %}
+              <form method="post" action="{{ url_for('tasks.toggle_done', tid=t.id) }}" style="display:inline">
+                <button class="linkbtn">{{ 'wieder öffnen' if t.erledigt else 'erledigt' }}</button>
+              </form>
+              <form method="post" action="{{ url_for('tasks.delete_task', tid=t.id) }}" style="display:inline"
+                    onsubmit="return confirm('Aufgabe löschen?')">
+                <button class="linkbtn danger">löschen</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

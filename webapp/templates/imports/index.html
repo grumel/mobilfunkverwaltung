@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Import · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="importgrid">
+    <form class="importcard" method="post" enctype="multipart/form-data"
+          action="{{ url_for('imports.vodafone_preview') }}">
+      <h3>Vodafone-Import</h3>
+      <p class="hint-dim">Aktualisiert Tarif, SIM, Vertragsdaten per GSM. Setzt das Werk
+         aus dem Konto-Mapping. Zuerst <b>Vorschau</b>, dann bestätigen. Vor dem echten
+         Import wird automatisch ein Backup erstellt.</p>
+      <input type="file" name="file" accept=".xlsx,.xls" required>
+      <button type="submit" class="btn accent">Datei prüfen (Vorschau)</button>
+    </form>
+
+    <form class="importcard" method="post" enctype="multipart/form-data"
+          action="{{ url_for('imports.syno_run') }}">
+      <h3>Syno-Import</h3>
+      <p class="hint-dim">Trägt Syno-Geräte per GSM/Name in bis zu zwei Slots ein.
+         Läuft <b>direkt</b> (mit vorherigem Backup). Zeilen ohne Treffer landen unter
+         „Nicht zugeordnet".</p>
+      <input type="file" name="file" accept=".xlsx,.xls" required>
+      <button type="submit" class="btn accent"
+              onclick="return confirm('Syno-Import jetzt ausführen? (Backup wird vorher erstellt)')">
+        Syno importieren</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

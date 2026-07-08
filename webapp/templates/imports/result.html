@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Protokoll{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="editcard">
+    <div class="edithead">
+      <h2>{{ title }} – Protokoll</h2>
+      <a class="btn" href="{{ url_for('imports.index') }}">Neuer Import</a>
+    </div>
+    <p class="hint-dim">Datei: <b>{{ filename }}</b></p>
+
+    <div class="tiles">
+      {% if kind == 'vodafone' %}
+        {% set t = [('Aktualisiert', result.updated, 'blue'),
+                    ('Neu angelegt', result.created, 'green'),
+                    ('Änderungen', result.changes|length, 'blue'),
+                    ('Zur Prüfung', result.review, 'orange'),
+                    ('Übersprungen', result.skipped, 'grey'),
+                    ('Fehler', result.errors|length, 'red')] %}
+      {% else %}
+        {% set t = [('GSM-Matches', result.matched_gsm, 'blue'),
+                    ('Name-Matches', result.matched_name, 'blue'),
+                    ('Bereits vorhanden', result.duplicate, 'grey'),
+                    ('Kein freier Slot', result.slots_full, 'orange'),
+                    ('Nicht zugeordnet', result.unmatched, 'orange'),
+                    ('Übersprungen', result.skipped, 'grey'),
+                    ('Fehler', result.errors|length, 'red')] %}
+      {% endif %}
+      {% for label, val, cls in t %}
+        <div class="tile {{ cls }}"><div class="tval">{{ val }}</div><div class="tlbl">{{ label }}</div></div>
+      {% endfor %}
+    </div>
+
+    <h3 class="sub">Protokoll</h3>
+    <pre class="logbox tall">{% for line in result.log_lines %}{{ line }}
+{% endfor %}</pre>
+
+    <div class="editactions">
+      <a class="btn" href="{{ url_for('participants.index') }}">Zur Liste</a>
+      <a class="btn" href="{{ url_for('imports.index') }}">Neuer Import</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Werk-Übersicht · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="bar"><span id="count">{{ rows|length }} Werke</span></div>
+  <div class="tablecard">
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Werk</th><th class="num">Gesamt</th>
+          <th class="num">Ungeprüft</th><th class="num">Ohne Vodafone</th>
+        </tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.werk }}</td>
+            <td class="num">{{ r.gesamt }}</td>
+            <td class="num">{{ r.ungeprueft }}</td>
+            <td class="num">{{ r.ohne_vf }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

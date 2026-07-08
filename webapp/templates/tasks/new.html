@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Neue Aufgabe · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="editwrap">
+  <div class="editcard" style="max-width:520px">
+    <div class="edithead">
+      <h2>Neue Aufgabe</h2>
+      <a class="btn" href="#" onclick="history.back();return false;">Zurück</a>
+    </div>
+    <p class="hint-dim">Für: <b>{{ pname or ('ID ' ~ pid) }}</b>{% if pgsm %} · GSM {{ pgsm }}{% endif %}</p>
+    <form method="post" action="{{ url_for('tasks.new_task', pid=pid) }}">
+      <label class="field wide">
+        <span>Kommentar</span>
+        <textarea name="kommentar" rows="3" autofocus></textarea>
+      </label>
+      <label class="field wide">
+        <span>Fällig am <em>(TT.MM.JJJJ)</em></span>
+        <input type="text" name="faellig_am" placeholder="z. B. 31.12.2026">
+      </label>
+      <label class="check">
+        <input type="checkbox" name="prioritaet"> Hohe Priorität
+      </label>
+      <div class="editactions">
+        <button type="submit" class="btn accent">Aufgabe anlegen</button>
+        <a class="btn" href="#" onclick="history.back();return false;">Abbrechen</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
