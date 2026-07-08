@@ -8,6 +8,29 @@ Reverse-Proxy **Caddy**; darunter **gunicorn**. Alles nur im LAN erreichbar.
 [Browser] --80--> [Caddy] --8000--> [gunicorn -> webapp] --> mobilfunk.db
 ```
 
+## Schnellweg: Automatischer Installer (empfohlen)
+
+Auf einem frischen Debian/Ubuntu genügen drei Befehle:
+
+```bash
+sudo apt update && sudo apt install -y git
+sudo git clone https://github.com/grumel/mdwWeb.git /opt/mobilfunk-web
+sudo bash /opt/mobilfunk-web/deploy/install.sh            # optional: ... install.sh /pfad/zur/mobilfunk.db
+```
+
+`install.sh` erledigt alles: Pakete, Benutzer `mobilfunk`, `/var/lib/mobilfunk`,
+venv + Abhängigkeiten, zufälliges Secret, systemd-Dienst, Caddy (Port 80) und
+Backup-Cron. Er ist **idempotent** (mehrfach ausführbar). Danach die Datenbank
+nach `/var/lib/mobilfunk/mobilfunk.db` bringen (falls nicht als Argument
+übergeben) und `sudo systemctl restart mobilfunk-web`.
+
+Aufruf danach: `http://<server-ip>/`
+
+> Die folgenden Abschnitte beschreiben dieselben Schritte **manuell** (falls du
+> etwas anpassen willst oder der Installer nicht passt).
+
+---
+
 ## 0. Voraussetzungen
 - Debian 12 / Ubuntu Server frisch installiert, feste interne IP (z. B. 192.168.1.50)
 - SSH-Zugang, sudo
