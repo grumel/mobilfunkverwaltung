@@ -60,5 +60,9 @@ Immer gegen eine **Kopie** der echten DB, nie gegen das Original:
   geprüft/löschen/kopieren/zu Aufgabe), Zusammenführen, Import (Vodafone mit
   Vorschau + Syno), Aufgaben, Statistik, Protokoll/Audit, Einstellungen (DB-Pfad),
   Härtung (Secret + CSRF), Linux-Deployment (Port 80).
-- Offen: **HTTPS** produktiv, **PostgreSQL** (Phase 4; Import-Module dafür von
-  sqlite3 auf SQLAlchemy umstellen), Remote/GitHub, ThinkPad-Server aufsetzen.
+- Offen (Details siehe **ROADMAP.md**): ThinkPad-Server aufsetzen (Phase 1),
+  Datenbank-Umbau **SQLite → PostgreSQL** inkl. **Import-Refactor** von sqlite3 auf
+  SQLAlchemy (Phase 2), komplettes **React-Frontend** / Flask als JSON-API (Phase 3),
+  HTTPS.
+- Repo auf GitHub: **github.com/grumel/mdwWeb** (Remote `origin`, Branch `main`).
+  Desktop-App separat: github.com/grumel/mobilfunkverwaltung.
