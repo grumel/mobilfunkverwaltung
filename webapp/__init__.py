@@ -5,6 +5,8 @@ App-Factory: erzeugt die Flask-App, registriert Blueprints und stellt den
 angemeldeten Benutzer in allen Templates bereit.
 """
 
+import os
+
 from flask import Flask
 
 from webapp.config import SECRET_KEY
@@ -14,6 +16,14 @@ from webapp.security import current_user, can
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = SECRET_KEY
+
+    # CSRF-Schutz (per Umgebungsvariable MOBILFUNK_CSRF=0 abschaltbar, z. B. für Tests)
+    if os.environ.get("MOBILFUNK_CSRF", "1") != "0":
+        from flask_wtf import CSRFProtect
+        CSRFProtect(app)
+    else:
+        # Ohne CSRF trotzdem csrf_token() in Templates verfügbar halten (No-op)
+        app.jinja_env.globals.setdefault("csrf_token", lambda: "")
 
     from webapp.blueprints.auth import bp as auth_bp
     from webapp.blueprints.participants import bp as participants_bp

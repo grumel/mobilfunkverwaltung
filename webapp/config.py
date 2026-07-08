@@ -14,7 +14,7 @@ Für PostgreSQL: DATABASE_URL bzw. database_url auf
 import os
 from pathlib import Path
 
-from webapp.webconfig import load as _load_webcfg
+from webapp.webconfig import load as _load_webcfg, get_or_create_secret as _get_secret
 
 try:
     from modules.paths import DATA_DIR
@@ -42,4 +42,5 @@ def resolve_database_url() -> str:
 
 DATABASE_URL = resolve_database_url()
 DEFAULT_DB_PATH = str(_default_db)
-SECRET_KEY = os.environ.get("MOBILFUNK_SECRET", "dev-poc-secret-bitte-aendern")
+# Echtes Secret: env MOBILFUNK_SECRET, sonst persistenter Zufallsschlüssel
+SECRET_KEY = os.environ.get("MOBILFUNK_SECRET") or _get_secret()

@@ -11,6 +11,7 @@ Override des Speicherorts per Umgebungsvariable MOBILFUNK_WEBCONFIG_DIR.
 
 import json
 import os
+import secrets
 from pathlib import Path
 
 
@@ -40,3 +41,23 @@ def save(data: dict) -> None:
     d.mkdir(parents=True, exist_ok=True)
     config_file().write_text(json.dumps(data, ensure_ascii=False, indent=2),
                              encoding="utf-8")
+
+
+def get_or_create_secret() -> str:
+    """Persistenter, zufälliger Session-Schlüssel (falls kein MOBILFUNK_SECRET gesetzt).
+    Bleibt über Neustarts stabil, ist aber nicht der unsichere Dev-Default."""
+    f = config_dir() / "secret.key"
+    if f.exists():
+        try:
+            key = f.read_text(encoding="utf-8").strip()
+            if key:
+                return key
+        except Exception:
+            pass
+    key = secrets.token_hex(32)
+    try:
+        config_dir().mkdir(parents=True, exist_ok=True)
+        f.write_text(key, encoding="utf-8")
+    except Exception:
+        pass
+    return key

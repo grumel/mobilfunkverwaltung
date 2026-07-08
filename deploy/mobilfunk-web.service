@@ -1,0 +1,24 @@
+[Unit]
+Description=Mobilfunkverwaltung Web (gunicorn)
+After=network.target
+
+[Service]
+User=mobilfunk
+Group=mobilfunk
+WorkingDirectory=/opt/mobilfunk-web
+
+# Datenbank und Konfig liegen getrennt vom Programm (schreibbar):
+Environment=MOBILFUNK_DATA_DIR=/var/lib/mobilfunk
+Environment=MOBILFUNK_WEBCONFIG_DIR=/var/lib/mobilfunk
+# WICHTIG: eigenes Secret setzen! Erzeugen mit:
+#   python3 -c "import secrets; print(secrets.token_hex(32))"
+Environment=MOBILFUNK_SECRET=BITTE-DURCH-EIGENEN-ZUFALLSWERT-ERSETZEN
+
+# gunicorn laeuft lokal auf 8000; Port 80 macht der Reverse-Proxy (Caddy) davor.
+ExecStart=/opt/mobilfunk-web/.venv/bin/gunicorn --chdir /opt/mobilfunk-web \
+    --workers 2 --bind 127.0.0.1:8000 "webapp:create_app()"
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

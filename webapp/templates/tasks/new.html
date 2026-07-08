@@ -9,6 +9,7 @@
     </div>
     <p class="hint-dim">Für: <b>{{ pname or ('ID ' ~ pid) }}</b>{% if pgsm %} · GSM {{ pgsm }}{% endif %}</p>
     <form method="post" action="{{ url_for('tasks.new_task', pid=pid) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="field wide">
         <span>Kommentar</span>
         <textarea name="kommentar" rows="3" autofocus></textarea>

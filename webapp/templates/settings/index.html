@@ -22,6 +22,7 @@
     {% endif %}
 
     <form method="post" action="{{ url_for('settings.index') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="field wide">
         <span>Datenbank-Datei (SQLite) <em>– vollständiger Pfad zur .db-Datei</em></span>
         <input type="text" name="db_path" value="{{ cfg.db_path or '' }}"

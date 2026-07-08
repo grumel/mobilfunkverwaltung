@@ -8,6 +8,7 @@
 </head>
 <body class="login-body">
   <form class="login-card" method="post" action="{{ url_for('auth.login') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="login-head"><span class="dot"></span> Mobilfunkverwaltung</div>
     <p class="login-sub">Bitte anmelden</p>
     {% with msgs = get_flashed_messages() %}

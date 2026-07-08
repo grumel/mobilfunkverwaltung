@@ -1,0 +1,16 @@
+# Reverse-Proxy auf Port 80 -> gunicorn (127.0.0.1:8000)
+# Ablage: /etc/caddy/Caddyfile  (dann: sudo systemctl restart caddy)
+
+:80 {
+    encode gzip
+    reverse_proxy 127.0.0.1:8000
+}
+
+# --- Spaeter HTTPS (tunen/erweitern) -------------------------------------
+# Sobald es einen internen DNS-Namen gibt, einfach so ersetzen. Caddy holt/
+# verwaltet das Zertifikat dann automatisch (bzw. interne CA im LAN):
+#
+# mobilfunk.intern.alpla {
+#     encode gzip
+#     reverse_proxy 127.0.0.1:8000
+# }

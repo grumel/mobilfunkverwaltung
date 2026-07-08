@@ -19,6 +19,7 @@
 
     <form method="post"
           action="{{ url_for('participants.new_participant') if is_new else url_for('participants.edit_participant', pid=p.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="grid">
         <label class="field">
           <span>Register (Provider)</span>

@@ -5,6 +5,7 @@
   <div class="importgrid">
     <form class="importcard" method="post" enctype="multipart/form-data"
           action="{{ url_for('imports.vodafone_preview') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <h3>Vodafone-Import</h3>
       <p class="hint-dim">Aktualisiert Tarif, SIM, Vertragsdaten per GSM. Setzt das Werk
          aus dem Konto-Mapping. Zuerst <b>Vorschau</b>, dann bestätigen. Vor dem echten
@@ -15,6 +16,7 @@
 
     <form class="importcard" method="post" enctype="multipart/form-data"
           action="{{ url_for('imports.syno_run') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <h3>Syno-Import</h3>
       <p class="hint-dim">Trägt Syno-Geräte per GSM/Name in bis zu zwei Slots ein.
          Läuft <b>direkt</b> (mit vorherigem Backup). Zeilen ohne Treffer landen unter

@@ -1,0 +1,4 @@
+# Nur fuer den Server-Betrieb (Linux). Zusaetzlich zu requirements.txt.
+gunicorn>=21.2
+# Fuer PostgreSQL (spaeter, optional):
+# psycopg[binary]>=3.2

@@ -48,6 +48,7 @@
     canWrite:  {{ can('write')|tojson }},
     canDelete: {{ can('delete')|tojson }},
     back:      window.location.pathname + window.location.search,
+    csrf:      {{ csrf_token()|tojson }},
   };
 
   // --- Live-Suche ---------------------------------------------------------
@@ -84,6 +85,7 @@
     const add = (n, v) => { const i = document.createElement('input');
       i.type = 'hidden'; i.name = n; i.value = v; f.appendChild(i); };
     add('back', CFG.back);
+    add('csrf_token', CFG.csrf);
     for (const k in (extra || {})) add(k, extra[k]);
     document.body.appendChild(f); f.submit();
   }
@@ -173,6 +175,7 @@
     const add = (n, v) => { const i = document.createElement('input');
       i.type = 'hidden'; i.name = n; i.value = v; f.appendChild(i); };
     add('back', CFG.back);
+    add('csrf_token', CFG.csrf);
     selected.forEach(id => add('ids', id));
     document.body.appendChild(f); f.submit();
   };
