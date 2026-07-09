@@ -9,11 +9,13 @@ später Token-/SameSite-Absicherung ergänzen.
 Datumsfelder werden als ISO-Strings (YYYY-MM-DD) übertragen – so wie gespeichert.
 """
 
+from datetime import date, timedelta
+
 from flask import Blueprint, request, jsonify
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, case, and_
 
 from webapp.db import SessionLocal
-from webapp.models import Participant, User
+from webapp.models import Participant, User, Task
 from webapp.security import current_user, can
 from webapp import service as svc
 from modules.auth import verify_password
@@ -261,3 +263,151 @@ def participant_delete(pid):
         return jsonify(ok=True, id=pid)
     finally:
         db.close()
+
+
+# --------------------------------------------------------------------------- #
+# Summary (Nav-Zähler + rote Zeilenmarkierung), Aufgaben, Statistik
+# --------------------------------------------------------------------------- #
+@bp.get("/summary")
+def summary():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    db = SessionLocal()
+    try:
+        pids = [r[0] for r in db.query(Task.participant_id)
+                .filter(Task.erledigt == 0, Task.participant_id.isnot(None)).all()]
+        cnt = db.query(func.count()).select_from(Task).filter(Task.erledigt == 0).scalar() or 0
+    finally:
+        db.close()
+    return jsonify(open_tasks=cnt, open_task_pids=pids)
+
+
+TASK_FIELDS = ["id", "participant_id", "name", "gsm", "plant", "konto", "tarif",
+               "kommentar", "erledigt", "created_by", "created_at", "done_at",
+               "faellig_am", "prioritaet"]
+
+
+@bp.get("/tasks")
+def tasks():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    show = request.args.get("show", "offen")
+    db = SessionLocal()
+    try:
+        qy = db.query(Task)
+        if show != "alle":
+            qy = qy.filter(Task.erledigt == 0)
+        no_due = case((Task.faellig_am.is_(None), 1), (Task.faellig_am == "", 1), else_=0)
+        rows = qy.order_by(Task.erledigt, Task.prioritaet.desc(), no_due,
+                           Task.faellig_am, Task.created_at.desc()).all()
+        out = [_dict(t, TASK_FIELDS) for t in rows]
+    finally:
+        db.close()
+    return jsonify(tasks=out, total=len(out))
+
+
+@bp.post("/participants/<int:pid>/tasks")
+def task_create(pid):
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    data = request.get_json(silent=True) or {}
+    db = SessionLocal()
+    try:
+        p = db.get(Participant, pid)
+        if not p:
+            return jsonify(error="nicht gefunden"), 404
+        t = Task(participant_id=p.id, name=p.name, gsm=p.gsm, plant=p.plant,
+                 konto=p.konto, tarif=p.tarif,
+                 kommentar=(data.get("kommentar") or "").strip() or None,
+                 faellig_am=(data.get("faellig_am") or "").strip() or None,
+                 prioritaet=1 if data.get("prioritaet") else 0,
+                 created_by=(current_user() or {}).get("username"),
+                 created_at=svc.now_str(), erledigt=0)
+        db.add(t)
+        svc.log_import(db, "AUFGABE", f"Aufgabe für ID={pid} (API)", participant_id=pid)
+        db.flush()
+        tid = t.id
+        db.commit()
+        return jsonify(id=tid), 201
+    finally:
+        db.close()
+
+
+@bp.post("/tasks/<int:tid>/done")
+def task_done(tid):
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    db = SessionLocal()
+    try:
+        t = db.get(Task, tid)
+        if not t:
+            return jsonify(error="nicht gefunden"), 404
+        t.erledigt = 0 if t.erledigt else 1
+        t.done_at = svc.now_str() if t.erledigt else None
+        db.commit()
+        return jsonify(id=tid, erledigt=t.erledigt)
+    finally:
+        db.close()
+
+
+@bp.delete("/tasks/<int:tid>")
+def task_delete(tid):
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    db = SessionLocal()
+    try:
+        t = db.get(Task, tid)
+        if t:
+            db.delete(t)
+            db.commit()
+        return jsonify(ok=True, id=tid)
+    finally:
+        db.close()
+
+
+@bp.get("/stats")
+def stats():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    today = date.today().isoformat()
+    in30 = (date.today() + timedelta(days=30)).isoformat()
+    in60 = (date.today() + timedelta(days=60)).isoformat()
+    in90 = (date.today() + timedelta(days=90)).isoformat()
+    P = Participant
+    db = SessionLocal()
+    try:
+        def cnt(*crit):
+            qy = db.query(func.count()).select_from(P)
+            for cc in crit:
+                qy = qy.filter(cc)
+            return qy.scalar() or 0
+        has_syno = or_(and_(P.syno.isnot(None), P.syno != ""),
+                       and_(P.syno2.isnot(None), P.syno2 != ""))
+        tiles = {
+            "total":        cnt(),
+            "verified":     cnt(P.verified == 1),
+            "zur_pruefung": cnt(P.verified == 0),
+            "ohne_gsm":     cnt(or_(P.gsm.is_(None), P.gsm == "")),
+            "mit_syno":     cnt(has_syno),
+            "abgelaufen":   cnt(P.vertragsende.isnot(None), P.vertragsende != "", P.vertragsende < today),
+            "ablauf_30":    cnt(P.vertragsende >= today, P.vertragsende <= in30),
+            "ablauf_60":    cnt(P.vertragsende > in30, P.vertragsende <= in60),
+            "ablauf_90":    cnt(P.vertragsende > in60, P.vertragsende <= in90),
+        }
+        werk = func.coalesce(P.plant, "(kein Werk)")
+        werke = [{"werk": w, "n": n} for w, n in
+                 db.query(werk, func.count()).group_by(werk).order_by(func.count().desc()).all()]
+        ablauf = [{"name": n, "gsm": g, "plant": pl, "vertragsende": ve, "provider": pr}
+                  for n, g, pl, ve, pr in
+                  db.query(P.name, P.gsm, P.plant, P.vertragsende, P.provider)
+                    .filter(P.vertragsende >= today, P.vertragsende <= in90)
+                    .order_by(P.vertragsende).all()]
+    finally:
+        db.close()
+    return jsonify(tiles=tiles, werke=werke, ablauf=ablauf)
