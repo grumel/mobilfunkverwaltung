@@ -3,6 +3,7 @@ import { api } from '../api'
 import Participants from './Participants.jsx'
 import Tasks from './Tasks.jsx'
 import Stats from './Stats.jsx'
+import Import from './Import.jsx'
 
 const PROVIDERS = [
   ['vodafone', 'Vodafone'], ['telekom', 'Telekom'], ['o2', 'O2'],
@@ -15,6 +16,7 @@ const DERIVED = [
 export default function Shell({ user, onLogout }) {
   const [view, setView] = useState('vodafone')
   const [summary, setSummary] = useState({ open_tasks: 0, open_task_pids: [] })
+  const isAdmin = user.role === 'admin'
 
   const refreshSummary = useCallback(() => {
     api.summary().then(setSummary).catch(() => {})
@@ -40,6 +42,9 @@ export default function Shell({ user, onLogout }) {
             Aufgaben{summary.open_tasks > 0 && <span className="badgecount">{summary.open_tasks}</span>}
           </button>
           <button className={'tab' + (view === 'statistik' ? ' active' : '')} onClick={() => setView('statistik')}>Statistik</button>
+          {isAdmin && (
+            <button className={'tab import' + (view === 'import' ? ' active' : '')} onClick={() => setView('import')}>Import ▾</button>
+          )}
         </nav>
         <span className="spacer" />
         <span className="user">{user.username} · {user.role}</span>
@@ -50,8 +55,10 @@ export default function Shell({ user, onLogout }) {
           ? <Tasks user={user} onChanged={refreshSummary} />
           : view === 'statistik'
             ? <Stats />
-            : <Participants view={view} user={user}
-                            openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
+            : view === 'import'
+              ? <Import />
+              : <Participants view={view} user={user}
+                              openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
       </main>
     </div>
   )

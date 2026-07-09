@@ -15,6 +15,20 @@ async function req(url, opts = {}) {
 }
 const enc = encodeURIComponent
 
+// Datei-Upload (multipart) – eigener Aufruf ohne JSON-Content-Type-Header.
+async function upload(url, file) {
+  const fd = new FormData()
+  fd.append('file', file)
+  const res = await fetch(url, { method: 'POST', credentials: 'same-origin', body: fd })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const err = new Error(data.error || `HTTP ${res.status}`)
+    err.status = res.status
+    throw err
+  }
+  return data
+}
+
 export const api = {
   // Auth
   me: () => req('/api/me'),
@@ -38,4 +52,9 @@ export const api = {
   taskDone: (tid) => req(`/api/tasks/${tid}/done`, { method: 'POST' }),
   taskDelete: (tid) => req(`/api/tasks/${tid}`, { method: 'DELETE' }),
   stats: () => req('/api/stats'),
+
+  // Import
+  vodafonePreview: (file) => upload('/api/import/vodafone/preview', file),
+  vodafoneConfirm: () => req('/api/import/vodafone/confirm', { method: 'POST' }),
+  synoImport: (file) => upload('/api/import/syno', file),
 }

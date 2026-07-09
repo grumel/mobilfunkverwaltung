@@ -121,6 +121,9 @@ tr.done td { color:var(--dim); }
   text-align:center; background:var(--head); }
 .tile .tval { font-size:22px; font-weight:700; }
 .tile .tlbl { font-size:11px; color:var(--dim); margin-top:2px; }
+.tile.blue .tval { color:#2E6DA4; } .tile.green .tval { color:#3f9142; }
+.tile.orange .tval { color:#E67E22; } .tile.red .tval { color:#C0392B; }
+.tile.grey .tval { color:#888; }
 .statcols { display:grid; grid-template-columns:minmax(240px,1fr) 2fr; gap:16px; align-items:start; }
 .cardhead { padding:9px 12px; border-bottom:1px solid var(--line); font-weight:600; font-size:13px; background:var(--head); }
 .barrow { display:flex; align-items:center; gap:10px; padding:4px 0; font-size:13px; }
@@ -128,3 +131,21 @@ tr.done td { color:var(--dim); }
 .bartrack { flex:1 1 auto; height:14px; background:#eef1f4; border-radius:7px; overflow:hidden; }
 .barfill { display:block; height:100%; background:var(--accent); border-radius:7px; }
 .barval { flex:0 0 40px; text-align:right; font-variant-numeric:tabular-nums; color:var(--dim); }
+
+/* Import */
+.importgrid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.importcard { background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:18px 20px; }
+.importcard h3 { margin:0 0 8px; font-size:15px; }
+.importcard form { display:flex; flex-direction:column; gap:10px; align-items:flex-start; }
+.tab.import { border:1px solid var(--line); border-radius:7px; }
+.tab.import.active { background:var(--accent); color:#fff; }
+.warnbox { background:#fdecea; border:1px solid #f5b7b1; color:#922b21;
+  border-radius:10px; padding:12px 14px; font-size:13px; margin:10px 0; }
+.warnbox ul { margin:6px 0; padding-left:20px; }
+.sub { font-size:14px; margin:14px 0 6px; }
+.logbox { background:#0f172a; color:#d7e0ea; border-radius:8px; padding:12px 14px;
+  font-family:Consolas,monospace; font-size:12.5px; overflow:auto; max-height:220px;
+  white-space:pre-wrap; margin:0; }
+.logbox.tall { max-height:420px; }
+@media (max-width: 900px) { .importgrid, .statcols { grid-template-columns:1fr; } }
