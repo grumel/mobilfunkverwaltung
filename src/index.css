@@ -10,7 +10,10 @@ body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--b
 
 /* Topbar */
 .topbar { display:flex; align-items:center; gap:12px; background:var(--card);
-  border-bottom:1px solid var(--line); padding:0 16px; height:52px; position:sticky; top:0; z-index:10; }
+  border-bottom:1px solid var(--line); padding:0 16px; height:52px; position:sticky; top:0; z-index:10;
+  margin-top:64px; }
+.version { font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums;
+  border:1px solid var(--line); border-radius:8px; padding:2px 8px; }
 .dot { width:10px; height:10px; border-radius:50%; background:var(--accent); flex:0 0 auto; }
 .appname { font-weight:600; font-size:15px; }
 .webtag { font-size:10px; color:var(--dim); border:1px solid var(--line); padding:1px 7px; border-radius:10px; }

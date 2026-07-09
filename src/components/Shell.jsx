@@ -18,7 +18,12 @@ const DERIVED = [
 
 const PARTICIPANT_VIEWS = new Set([...PROVIDERS, ...DERIVED].map(([k]) => k))
 
-export default function Shell({ user, onLogout }) {
+export function versionLabel(version) {
+  if (!version || !version.build) return ''
+  return 'v' + version.build + (version.commit ? ' · ' + version.commit : '')
+}
+
+export default function Shell({ user, onLogout, version }) {
   const [view, setView] = useState('vodafone')
   const [summary, setSummary] = useState({ open_tasks: 0, open_task_pids: [] })
   const [qInput, setQInput] = useState('')
@@ -65,6 +70,7 @@ export default function Shell({ user, onLogout }) {
           )}
         </nav>
         <span className="spacer" />
+        {version && version.build && <span className="version" title={'Version ' + versionLabel(version)}>{versionLabel(version)}</span>}
         <span className="user">{user.username} · {user.role}</span>
         <button className="logout" onClick={onLogout}>Abmelden</button>
       </header>

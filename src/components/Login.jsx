@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { api } from '../api'
+import { versionLabel } from './Shell.jsx'
 
-export default function Login({ onLogin }) {
+export default function Login({ onLogin, version }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -36,7 +37,8 @@ export default function Login({ onLogin }) {
                  autoComplete="current-password" required />
         </label>
         <button type="submit" disabled={busy}>{busy ? 'Anmelden…' : 'Anmelden'}</button>
-        <p className="hint">Gleiche Zugangsdaten wie in der Desktop-/Web-App.</p>
+        <p className="hint">Gleiche Zugangsdaten wie in der Desktop-/Web-App.
+          {version && version.build && <><br />{versionLabel(version)}</>}</p>
       </form>
     </div>
   )

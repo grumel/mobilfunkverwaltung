@@ -30,8 +30,9 @@ async function upload(url, file) {
 }
 
 export const api = {
-  // Auth
+  // Auth / Meta
   me: () => req('/api/me'),
+  version: () => req('/api/version'),
   login: (username, password) =>
     req('/api/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => req('/api/logout', { method: 'POST' }),
