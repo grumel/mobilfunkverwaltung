@@ -9,13 +9,18 @@ später Token-/SameSite-Absicherung ergänzen.
 Datumsfelder werden als ISO-Strings (YYYY-MM-DD) übertragen – so wie gespeichert.
 """
 
+import os
+import tempfile
 from datetime import date, timedelta
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from sqlalchemy import func, or_, select, case, and_
+from werkzeug.utils import secure_filename
 
 from webapp.db import SessionLocal
 from webapp.models import Participant, User, Task
+from modules import vodafone_import, syno_import
+from modules import database as ddb
 from webapp.security import current_user, can
 from webapp import service as svc
 from modules.auth import verify_password
@@ -411,3 +416,84 @@ def stats():
     finally:
         db.close()
     return jsonify(tiles=tiles, werke=werke, ablauf=ablauf)
+
+
+# --------------------------------------------------------------------------- #
+# Import (nur Admin) – wiederverwendet modules.vodafone_import / syno_import
+# --------------------------------------------------------------------------- #
+def _require_admin():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("admin"):
+        return jsonify(error="keine Berechtigung"), 403
+    return None
+
+
+def _save_upload():
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return None, None, (jsonify(error="Bitte eine Excel-Datei auswählen."), 400)
+    if not f.filename.lower().endswith((".xlsx", ".xls")):
+        return None, None, (jsonify(error="Nur Excel-Dateien (.xlsx/.xls) werden unterstützt."), 400)
+    fd, path = tempfile.mkstemp(suffix="_" + secure_filename(f.filename))
+    os.close(fd)
+    f.save(path)
+    return path, f.filename, None
+
+
+@bp.post("/import/vodafone/preview")
+def import_vodafone_preview():
+    err = _require_admin()
+    if err:
+        return err
+    path, filename, err = _save_upload()
+    if err:
+        return err
+    try:
+        preview = vodafone_import.run_vodafone_import(path, dry_run=True)
+    except Exception as exc:
+        try: os.unlink(path)
+        except OSError: pass
+        return jsonify(error=f"Importfehler: {exc}"), 400
+    session["vodafone_import_path"] = path
+    session["vodafone_import_name"] = filename
+    return jsonify(preview=preview, filename=filename)
+
+
+@bp.post("/import/vodafone/confirm")
+def import_vodafone_confirm():
+    err = _require_admin()
+    if err:
+        return err
+    path = session.pop("vodafone_import_path", None)
+    filename = session.pop("vodafone_import_name", "?")
+    if not path or not os.path.exists(path):
+        return jsonify(error="Import-Datei nicht mehr vorhanden – bitte erneut hochladen."), 400
+    try:
+        ddb.create_backup()
+        result = vodafone_import.run_vodafone_import(path)
+    except Exception as exc:
+        return jsonify(error=f"Import fehlgeschlagen: {exc}"), 400
+    finally:
+        try: os.unlink(path)
+        except OSError: pass
+    return jsonify(result=result, filename=filename)
+
+
+@bp.post("/import/syno")
+def import_syno():
+    err = _require_admin()
+    if err:
+        return err
+    path, filename, err = _save_upload()
+    if err:
+        return err
+    try:
+        ddb.create_backup()
+        result = syno_import.run_syno_import(path)
+    except Exception as exc:
+        return jsonify(error=f"Import fehlgeschlagen: {exc}"), 400
+    finally:
+        try: os.unlink(path)
+        except OSError: pass
+    return jsonify(result=result, filename=filename)
