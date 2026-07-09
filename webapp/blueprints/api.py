@@ -27,7 +27,7 @@ from webapp import webconfig
 from webapp import config as appconfig
 from webapp.security import current_user, can
 from webapp import service as svc
-from modules.auth import verify_password
+from modules.auth import verify_password, hash_password, ROLES
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -657,3 +657,160 @@ def settings_put():
     webconfig.save(newcfg)
     return jsonify(ok=True, message=message, warning=warning,
                    note="Bitte die Web-App neu starten, damit die Änderung aktiv wird.")
+
+
+# --------------------------------------------------------------------------- #
+# Benutzerverwaltung (nur Admin)
+# --------------------------------------------------------------------------- #
+USER_FIELDS = ["id", "username", "role", "active", "last_login",
+               "created_at", "windows_login"]
+
+
+@bp.get("/users")
+def users_list():
+    err = _require_admin()
+    if err:
+        return err
+    db = SessionLocal()
+    try:
+        rows = db.query(User).order_by(User.username).all()
+        return jsonify(users=[_dict(u, USER_FIELDS) for u in rows])
+    finally:
+        db.close()
+
+
+@bp.post("/users")
+def user_create():
+    err = _require_admin()
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+    role = (data.get("role") or "read").strip()
+    active = 1 if data.get("active", True) else 0
+    windows_login = (data.get("windows_login") or "").strip() or None
+
+    if not username:
+        return jsonify(error="Benutzername darf nicht leer sein."), 400
+    if role not in ROLES:
+        return jsonify(error="Ungültige Rolle."), 400
+    # Passwort ist Pflicht, außer es wird ein Windows-Login hinterlegt (SSO)
+    if password:
+        if len(password) < 6:
+            return jsonify(error="Passwort: mindestens 6 Zeichen."), 400
+        pw_hash = hash_password(password)
+    elif windows_login:
+        pw_hash = hash_password(os.urandom(24).hex())  # unbenutzbares Zufallspasswort
+    else:
+        return jsonify(error="Passwort (min. 6 Zeichen) oder Windows-Login erforderlich."), 400
+
+    db = SessionLocal()
+    try:
+        if db.query(User).filter(func.lower(User.username) == username.lower()).first():
+            return jsonify(error="Benutzername bereits vergeben."), 409
+        u = User(username=username, password_hash=pw_hash, role=role, active=active,
+                 force_pw_change=0, windows_login=windows_login, created_at=svc.now_str())
+        db.add(u)
+        db.flush()
+        svc.log_audit(db, current_user(), "USER_CREATE",
+                      f"Neuer Benutzer '{username}' Rolle={role} "
+                      f"Windows-Login={windows_login or '-'} (API)",
+                      table_name="users", record_id=u.id)
+        db.commit()
+        return jsonify(user=_dict(u, USER_FIELDS)), 201
+    finally:
+        db.close()
+
+
+@bp.put("/users/<int:uid>")
+def user_update(uid):
+    err = _require_admin()
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    db = SessionLocal()
+    try:
+        u = db.get(User, uid)
+        if not u:
+            return jsonify(error="nicht gefunden"), 404
+
+        me = current_user()
+        if "username" in data:
+            username = (data.get("username") or "").strip()
+            if not username:
+                return jsonify(error="Benutzername darf nicht leer sein."), 400
+            clash = db.query(User).filter(func.lower(User.username) == username.lower(),
+                                          User.id != uid).first()
+            if clash:
+                return jsonify(error="Benutzername bereits vergeben."), 409
+            u.username = username
+        if "role" in data:
+            role = (data.get("role") or "").strip()
+            if role not in ROLES:
+                return jsonify(error="Ungültige Rolle."), 400
+            if u.id == me["id"] and role != "admin":
+                return jsonify(error="Die eigene Admin-Rolle kann nicht entzogen werden."), 400
+            u.role = role
+        if "active" in data:
+            active = 1 if data.get("active") else 0
+            if u.id == me["id"] and active == 0:
+                return jsonify(error="Das eigene Konto kann nicht deaktiviert werden."), 400
+            u.active = active
+        if "windows_login" in data:
+            u.windows_login = (data.get("windows_login") or "").strip() or None
+
+        svc.log_audit(db, me, "USER_EDIT",
+                      f"Benutzer '{u.username}' geändert Rolle={u.role} aktiv={u.active} (API)",
+                      table_name="users", record_id=u.id)
+        db.commit()
+        return jsonify(user=_dict(u, USER_FIELDS))
+    finally:
+        db.close()
+
+
+@bp.post("/users/<int:uid>/password")
+def user_set_password(uid):
+    err = _require_admin()
+    if err:
+        return err
+    password = (request.get_json(silent=True) or {}).get("password") or ""
+    if len(password) < 6:
+        return jsonify(error="Passwort: mindestens 6 Zeichen."), 400
+    db = SessionLocal()
+    try:
+        u = db.get(User, uid)
+        if not u:
+            return jsonify(error="nicht gefunden"), 404
+        u.password_hash = hash_password(password)
+        u.force_pw_change = 0
+        svc.log_audit(db, current_user(), "USER_PASSWORD",
+                      f"Passwort für '{u.username}' zurückgesetzt (API)",
+                      table_name="users", record_id=u.id)
+        db.commit()
+        return jsonify(ok=True)
+    finally:
+        db.close()
+
+
+@bp.delete("/users/<int:uid>")
+def user_delete(uid):
+    err = _require_admin()
+    if err:
+        return err
+    db = SessionLocal()
+    try:
+        u = db.get(User, uid)
+        if not u:
+            return jsonify(error="nicht gefunden"), 404
+        if u.id == current_user()["id"]:
+            return jsonify(error="Das eigene Konto kann nicht gelöscht werden."), 400
+        name = u.username
+        svc.log_audit(db, current_user(), "USER_DELETE",
+                      f"Benutzer '{name}' gelöscht (API)",
+                      table_name="users", record_id=uid)
+        db.delete(u)
+        db.commit()
+        return jsonify(ok=True)
+    finally:
+        db.close()
