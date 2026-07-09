@@ -116,6 +116,37 @@ def me():
     return jsonify(user=u)
 
 
+_VERSION_CACHE = None
+
+
+def app_version():
+    """Fortlaufende Versionsnummer = Anzahl Git-Commits (+ Kurz-Hash).
+
+    Wird beim ersten Aufruf ermittelt und zwischengespeichert. Ohne Git
+    (z. B. bei einer Kopie ohne .git) bleibt sie leer."""
+    global _VERSION_CACHE
+    if _VERSION_CACHE is not None:
+        return _VERSION_CACHE
+    build = commit = None
+    try:
+        import subprocess
+        root = str(Path(__file__).resolve().parents[2])
+        run = lambda *a: subprocess.check_output(["git", "-C", root, *a],
+                                                 text=True, stderr=subprocess.DEVNULL).strip()
+        build = run("rev-list", "--count", "HEAD")
+        commit = run("rev-parse", "--short", "HEAD")
+    except Exception:
+        pass
+    _VERSION_CACHE = {"build": build, "commit": commit}
+    return _VERSION_CACHE
+
+
+@bp.get("/version")
+def version():
+    # Öffentlich (auch vor Login sichtbar, z. B. auf der Anmeldeseite).
+    return jsonify(app_version())
+
+
 # --------------------------------------------------------------------------- #
 # Teilnehmer – Liste / Detail / Schreiben
 # --------------------------------------------------------------------------- #
