@@ -17,10 +17,14 @@ from flask import Blueprint, request, jsonify, session
 from sqlalchemy import func, or_, select, case, and_
 from werkzeug.utils import secure_filename
 
+from pathlib import Path
+
 from webapp.db import SessionLocal
 from webapp.models import Participant, User, Task
 from modules import vodafone_import, syno_import
 from modules import database as ddb
+from webapp import webconfig
+from webapp import config as appconfig
 from webapp.security import current_user, can
 from webapp import service as svc
 from modules.auth import verify_password
@@ -497,3 +501,53 @@ def import_syno():
         try: os.unlink(path)
         except OSError: pass
     return jsonify(result=result, filename=filename)
+
+
+# --------------------------------------------------------------------------- #
+# Einstellungen (nur Admin) – Datenbankpfad (Programm/DB getrennt)
+# --------------------------------------------------------------------------- #
+@bp.get("/settings")
+def settings_get():
+    err = _require_admin()
+    if err:
+        return err
+    cfg = webconfig.load()
+    return jsonify(
+        db_path=cfg.get("db_path", ""),
+        database_url=cfg.get("database_url", ""),
+        current_url=appconfig.DATABASE_URL,
+        default_path=appconfig.DEFAULT_DB_PATH,
+        config_file=str(webconfig.config_file()),
+        env_override=bool(os.environ.get("DATABASE_URL")),
+    )
+
+
+@bp.put("/settings")
+def settings_put():
+    err = _require_admin()
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    db_path = (data.get("db_path") or "").strip()
+    database_url = (data.get("database_url") or "").strip()
+    cfg = webconfig.load()
+    newcfg = dict(cfg)
+    warning = None
+    if database_url:
+        newcfg["database_url"] = database_url
+        newcfg.pop("db_path", None)
+        message = "Volle DATABASE_URL gespeichert."
+    elif db_path:
+        p = Path(db_path)
+        newcfg["db_path"] = str(p)
+        newcfg.pop("database_url", None)
+        if not p.exists():
+            warning = "Achtung: Die angegebene Datei existiert (noch) nicht – bitte Pfad prüfen."
+        message = "Datenbankpfad gespeichert."
+    else:
+        newcfg.pop("db_path", None)
+        newcfg.pop("database_url", None)
+        message = "Auf Standard-Datenbank zurückgesetzt."
+    webconfig.save(newcfg)
+    return jsonify(ok=True, message=message, warning=warning,
+                   note="Bitte die Web-App neu starten, damit die Änderung aktiv wird.")
