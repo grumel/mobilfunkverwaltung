@@ -60,3 +60,41 @@ td.num { text-align:right; font-variant-numeric:tabular-nums; }
 .flash { background:#fdecea; border:1px solid #f5b7b1; color:#922b21; padding:8px 12px;
   border-radius:8px; font-size:13px; }
 .hint { margin:0; color:var(--dim); font-size:11px; text-align:center; }
+
+/* Toolbar / Tabs */
+.tabsep { width:1px; align-self:center; height:22px; background:var(--line); margin:0 6px; }
+.hint-dim { color:var(--dim); font-size:12px; }
+.btn { padding:8px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card);
+  color:var(--fg); font-size:13px; cursor:pointer; }
+.btn:hover { background:var(--hover); }
+.btn.accent { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
+.btn.accent:disabled { opacity:.6; cursor:default; }
+
+/* Kontextmenü */
+.ctxmenu { position:absolute; z-index:100; min-width:190px; background:var(--card);
+  border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 26px rgba(0,0,0,.14);
+  padding:4px; font-size:13px; }
+.ctx-item { padding:7px 12px; border-radius:6px; cursor:pointer; white-space:nowrap; }
+.ctx-item:hover { background:var(--hover); }
+.ctx-item.danger { color:var(--accent); }
+.ctx-sep { height:1px; background:var(--line); margin:4px 6px; }
+
+/* Modal (Bearbeiten) */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,.28); display:flex;
+  align-items:flex-start; justify-content:center; padding:40px 16px; z-index:200; overflow:auto; }
+.modal { background:var(--card); border-radius:12px; width:100%; max-width:820px;
+  padding:18px 20px; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+.modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.modal-head h3 { margin:0; font-size:16px; }
+.x { border:0; background:none; font-size:22px; line-height:1; cursor:pointer; color:var(--dim); }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+.field { display:flex; flex-direction:column; gap:4px; font-size:13px; }
+.field.wide { margin-top:10px; }
+.field > span { color:var(--dim); }
+.field input, .field select, .field textarea { padding:8px 10px; border:1px solid var(--line);
+  border-radius:8px; font-size:14px; outline:none; background:var(--card); color:var(--fg); font-family:inherit; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(214,0,28,.12); }
+.field input[readonly], .field textarea[readonly] { background:#f7f8f9; color:var(--dim); }
+.check { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; }
+.modal-actions { display:flex; gap:10px; margin-top:16px; }

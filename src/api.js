@@ -13,12 +13,21 @@ async function req(url, opts = {}) {
   }
   return res.json()
 }
+const enc = encodeURIComponent
 
 export const api = {
+  // Auth
   me: () => req('/api/me'),
   login: (username, password) =>
     req('/api/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => req('/api/logout', { method: 'POST' }),
-  participants: (provider, q) =>
-    req(`/api/participants?provider=${encodeURIComponent(provider)}&q=${encodeURIComponent(q || '')}`),
+
+  // Teilnehmer
+  participants: (view, q) => req(`/api/participants?view=${enc(view)}&q=${enc(q || '')}`),
+  participant: (id) => req(`/api/participants/${id}`),
+  create: (data) => req('/api/participants', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => req(`/api/participants/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  verify: (id) => req(`/api/participants/${id}/verify`, { method: 'POST' }),
+  move: (id, provider) => req(`/api/participants/${id}/move`, { method: 'POST', body: JSON.stringify({ provider }) }),
+  remove: (id) => req(`/api/participants/${id}`, { method: 'DELETE' }),
 }
