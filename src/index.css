@@ -1,0 +1,62 @@
+:root {
+  --bg:#f4f5f7; --card:#fff; --line:#e3e6ea; --fg:#1f2933; --dim:#6b7280;
+  --accent:#d6001c; --head:#fafbfc; --hover:#f0f7ff;
+  --ok-bg:#e6f4ea; --ok-fg:#1e7d34; --open-bg:#fdecea; --open-fg:#b3261e;
+}
+* { box-sizing:border-box; }
+body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+.center { display:flex; align-items:center; justify-content:center; min-height:100vh; color:var(--dim); }
+
+/* Topbar */
+.topbar { display:flex; align-items:center; gap:12px; background:var(--card);
+  border-bottom:1px solid var(--line); padding:0 16px; height:52px; position:sticky; top:0; z-index:10; }
+.dot { width:10px; height:10px; border-radius:50%; background:var(--accent); flex:0 0 auto; }
+.appname { font-weight:600; font-size:15px; }
+.webtag { font-size:10px; color:var(--dim); border:1px solid var(--line); padding:1px 7px; border-radius:10px; }
+.spacer { flex:1 1 auto; }
+.user { font-size:12px; color:var(--dim); }
+.logout { font-size:12px; color:var(--accent); background:none; border:0; cursor:pointer; }
+.logout:hover { text-decoration:underline; }
+
+/* Liste */
+.wrap { padding:14px 18px; }
+.tabs { display:flex; gap:2px; margin-bottom:10px; }
+.tab { padding:8px 14px; font-size:13px; border:0; border-radius:7px 7px 0 0; background:transparent;
+  color:var(--fg); cursor:pointer; }
+.tab:hover { background:var(--hover); }
+.tab.active { background:var(--accent); color:#fff; font-weight:600; }
+.bar { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.q { flex:0 0 340px; padding:9px 12px; border:1px solid var(--line); border-radius:8px;
+  font-size:14px; outline:none; background:var(--card); }
+.q:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(214,0,28,.12); }
+.count { color:var(--dim); font-size:13px; }
+.err { color:var(--accent); font-size:13px; }
+.tablecard { background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.scroll { max-height:calc(100vh - 175px); overflow:auto; }
+table { border-collapse:collapse; width:100%; font-size:13px; }
+thead th { position:sticky; top:0; background:var(--head); text-align:left; padding:10px 12px;
+  border-bottom:1px solid var(--line); font-weight:600; white-space:nowrap; }
+tbody td { padding:8px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+tbody tr:hover { background:var(--hover); }
+td.num { text-align:right; font-variant-numeric:tabular-nums; }
+.badge { font-size:11px; padding:2px 8px; border-radius:10px; }
+.badge.ok { background:var(--ok-bg); color:var(--ok-fg); }
+.badge.open { background:var(--open-bg); color:var(--open-fg); }
+
+/* Login */
+.login-body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.login-card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:26px 28px; width:320px; box-shadow:0 8px 30px rgba(0,0,0,.06);
+  display:flex; flex-direction:column; gap:12px; }
+.login-head { display:flex; align-items:center; gap:8px; font-weight:600; font-size:16px; }
+.login-sub { margin:0; color:var(--dim); font-size:13px; }
+.login-card label { display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--dim); }
+.login-card input { padding:9px 11px; border:1px solid var(--line); border-radius:8px;
+  font-size:14px; outline:none; color:var(--fg); }
+.login-card input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(214,0,28,.12); }
+.login-card button { margin-top:4px; padding:10px; border:0; border-radius:8px;
+  background:var(--accent); color:#fff; font-size:14px; font-weight:600; cursor:pointer; }
+.login-card button:disabled { opacity:.6; cursor:default; }
+.flash { background:#fdecea; border:1px solid #f5b7b1; color:#922b21; padding:8px 12px;
+  border-radius:8px; font-size:13px; }
+.hint { margin:0; color:var(--dim); font-size:11px; text-align:center; }
