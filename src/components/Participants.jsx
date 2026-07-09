@@ -4,7 +4,9 @@ import EditModal from './EditModal.jsx'
 
 const COLS = [
   ['master_id', 'Nr.'], ['gsm', 'GSM'], ['name', 'Name'], ['plant', 'Werk'],
-  ['konto', 'Konto'], ['tarif', 'Tarif'], ['vertragsende', 'Vtg.-Ende'], ['bemerkung', 'Bemerkung'],
+  ['konto', 'Konto'], ['tarif', 'Tarif'], ['sim_nummer', 'SIM-Seriennummer'],
+  ['vertragsbeginn', 'Vertragsbeginn'], ['vertragsende', 'Vtg.-Ende'], ['kuendigung', 'Kündigung zu'],
+  ['rahmenvertrag', 'Rahmenvertrag'], ['bemerkung', 'Bemerkung'],
 ]
 const NUM = new Set(['master_id', 'konto'])
 const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
