@@ -18,9 +18,10 @@ def create_app() -> Flask:
     app.config["SECRET_KEY"] = SECRET_KEY
 
     # CSRF-Schutz (per Umgebungsvariable MOBILFUNK_CSRF=0 abschaltbar, z. B. für Tests)
+    csrf = None
     if os.environ.get("MOBILFUNK_CSRF", "1") != "0":
         from flask_wtf import CSRFProtect
-        CSRFProtect(app)
+        csrf = CSRFProtect(app)
     else:
         # Ohne CSRF trotzdem csrf_token() in Templates verfügbar halten (No-op)
         app.jinja_env.globals.setdefault("csrf_token", lambda: "")
@@ -32,6 +33,7 @@ def create_app() -> Flask:
     from webapp.blueprints.tasks import bp as tasks_bp
     from webapp.blueprints.reports import bp as reports_bp
     from webapp.blueprints.settings import bp as settings_bp
+    from webapp.blueprints.api import bp as api_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(participants_bp)
     app.register_blueprint(tabs_bp)
@@ -39,6 +41,10 @@ def create_app() -> Flask:
     app.register_blueprint(tasks_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(api_bp)
+    # JSON-API ist Session-basiert – CSRF-Token-Zwang hier ausnehmen (React-Frontend)
+    if csrf is not None:
+        csrf.exempt(api_bp)
 
     from webapp.service import NAV_PROVIDERS
 
