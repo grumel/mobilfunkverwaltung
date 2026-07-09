@@ -66,4 +66,12 @@ export const api = {
   // Protokoll / Audit
   importLog: () => req('/api/logs/import'),
   auditLog: () => req('/api/logs/audit'),
+
+  // Benutzerverwaltung (nur Admin)
+  users: () => req('/api/users'),
+  userCreate: (data) => req('/api/users', { method: 'POST', body: JSON.stringify(data) }),
+  userUpdate: (uid, data) => req(`/api/users/${uid}`, { method: 'PUT', body: JSON.stringify(data) }),
+  userSetPassword: (uid, password) =>
+    req(`/api/users/${uid}/password`, { method: 'POST', body: JSON.stringify({ password }) }),
+  userDelete: (uid) => req(`/api/users/${uid}`, { method: 'DELETE' }),
 }

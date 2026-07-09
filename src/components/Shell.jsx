@@ -6,6 +6,7 @@ import Stats from './Stats.jsx'
 import Import from './Import.jsx'
 import Settings from './Settings.jsx'
 import Logs from './Logs.jsx'
+import Users from './Users.jsx'
 
 const PROVIDERS = [
   ['vodafone', 'Vodafone'], ['telekom', 'Telekom'], ['o2', 'O2'],
@@ -58,6 +59,7 @@ export default function Shell({ user, onLogout }) {
             <>
               <button className={'tab' + (view === 'audit' ? ' active' : '')} onClick={() => setView('audit')}>Audit</button>
               <button className={'tab import' + (view === 'import' ? ' active' : '')} onClick={() => setView('import')}>Import ▾</button>
+              <button className={'tab' + (view === 'benutzer' ? ' active' : '')} onClick={() => setView('benutzer')}>Benutzer</button>
               <button className={'tab' + (view === 'einstellungen' ? ' active' : '')} onClick={() => setView('einstellungen')}>⚙ Einstellungen</button>
             </>
           )}
@@ -85,6 +87,8 @@ export default function Shell({ user, onLogout }) {
                 ? <Logs kind="audit" user={user} />
                 : view === 'import'
                   ? <Import />
+                  : view === 'benutzer'
+                    ? <Users user={user} />
                   : view === 'einstellungen'
                     ? <Settings />
                     : <Participants view={view} q={q} user={user}

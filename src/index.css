@@ -2,6 +2,7 @@
   --bg:#eef0f2; --card:#fff; --line:#c3c9d1; --fg:#10141a; --dim:#4b5563;
   --accent:#d6001c; --head:#e9ecf0; --hover:#eaf2ff;
   --ok-bg:#e6f4ea; --ok-fg:#1e7d34; --open-bg:#fdecea; --open-fg:#b3261e;
+  --zebra:#f3f5f8;
 }
 * { box-sizing:border-box; }
 body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--fg); }
@@ -45,6 +46,7 @@ thead th.sortable { cursor:pointer; user-select:none; }
 thead th.sortable:hover { background:var(--hover); }
 .sortarrow { color:var(--accent); }
 tbody td { padding:8px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+tbody tr:nth-child(even) { background:var(--zebra); }
 tbody tr:hover { background:var(--hover); }
 td.num { text-align:right; font-variant-numeric:tabular-nums; }
 .badge { font-size:11px; padding:2px 8px; border-radius:10px; }
