@@ -1,8 +1,13 @@
 # Mobilfunkverwaltung – React-Frontend
 
-Neues Frontend (Phase 3 der [Roadmap](../Mobilfunk-WebApp/ROADMAP.md)). Spricht die
-**JSON-API** der Flask-App (`Mobilfunk-WebApp`) an. Aktueller Stand: **Fundament** –
-Login + Provider-Tabs/Vodafone-Liste mit Live-Suche. Wird Tab für Tab ausgebaut.
+Neues Frontend (Phase 3 der [Roadmap](https://github.com/grumel/mdwWeb/blob/main/ROADMAP.md)).
+Spricht die **JSON-API** der Flask-App (`mdwWeb` / `Mobilfunk-WebApp`) an.
+
+Aktueller Stand: Login, alle Provider-Tabs + abgeleitete Ansichten (Prüfungen/
+Unvollständig/Duplikate), Bearbeiten-Dialog, Rechtsklick-Aktionen (geprüft/
+verschieben/löschen, rollenbasiert), Aufgaben (mit Zähler-Badge, Markierung in
+Listen), Statistik (Kennzahlen, Werk-Balken, ablaufende Verträge). Wird Tab für
+Tab weiter ausgebaut (Import, Einstellungen folgen).
 
 ## Voraussetzung
 - Node.js (LTS)
@@ -24,12 +29,16 @@ die API bleibt hinter demselben Reverse-Proxy.
 
 ## Struktur
 ```
-index.html            Einstieg
-vite.config.js        Dev-Server + /api-Proxy
-src/main.jsx          React-Bootstrap
-src/api.js            API-Client (fetch)
-src/App.jsx           Auth-Status + App-Shell
+index.html                     Einstieg
+vite.config.js                 Dev-Server + /api-Proxy
+src/main.jsx                   React-Bootstrap
+src/api.js                     API-Client (fetch)
+src/App.jsx                    Auth-Status
 src/components/Login.jsx
-src/components/Participants.jsx
-src/index.css         Styling (Look der Web-App)
+src/components/Shell.jsx       App-Shell, Tab-Leiste, Summary-Polling
+src/components/Participants.jsx  Liste, Suche, Rechtsklick-Aktionen
+src/components/EditModal.jsx   Bearbeiten-/Neu-Dialog
+src/components/Tasks.jsx       Aufgaben
+src/components/Stats.jsx       Statistik
+src/index.css                  Styling (Look der Web-App)
 ```
