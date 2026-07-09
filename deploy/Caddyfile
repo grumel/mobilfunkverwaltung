@@ -1,9 +1,26 @@
-# Reverse-Proxy auf Port 80 -> gunicorn (127.0.0.1:8000)
+# Reverse-Proxy auf Port 80.
 # Ablage: /etc/caddy/Caddyfile  (dann: sudo systemctl restart caddy)
+#
+# Topologie:
+#   /api/*  -> gunicorn (127.0.0.1:8000), die Flask-JSON-API
+#   /*      -> statisches React-Bundle (mdw-frontend, "npm run build" -> dist/)
+#
+# Die alte Server-gerenderte Jinja-Oberflaeche der Flask-App bleibt bestehen,
+# ist ueber Port 80 aber nicht mehr eingebunden (React ist die Standard-UI).
+# Bei Bedarf direkt erreichbar auf dem Server selbst: http://127.0.0.1:8000/
 
 :80 {
     encode gzip
-    reverse_proxy 127.0.0.1:8000
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    handle {
+        root * /opt/mobilfunk-frontend/dist
+        try_files {path} /index.html
+        file_server
+    }
 }
 
 # --- Spaeter HTTPS (tunen/erweitern) -------------------------------------
@@ -12,5 +29,6 @@
 #
 # mobilfunk.intern.alpla {
 #     encode gzip
-#     reverse_proxy 127.0.0.1:8000
+#     handle /api/* { reverse_proxy 127.0.0.1:8000 }
+#     handle { root * /opt/mobilfunk-frontend/dist; try_files {path} /index.html; file_server }
 # }

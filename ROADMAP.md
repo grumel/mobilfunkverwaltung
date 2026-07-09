@@ -8,15 +8,21 @@ laufende Lösung, dann Datenbank, dann Frontend.
 ## Phase 1 — Server-Go-Live (aktuell)
 
 Kleiner Linux-Rechner (Lenovo ThinkPad, Ubuntu/Debian Desktop genügt) im eigenen
-Netz. Automatischer Installer `deploy/install.sh` richtet alles ein: gunicorn +
-Caddy (Port 80), systemd-Dienst, Backup-Cron, „Immer-an".
+Netz. Automatischer Installer `deploy/install.sh` richtet **beide** Repos ein:
+Backend (gunicorn) + Frontend (React-Build) hinter Caddy (Port 80), systemd-Dienst,
+Node.js, Backup-Cron, „Immer-an". Details: `deploy/INSTALL.md`.
+
+Topologie: `Caddy :80` → `/api/*` zu gunicorn (Backend-JSON-API),
+`/*` statisches React-Bundle (`mdw-frontend/dist`). Man kann kein fertiges
+Windows-Verzeichnis kopieren (`.venv/`, `node_modules/` sind plattformgebunden) —
+beide Repos werden auf dem Server geklont und dort gebaut; der Installer macht das.
 
 - [x] Härtung: persistentes Secret + CSRF
-- [x] Deployment-Paket + Installer (Port 80)
+- [x] Deployment-Paket + Installer (Port 80, Backend + Frontend)
 - [ ] Server aufsetzen, DB `mobilfunk.db` übertragen, erster Lauf
 - [ ] Danach optional **HTTPS** (im `Caddyfile` `:80` → DNS-Name; Caddy holt das Zertifikat)
 
-Stabiler Zustand als Basis für Phase 2 und 3.
+Stabiler Zustand als Basis für Phase 2.
 
 ---
 
@@ -52,30 +58,33 @@ für den Netzwerkbetrieb. Die Architektur ist bereits vorbereitet (SQLAlchemy,
 6. **Verifizieren:** Datensatzzahlen je Tabelle vor/nach vergleichen; Login, Listen,
    eine Bearbeitung testen. Bei Problemen einfach zurück auf die SQLite-URL.
 
-**Reihenfolge-Tipp:** Wenn Phase 3 (React/API) ohnehin kommt, bietet es sich an,
-den Import-Refactor (Schritt 3) **zusammen mit der API-Schicht** zu erledigen —
-dann ist alles konsistent auf SQLAlchemy/Postgres.
+**Stand:** Phase 3 (React + JSON-API) ist bereits fertig — die API-Schicht existiert
+also schon. Der Import-Refactor (Schritt 3) ist damit der nächste konkrete Schritt
+für Phase 2, kein „zusammen mit" mehr.
 
 ---
 
-## Phase 3 — Komplettes Frontend in React
+## Phase 3 — Komplettes Frontend in React ✅ (inhaltlich fertig)
 
-**Ziel:** app-artige, interaktivere Oberfläche; Flask wird zur reinen JSON-API.
+**Ziel:** app-artige, interaktivere Oberfläche; Flask als JSON-API.
 Die Geschäftslogik (`modules/`, SQLAlchemy, Rollen) bleibt erhalten.
 
-**Vorgehen (sanfter Übergang, kein „großer Knall")**
-1. **JSON-API** in Flask aufbauen — **neben** der bestehenden Oberfläche. Pro
-   Bereich Endpunkte (Teilnehmer, Aufgaben, Import, Statistik, Auth). Auth per
-   Session-Cookie oder Token; CSRF/CORS beachten.
-2. **React-App** (Vite + React) aufsetzen, Routing, Datenabruf (fetch/React-Query).
-3. **Tab für Tab** von Jinja auf React umstellen; beide Wege laufen parallel, die
-   App bleibt durchgehend benutzbar.
-4. **Build/Deploy:** React-Build (npm/Vite) → statisches Bundle, von Caddy
-   ausgeliefert; API bleibt hinter demselben Reverse-Proxy.
-5. Alte Jinja-Templates entfernen, wenn ein Bereich vollständig in React läuft.
+Eigenes Repo: **github.com/grumel/mdw-frontend** (Vite + React). Spricht die
+JSON-API (`webapp/blueprints/api.py`, Präfix `/api`) an, die **parallel** zur
+bestehenden Jinja-Oberfläche im selben Backend läuft.
 
-**Mehrwert:** flüssiger (keine Reloads), schöne Charts (z. B. Recharts),
-wiederverwendbare Komponenten, mobil-/PWA-tauglich.
+- [x] JSON-API in Flask (`api.py`, Session-Auth, CSRF-exempt für React)
+- [x] React-App: Login, alle Provider-Tabs + abgeleitete Ansichten (Prüfungen/
+      Unvollständig/Duplikate), Bearbeiten/Neu, Rechtsklick-Aktionen (geprüft/
+      verschieben/löschen, rollenbasiert), Aufgaben (Zähler, rote Markierung),
+      Statistik, Import (Vodafone Vorschau/Bestätigen, Syno), Einstellungen (DB-Pfad)
+- [x] Deployment: Caddy liefert das React-Bundle unter `/`, `/api/*` → gunicorn
+- [ ] Rest: **Zusammenführen** (Merge-Modus) und **Protokoll/Audit-Log**-Ansicht
+      fehlen in React noch (existieren im alten Jinja-UI)
+- [ ] Alte Jinja-Templates entfernen, sobald React sie vollständig abdeckt
+
+**Mehrwert:** flüssiger (keine Reloads), Kennzahl-Kacheln/Balken, wiederverwendbare
+Komponenten, mobil-/PWA-tauglich.
 
 ---
 
