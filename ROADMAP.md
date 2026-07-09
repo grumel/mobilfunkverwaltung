@@ -77,6 +77,21 @@ bestehenden Jinja-Oberfläche im selben Backend läuft.
       **alle** Funktionen des bisherigen Web-UI ab
 - [ ] Alte Jinja-Templates entfernen, sobald sich niemand mehr auf sie verlässt
       (bewusst noch nicht — dienen als Fallback/Vergleichsreferenz)
+- [ ] **Kündigung/Rücknahme/Neuvertrag fehlen noch** (im Desktop-UI vorhanden,
+      nie migriert — hängen dort an Windows-COM: Word für PDF, Outlook für
+      Mail-Entwurf, siehe `modules/kuendigung.py` / `modules/neuvertrag.py`).
+      Läuft auf dem Linux-Server so nicht. Geplanter Ansatz:
+      - Vorlage füllen (`python-docx`, bereits plattformunabhängig) → PDF
+        über **LibreOffice headless** statt Word-COM erzeugen, Download-Button
+        im React-Frontend.
+      - Statt Outlook-Entwurf: Betreff/Text zum Kopieren anzeigen, PDF wird
+        manuell an Outlook (Windows-Client) angehängt und verschickt.
+      - Neuvertrag: eigenes Formular in React fehlt komplett, plus
+        Werk→Konto-Zuordnung aus den Einstellungen (`konto_plant`) muss in
+        die Web-Einstellungen übernommen werden.
+      - Voraussetzung: LibreOffice auf dem Server installieren, Word-Vorlagen
+        (`vorlage_kündigung.docx`, `vorlage_rücknahme.docx`) auf den Server
+        übertragen.
 
 **Mehrwert:** flüssiger (keine Reloads), Kennzahl-Kacheln/Balken, wiederverwendbare
 Komponenten, mobil-/PWA-tauglich.
