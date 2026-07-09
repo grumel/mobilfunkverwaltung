@@ -15,15 +15,24 @@ const DERIVED = [
   ['offen', 'Prüfungen'], ['unvollstaendig', 'Unvollständig'], ['duplikate', 'Duplikate'],
 ]
 
+const PARTICIPANT_VIEWS = new Set([...PROVIDERS, ...DERIVED].map(([k]) => k))
+
 export default function Shell({ user, onLogout }) {
   const [view, setView] = useState('vodafone')
   const [summary, setSummary] = useState({ open_tasks: 0, open_task_pids: [] })
+  const [qInput, setQInput] = useState('')
+  const [q, setQ] = useState('')
   const isAdmin = user.role === 'admin'
+  const isParticipantsView = PARTICIPANT_VIEWS.has(view)
 
   const refreshSummary = useCallback(() => {
     api.summary().then(setSummary).catch(() => {})
   }, [])
   useEffect(() => { refreshSummary() }, [view, refreshSummary])
+  useEffect(() => {
+    const t = setTimeout(() => setQ(qInput), 150)
+    return () => clearTimeout(t)
+  }, [qInput])
 
   return (
     <div>
@@ -57,6 +66,14 @@ export default function Shell({ user, onLogout }) {
         <span className="user">{user.username} · {user.role}</span>
         <button className="logout" onClick={onLogout}>Abmelden</button>
       </header>
+      {isParticipantsView && (
+        <div className="globalbar">
+          <input className="q" type="search" value={qInput} autoFocus
+                 placeholder="Globale Suche: Name, GSM, Werk, Konto, Tarif, Bemerkung …"
+                 onChange={(e) => setQInput(e.target.value)} />
+          <span className="hint-dim">durchsucht alle Reiter, unabhängig vom aktuell gewählten</span>
+        </div>
+      )}
       <main>
         {view === 'aufgaben'
           ? <Tasks user={user} onChanged={refreshSummary} />
@@ -70,7 +87,7 @@ export default function Shell({ user, onLogout }) {
                   ? <Import />
                   : view === 'einstellungen'
                     ? <Settings />
-                    : <Participants view={view} user={user}
+                    : <Participants view={view} q={q} user={user}
                                     openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
       </main>
     </div>

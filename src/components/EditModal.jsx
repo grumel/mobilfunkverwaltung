@@ -17,6 +17,22 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
   const [p, setP] = useState(isNew ? { provider: 'Vodafone', verified: 1 } : null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+
+  function startDrag(e) {
+    if (e.target.closest('.x')) return
+    const startX = e.clientX, startY = e.clientY
+    const startPos = pos
+    function onMove(ev) {
+      setPos({ x: startPos.x + (ev.clientX - startX), y: startPos.y + (ev.clientY - startY) })
+    }
+    function onUp() {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
 
   useEffect(() => {
     if (!isNew) {
@@ -38,8 +54,9 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
 
   return (
     <div className="overlay" onClick={onClose}>
-      <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}>
-        <div className="modal-head">
+      <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}
+            style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}>
+        <div className="modal-head" onMouseDown={startDrag}>
           <h3>{isNew ? 'Neuer Teilnehmer' : ('Bearbeiten: ' + ((p && p.name) || ('ID ' + id)))}</h3>
           <button type="button" className="x" onClick={onClose}>×</button>
         </div>

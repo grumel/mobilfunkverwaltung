@@ -6,17 +6,17 @@ const COLS = [
   ['master_id', 'Nr.'], ['gsm', 'GSM'], ['name', 'Name'], ['plant', 'Werk'],
   ['konto', 'Konto'], ['tarif', 'Tarif'], ['sim_nummer', 'SIM-Seriennummer'],
   ['vertragsbeginn', 'Vertragsbeginn'], ['vertragsende', 'Vtg.-Ende'], ['kuendigung', 'Kündigung zu'],
-  ['rahmenvertrag', 'Rahmenvertrag'], ['bemerkung', 'Bemerkung'],
+  ['rahmenvertrag', 'Rahmenvertrag'], ['syno', 'Syno'], ['start_syno', 'Syno seit'],
+  ['bemerkung', 'Bemerkung'],
 ]
 const NUM = new Set(['master_id', 'konto'])
 const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 
-export default function Participants({ view, user, openTaskPids = [], onChanged }) {
+export default function Participants({ view, q, user, openTaskPids = [], onChanged }) {
   const canWrite = user.role === 'write' || user.role === 'admin'
   const canDelete = user.role === 'admin'
   const taskSet = new Set(openTaskPids)
 
-  const [q, setQ] = useState('')
   const [rows, setRows] = useState([])
   const [total, setTotal] = useState(0)
   const [error, setError] = useState('')
@@ -24,6 +24,7 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
   const [editId, setEditId] = useState(undefined)
   const [mergeMode, setMergeMode] = useState(false)
   const [selected, setSelected] = useState(new Set())
+  const [sort, setSort] = useState({ key: 'name', dir: 1 })
 
   const load = useCallback((query) => {
     api.participants(view, query)
@@ -31,11 +32,8 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
       .catch((e) => setError(e.message))
   }, [view])
 
-  useEffect(() => { setQ(''); setMergeMode(false); setSelected(new Set()) }, [view])
-  useEffect(() => {
-    const t = setTimeout(() => load(q), 150)
-    return () => clearTimeout(t)
-  }, [view, q, load])
+  useEffect(() => { setMergeMode(false); setSelected(new Set()) }, [view])
+  useEffect(() => { load(q) }, [view, q, load])
   useEffect(() => {
     const close = () => setMenu(null)
     document.addEventListener('click', close)
@@ -81,12 +79,27 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
     if (mergeMode) toggleSelect(row.id)
   }
 
+  function toggleSort(key) {
+    setSort((s) => (s.key === key ? { key, dir: -s.dir } : { key, dir: 1 }))
+  }
+
+  function sortArrow(key) {
+    if (sort.key !== key) return null
+    return <span className="sortarrow">{sort.dir === 1 ? ' ▲' : ' ▼'}</span>
+  }
+
+  const sortedRows = [...rows].sort((a, b) => {
+    const av = a[sort.key], bv = b[sort.key]
+    if (av === bv) return 0
+    if (av === null || av === undefined || av === '') return 1
+    if (bv === null || bv === undefined || bv === '') return -1
+    if (NUM.has(sort.key) || sort.key === 'verified') return (Number(av) - Number(bv)) * sort.dir
+    return String(av).localeCompare(String(bv), 'de') * sort.dir
+  })
+
   return (
     <div className="wrap">
       <div className="bar">
-        <input className="q" type="search" value={q} autoFocus
-               placeholder="Suche: Name, GSM, Werk, Konto, Tarif …"
-               onChange={(e) => setQ(e.target.value)} />
         {canWrite && !mergeMode && (
           <>
             <button className="btn accent" onClick={() => setEditId(null)}>+ Neu</button>
@@ -100,9 +113,9 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
           </span>
         ) : (
           <>
-            <span className="count">{total} Treffer</span>
+            <span className="count">{total} Treffer{q ? ' (alle Reiter)' : ''}</span>
             {error && <span className="err">{error}</span>}
-            <span className="hint-dim">Rechtsklick = Aktionen · Doppelklick = Bearbeiten</span>
+            <span className="hint-dim">Rechtsklick = Aktionen · Doppelklick = Bearbeiten · Spaltenkopf = Sortieren</span>
           </>
         )}
       </div>
@@ -111,10 +124,15 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
         <div className="scroll">
           <table>
             <thead>
-              <tr><th>Status</th>{COLS.map(([k, l]) => <th key={k}>{l}</th>)}</tr>
+              <tr>
+                <th className="sortable" onClick={() => toggleSort('verified')}>Status{sortArrow('verified')}</th>
+                {COLS.map(([k, l]) => (
+                  <th key={k} className="sortable" onClick={() => toggleSort(k)}>{l}{sortArrow(k)}</th>
+                ))}
+              </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {sortedRows.map((r) => (
                 <tr key={r.id}
                     className={(taskSet.has(r.id) ? 'hastask ' : '') + (selected.has(r.id) ? 'selected' : '')}
                     style={mergeMode ? { cursor: 'pointer' } : undefined}
