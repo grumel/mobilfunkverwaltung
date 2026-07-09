@@ -34,10 +34,9 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 # Kurzfassung für Listen
 LIST_FIELDS = ["id", "master_id", "gsm", "name", "plant", "konto", "tarif",
                "sim_nummer", "vertragsbeginn", "vertragsende", "kuendigung",
-               "rahmenvertrag", "bemerkung", "verified", "provider"]
+               "rahmenvertrag", "syno", "start_syno", "bemerkung", "verified", "provider"]
 # Vollständig für die Detail-/Bearbeiten-Ansicht
-DETAIL_FIELDS = LIST_FIELDS + ["telefon",
-               "startdatum", "syno", "start_syno",
+DETAIL_FIELDS = LIST_FIELDS + ["telefon", "startdatum",
                "syno2", "start_syno2", "pruefung_grund", "created_at", "updated_at"]
 # Über die API beschreibbar (master_id + Zeitstempel bleiben außen vor)
 EDITABLE = ["gsm", "name", "plant", "konto", "telefon", "tarif", "sim_nummer",
@@ -53,8 +52,17 @@ def _dict(p, fields):
 
 
 def _apply_view(db, view, q):
-    """Query passend zur Ansicht (Provider-Slug oder abgeleitete Sicht)."""
+    """Query passend zur Ansicht (Provider-Slug oder abgeleitete Sicht).
+
+    Bei aktiver Suche (q gesetzt) wird reiterübergreifend über alle
+    Teilnehmer gesucht — der Reiter-Filter entfällt dann bewusst.
+    """
     P = Participant
+    q = (q or "").strip()
+    if q:
+        like = f"%{q}%"
+        return (db.query(P).filter(or_(*[getattr(P, f).ilike(like) for f in SEARCH_FIELDS]))
+                .order_by(P.name))
     if view in svc.SLUG_TO_PROVIDER:
         query = db.query(P).filter(func.coalesce(P.provider, "Vodafone") == svc.SLUG_TO_PROVIDER[view])
     elif view == "offen":
@@ -70,10 +78,6 @@ def _apply_view(db, view, q):
         query = db.query(P).filter(norm.in_(dup))
     else:
         query = db.query(P).filter(func.coalesce(P.provider, "Vodafone") == "Vodafone")
-    q = (q or "").strip()
-    if q:
-        like = f"%{q}%"
-        query = query.filter(or_(*[getattr(P, f).ilike(like) for f in SEARCH_FIELDS]))
     return query.order_by(P.name)
 
 
