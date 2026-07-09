@@ -47,6 +47,25 @@ set_logind() {
 
 log "Backend-Verzeichnis: $APP_DIR"
 
+# 0/11  Backend-Repo selbst aktualisieren (sonst haengt das Backend bei Updates
+# zurueck – der Installer zog frueher nur das Frontend). Aendert sich dabei der
+# Installer selbst, wird er einmalig mit dem neuen Stand neu gestartet.
+if [ "${SKIP_SELF_UPDATE:-0}" != "1" ] && [ -d "$APP_DIR/.git" ]; then
+  log "0/11  Backend aktualisieren (git pull)"
+  git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
+  before="$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo none)"
+  if git -C "$APP_DIR" pull --ff-only; then
+    after="$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo none)"
+    if [ "$before" != "$after" ] && [ "${SELF_UPDATED:-0}" != "1" ]; then
+      log "      Neue Version geladen – Installer wird mit neuem Stand neu gestartet"
+      export SELF_UPDATED=1
+      exec bash "$APP_DIR/deploy/install.sh" "$@"
+    fi
+  else
+    warn "Backend 'git pull' fehlgeschlagen – fahre mit vorhandenem Stand fort."
+  fi
+fi
+
 log "1/11  Systempakete installieren"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
@@ -201,5 +220,5 @@ if [ "$DB_MISSING" -eq 1 ]; then
   echo "     (oder Installer erneut mit DB-Pfad: sudo bash deploy/install.sh /pfad/zur/mobilfunk.db)"
 fi
 echo ""
-echo "  Update spaeter (beide Repos + Neubau):"
-echo "       cd $APP_DIR && git pull && sudo bash deploy/install.sh"
+echo "  Update spaeter (holt beide Repos automatisch + Neubau):"
+echo "       sudo bash $APP_DIR/deploy/install.sh"

@@ -146,11 +146,13 @@ sudo chmod +x /etc/cron.daily/mobilfunk-backup
 ---
 
 ## Updates einspielen
-Am einfachsten: Installer erneut ausführen (idempotent, holt beide Repos per
-`git pull` und baut das Frontend neu):
+Am einfachsten: Installer erneut ausführen (idempotent, holt **beide** Repos
+selbst per `git pull` – auch das Backend – und baut das Frontend neu):
 ```bash
-cd /opt/mobilfunk-web && sudo git pull && sudo bash deploy/install.sh
+sudo bash /opt/mobilfunk-web/deploy/install.sh
 ```
+> Der Installer aktualisiert sich zu Beginn selbst; ändert sich dabei das
+> Installer-Skript, startet er sich einmalig mit dem neuen Stand neu.
 Manuell äquivalent:
 ```bash
 cd /opt/mobilfunk-web && sudo -u mobilfunk git pull && sudo systemctl restart mobilfunk-web
