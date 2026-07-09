@@ -30,4 +30,12 @@ export const api = {
   verify: (id) => req(`/api/participants/${id}/verify`, { method: 'POST' }),
   move: (id, provider) => req(`/api/participants/${id}/move`, { method: 'POST', body: JSON.stringify({ provider }) }),
   remove: (id) => req(`/api/participants/${id}`, { method: 'DELETE' }),
+
+  // Summary (Nav-Zähler + rote Markierung), Aufgaben, Statistik
+  summary: () => req('/api/summary'),
+  tasks: (show) => req(`/api/tasks?show=${enc(show || 'offen')}`),
+  createTask: (pid, data) => req(`/api/participants/${pid}/tasks`, { method: 'POST', body: JSON.stringify(data) }),
+  taskDone: (tid) => req(`/api/tasks/${tid}/done`, { method: 'POST' }),
+  taskDelete: (tid) => req(`/api/tasks/${tid}`, { method: 'DELETE' }),
+  stats: () => req('/api/stats'),
 }

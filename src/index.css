@@ -98,3 +98,33 @@ td.num { text-align:right; font-variant-numeric:tabular-nums; }
 .field input[readonly], .field textarea[readonly] { background:#f7f8f9; color:var(--dim); }
 .check { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; }
 .modal-actions { display:flex; gap:10px; margin-top:16px; }
+
+/* Zähler-Badge, Aufgaben-Markierung */
+.badgecount { display:inline-block; min-width:16px; margin-left:6px; padding:0 5px; border-radius:9px;
+  background:var(--accent); color:#fff; font-size:11px; font-weight:700; text-align:center; }
+tbody tr.hastask td { color:var(--accent); font-weight:600; }
+
+/* Aufgabenliste */
+tr.overdue td { background:#fdecea; }
+tr.duetoday td { background:#fff7e0; }
+tr.done td { color:var(--dim); }
+.rowactions { white-space:nowrap; }
+.rowlink { color:#2E6DA4; font-weight:600; cursor:pointer; }
+.rowlink:hover { text-decoration:underline; }
+.linkbtn { background:none; border:0; color:#2E6DA4; cursor:pointer; font-size:12.5px;
+  padding:2px 4px; text-decoration:underline; }
+.linkbtn.danger { color:var(--accent); }
+
+/* Statistik */
+.tiles { display:flex; flex-wrap:wrap; gap:10px; margin:4px 0 14px; }
+.tile { border:1px solid var(--line); border-radius:10px; padding:10px 16px; min-width:96px;
+  text-align:center; background:var(--head); }
+.tile .tval { font-size:22px; font-weight:700; }
+.tile .tlbl { font-size:11px; color:var(--dim); margin-top:2px; }
+.statcols { display:grid; grid-template-columns:minmax(240px,1fr) 2fr; gap:16px; align-items:start; }
+.cardhead { padding:9px 12px; border-bottom:1px solid var(--line); font-weight:600; font-size:13px; background:var(--head); }
+.barrow { display:flex; align-items:center; gap:10px; padding:4px 0; font-size:13px; }
+.barlbl { flex:0 0 130px; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bartrack { flex:1 1 auto; height:14px; background:#eef1f4; border-radius:7px; overflow:hidden; }
+.barfill { display:block; height:100%; background:var(--accent); border-radius:7px; }
+.barval { flex:0 0 40px; text-align:right; font-variant-numeric:tabular-nums; color:var(--dim); }

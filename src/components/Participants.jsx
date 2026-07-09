@@ -9,16 +9,17 @@ const COLS = [
 const NUM = new Set(['master_id', 'konto'])
 const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 
-export default function Participants({ view, user }) {
+export default function Participants({ view, user, openTaskPids = [], onChanged }) {
   const canWrite = user.role === 'write' || user.role === 'admin'
   const canDelete = user.role === 'admin'
+  const taskSet = new Set(openTaskPids)
 
   const [q, setQ] = useState('')
   const [rows, setRows] = useState([])
   const [total, setTotal] = useState(0)
   const [error, setError] = useState('')
-  const [menu, setMenu] = useState(null)      // { x, y, row }
-  const [editId, setEditId] = useState(undefined)  // undefined=zu, null=neu, Zahl=bearbeiten
+  const [menu, setMenu] = useState(null)
+  const [editId, setEditId] = useState(undefined)
 
   const load = useCallback((query) => {
     api.participants(view, query)
@@ -39,7 +40,13 @@ export default function Participants({ view, user }) {
 
   async function act(fn) {
     setMenu(null)
-    try { await fn(); load(q) } catch (e) { alert(e.message) }
+    try { await fn(); load(q); onChanged && onChanged() } catch (e) { alert(e.message) }
+  }
+
+  function addTask(row) {
+    setMenu(null)
+    const k = prompt('Kommentar zur Aufgabe:', '')
+    if (k !== null) act(() => api.createTask(row.id, { kommentar: k }))
   }
 
   return (
@@ -62,7 +69,7 @@ export default function Participants({ view, user }) {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id}
+                <tr key={r.id} className={taskSet.has(r.id) ? 'hastask' : ''}
                     onDoubleClick={() => setEditId(r.id)}
                     onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.pageX, y: e.pageY, row: r }) }}>
                   <td>{r.verified === 1
@@ -88,6 +95,7 @@ export default function Participants({ view, user }) {
           {canWrite && (
             <>
               <div className="ctx-sep" />
+              <div className="ctx-item" onClick={() => addTask(menu.row)}>Zu Aufgabe …</div>
               <div className="ctx-item" onClick={() => act(() => api.verify(menu.row.id))}>
                 {menu.row.verified ? 'Als offen markieren' : 'Als geprüft markieren'}
               </div>
