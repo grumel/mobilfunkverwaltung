@@ -33,10 +33,11 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 
 # Kurzfassung für Listen
 LIST_FIELDS = ["id", "master_id", "gsm", "name", "plant", "konto", "tarif",
-               "vertragsende", "bemerkung", "verified", "provider"]
+               "sim_nummer", "vertragsbeginn", "vertragsende", "kuendigung",
+               "rahmenvertrag", "bemerkung", "verified", "provider"]
 # Vollständig für die Detail-/Bearbeiten-Ansicht
-DETAIL_FIELDS = LIST_FIELDS + ["telefon", "sim_nummer", "rahmenvertrag",
-               "startdatum", "vertragsbeginn", "kuendigung", "syno", "start_syno",
+DETAIL_FIELDS = LIST_FIELDS + ["telefon",
+               "startdatum", "syno", "start_syno",
                "syno2", "start_syno2", "pruefung_grund", "created_at", "updated_at"]
 # Über die API beschreibbar (master_id + Zeitstempel bleiben außen vor)
 EDITABLE = ["gsm", "name", "plant", "konto", "telefon", "tarif", "sim_nummer",
