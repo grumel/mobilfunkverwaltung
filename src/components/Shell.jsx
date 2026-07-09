@@ -5,6 +5,7 @@ import Tasks from './Tasks.jsx'
 import Stats from './Stats.jsx'
 import Import from './Import.jsx'
 import Settings from './Settings.jsx'
+import Logs from './Logs.jsx'
 
 const PROVIDERS = [
   ['vodafone', 'Vodafone'], ['telekom', 'Telekom'], ['o2', 'O2'],
@@ -43,8 +44,10 @@ export default function Shell({ user, onLogout }) {
             Aufgaben{summary.open_tasks > 0 && <span className="badgecount">{summary.open_tasks}</span>}
           </button>
           <button className={'tab' + (view === 'statistik' ? ' active' : '')} onClick={() => setView('statistik')}>Statistik</button>
+          <button className={'tab' + (view === 'protokoll' ? ' active' : '')} onClick={() => setView('protokoll')}>Protokoll</button>
           {isAdmin && (
             <>
+              <button className={'tab' + (view === 'audit' ? ' active' : '')} onClick={() => setView('audit')}>Audit</button>
               <button className={'tab import' + (view === 'import' ? ' active' : '')} onClick={() => setView('import')}>Import ▾</button>
               <button className={'tab' + (view === 'einstellungen' ? ' active' : '')} onClick={() => setView('einstellungen')}>⚙ Einstellungen</button>
             </>
@@ -59,12 +62,16 @@ export default function Shell({ user, onLogout }) {
           ? <Tasks user={user} onChanged={refreshSummary} />
           : view === 'statistik'
             ? <Stats />
-            : view === 'import'
-              ? <Import />
-              : view === 'einstellungen'
-                ? <Settings />
-                : <Participants view={view} user={user}
-                                openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
+            : view === 'protokoll'
+              ? <Logs kind="import" user={user} />
+              : view === 'audit'
+                ? <Logs kind="audit" user={user} />
+                : view === 'import'
+                  ? <Import />
+                  : view === 'einstellungen'
+                    ? <Settings />
+                    : <Participants view={view} user={user}
+                                    openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
       </main>
     </div>
   )

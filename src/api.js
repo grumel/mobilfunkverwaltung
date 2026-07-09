@@ -44,6 +44,7 @@ export const api = {
   verify: (id) => req(`/api/participants/${id}/verify`, { method: 'POST' }),
   move: (id, provider) => req(`/api/participants/${id}/move`, { method: 'POST', body: JSON.stringify({ provider }) }),
   remove: (id) => req(`/api/participants/${id}`, { method: 'DELETE' }),
+  merge: (ids) => req('/api/participants/merge', { method: 'POST', body: JSON.stringify({ ids }) }),
 
   // Summary (Nav-Zähler + rote Markierung), Aufgaben, Statistik
   summary: () => req('/api/summary'),
@@ -61,4 +62,8 @@ export const api = {
   // Einstellungen
   getSettings: () => req('/api/settings'),
   saveSettings: (data) => req('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Protokoll / Audit
+  importLog: () => req('/api/logs/import'),
+  auditLog: () => req('/api/logs/audit'),
 }

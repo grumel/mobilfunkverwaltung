@@ -20,6 +20,8 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
   const [error, setError] = useState('')
   const [menu, setMenu] = useState(null)
   const [editId, setEditId] = useState(undefined)
+  const [mergeMode, setMergeMode] = useState(false)
+  const [selected, setSelected] = useState(new Set())
 
   const load = useCallback((query) => {
     api.participants(view, query)
@@ -27,7 +29,7 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
       .catch((e) => setError(e.message))
   }, [view])
 
-  useEffect(() => { setQ('') }, [view])
+  useEffect(() => { setQ(''); setMergeMode(false); setSelected(new Set()) }, [view])
   useEffect(() => {
     const t = setTimeout(() => load(q), 150)
     return () => clearTimeout(t)
@@ -49,16 +51,58 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
     if (k !== null) act(() => api.createTask(row.id, { kommentar: k }))
   }
 
+  function toggleMergeMode() {
+    setMergeMode((m) => !m)
+    setSelected(new Set())
+  }
+
+  function toggleSelect(id) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function doMerge() {
+    if (selected.size < 2) { alert('Bitte mindestens 2 Einträge auswählen.'); return }
+    if (!confirm(selected.size + ' Einträge zusammenführen?\n\nLeere Felder des ältesten '
+                 + 'Eintrags werden aus den anderen gefüllt, die übrigen gelöscht.')) return
+    try {
+      await api.merge(Array.from(selected))
+      setMergeMode(false); setSelected(new Set())
+      load(q); onChanged && onChanged()
+    } catch (e) { alert(e.message) }
+  }
+
+  function handleRowClick(row) {
+    if (mergeMode) toggleSelect(row.id)
+  }
+
   return (
     <div className="wrap">
       <div className="bar">
         <input className="q" type="search" value={q} autoFocus
                placeholder="Suche: Name, GSM, Werk, Konto, Tarif …"
                onChange={(e) => setQ(e.target.value)} />
-        {canWrite && <button className="btn accent" onClick={() => setEditId(null)}>+ Neu</button>}
-        <span className="count">{total} Treffer</span>
-        {error && <span className="err">{error}</span>}
-        <span className="hint-dim">Rechtsklick = Aktionen · Doppelklick = Bearbeiten</span>
+        {canWrite && !mergeMode && (
+          <>
+            <button className="btn accent" onClick={() => setEditId(null)}>+ Neu</button>
+            <button className="btn" onClick={toggleMergeMode}>Zusammenführen</button>
+          </>
+        )}
+        {mergeMode ? (
+          <span className="hint-dim">
+            <b>{selected.size} ausgewählt</b> — <a href="#" onClick={(e) => { e.preventDefault(); doMerge() }}>zusammenführen</a>
+            {' · '}<a href="#" onClick={(e) => { e.preventDefault(); toggleMergeMode() }}>abbrechen</a>
+          </span>
+        ) : (
+          <>
+            <span className="count">{total} Treffer</span>
+            {error && <span className="err">{error}</span>}
+            <span className="hint-dim">Rechtsklick = Aktionen · Doppelklick = Bearbeiten</span>
+          </>
+        )}
       </div>
 
       <div className="tablecard">
@@ -69,9 +113,12 @@ export default function Participants({ view, user, openTaskPids = [], onChanged 
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className={taskSet.has(r.id) ? 'hastask' : ''}
-                    onDoubleClick={() => setEditId(r.id)}
-                    onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.pageX, y: e.pageY, row: r }) }}>
+                <tr key={r.id}
+                    className={(taskSet.has(r.id) ? 'hastask ' : '') + (selected.has(r.id) ? 'selected' : '')}
+                    style={mergeMode ? { cursor: 'pointer' } : undefined}
+                    onClick={() => handleRowClick(r)}
+                    onDoubleClick={() => !mergeMode && setEditId(r.id)}
+                    onContextMenu={(e) => { if (mergeMode) return; e.preventDefault(); setMenu({ x: e.pageX, y: e.pageY, row: r }) }}>
                   <td>{r.verified === 1
                     ? <span className="badge ok">geprüft</span>
                     : <span className="badge open">offen</span>}</td>
