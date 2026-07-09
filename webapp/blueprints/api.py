@@ -20,7 +20,7 @@ from werkzeug.utils import secure_filename
 from pathlib import Path
 
 from webapp.db import SessionLocal
-from webapp.models import Participant, User, Task
+from webapp.models import Participant, User, Task, ImportLog, AuditLog
 from modules import vodafone_import, syno_import
 from modules import database as ddb
 from webapp import webconfig
@@ -274,6 +274,58 @@ def participant_delete(pid):
         db.close()
 
 
+MERGE_FIELDS = ["gsm", "name", "plant", "konto", "telefon", "tarif", "sim_nummer",
+                "rahmenvertrag", "startdatum", "vertragsbeginn", "vertragsende",
+                "kuendigung", "syno", "start_syno", "syno2", "start_syno2",
+                "bemerkung", "pruefung_grund"]
+
+
+@bp.post("/participants/merge")
+def participant_merge():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    ids = [int(i) for i in (request.get_json(silent=True) or {}).get("ids", [])
+           if isinstance(i, int) or (isinstance(i, str) and i.isdigit())]
+    if len(ids) < 2:
+        return jsonify(error="Bitte mindestens 2 Einträge auswählen."), 400
+    db = SessionLocal()
+    try:
+        parts = (db.query(Participant).filter(Participant.id.in_(ids))
+                   .order_by(Participant.id).all())
+        if len(parts) < 2:
+            return jsonify(error="Ausgewählte Einträge nicht gefunden."), 400
+        target, others = parts[0], parts[1:]
+        # Werte für leere Zielfelder sammeln, solange die anderen noch existieren
+        fill = {}
+        for f in MERGE_FIELDS:
+            if not (getattr(target, f) or "").strip():
+                for o in others:
+                    val = getattr(o, f)
+                    if val not in (None, "") and str(val).strip():
+                        fill[f] = val
+                        break
+        other_ids = [o.id for o in others]
+        # Erst die anderen löschen (flush), damit eindeutige Werte (z. B. GSM) frei werden
+        for o in others:
+            db.delete(o)
+        db.flush()
+        for f, val in fill.items():
+            setattr(target, f, val)
+        target.updated_at = svc.now_str()
+        svc.log_import(db, "MERGE", f"IDs {other_ids} in ID {target.id} zusammengeführt (API)",
+                       participant_id=target.id)
+        svc.log_audit(db, current_user(), "MERGE",
+                      f"{len(ids)} Einträge zusammengeführt in '{target.name or target.id}' (API)",
+                      table_name="participants", record_id=target.id)
+        db.commit()
+        return jsonify(id=target.id, merged_count=len(ids),
+                       participant=_dict(target, DETAIL_FIELDS))
+    finally:
+        db.close()
+
+
 # --------------------------------------------------------------------------- #
 # Summary (Nav-Zähler + rote Zeilenmarkierung), Aufgaben, Statistik
 # --------------------------------------------------------------------------- #
@@ -420,6 +472,39 @@ def stats():
     finally:
         db.close()
     return jsonify(tiles=tiles, werke=werke, ablauf=ablauf)
+
+
+IMPORTLOG_FIELDS = ["id", "zeitpunkt", "quelle", "aktion", "details", "participant_id"]
+AUDITLOG_FIELDS = ["id", "zeitpunkt", "user_id", "username", "aktion", "details",
+                   "table_name", "record_id"]
+
+
+@bp.get("/logs/import")
+def logs_import():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    db = SessionLocal()
+    try:
+        rows = db.query(ImportLog).order_by(ImportLog.zeitpunkt.desc()).limit(500).all()
+        out = [_dict(r, IMPORTLOG_FIELDS) for r in rows]
+    finally:
+        db.close()
+    return jsonify(logs=out, total=len(out))
+
+
+@bp.get("/logs/audit")
+def logs_audit():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("admin"):
+        return jsonify(error="keine Berechtigung"), 403
+    db = SessionLocal()
+    try:
+        rows = db.query(AuditLog).order_by(AuditLog.zeitpunkt.desc()).limit(500).all()
+        out = [_dict(r, AUDITLOG_FIELDS) for r in rows]
+    finally:
+        db.close()
+    return jsonify(logs=out, total=len(out))
 
 
 # --------------------------------------------------------------------------- #
