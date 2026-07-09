@@ -209,11 +209,15 @@ def find_by_gsm(filepath: str | Path, gsm: str) -> dict | None:
 # Öffentliche Importfunktion
 # ---------------------------------------------------------------------------
 
-def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
+def run_vodafone_import(filepath: str | Path, dry_run: bool = False,
+                        db_module=None) -> dict:
     """
     Führt den Vodafone-Import durch.
 
     dry_run=True: liest und analysiert die Datei, schreibt aber nichts in die DB.
+    db_module: austauschbares Datenbank-Backend (Standard: modules.database,
+        SQLite). Muss dieselbe Funktionsoberfläche bieten – siehe
+        webapp/import_adapter.py für die SQLAlchemy-Variante (z. B. PostgreSQL).
 
     Rückgabe:
         {
@@ -226,6 +230,7 @@ def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
             "dry_run":     bool,
         }
     """
+    dbm = db_module or db
     filepath = Path(filepath)
     if not filepath.exists():
         raise FileNotFoundError(f"Vodafone-Datei nicht gefunden: {filepath}")
@@ -258,17 +263,17 @@ def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
     log_lines.append(f"=== Vodafone-Import {datetime.now().strftime('%d.%m.%Y %H:%M:%S')} ===")
     log_lines.append(f"Datei: {filepath.name}")
 
-    ctx = db.dry_run_transaction if dry_run else db.transaction
+    ctx = dbm.dry_run_transaction if dry_run else dbm.transaction
     with ctx() as conn:
         # Veraltete Plant-Warnungen aus alten Importen bereinigen
-        cleaned = db.clean_vodafone_plant_warnings(conn)
+        cleaned = dbm.clean_vodafone_plant_warnings(conn)
         if cleaned:
             log_lines.append(f"Bereinigt: {cleaned} veraltete Werk-Warnungen aus Bemerkung entfernt")
-            db.log_import(conn, "Vodafone", "CLEANUP", f"{cleaned} Plant-Warnungen bereinigt")
+            dbm.log_import(conn, "Vodafone", "CLEANUP", f"{cleaned} Plant-Warnungen bereinigt")
 
         # Alle Teilnehmer als "nicht in Vodafone" vormarkieren;
         # gematchte werden im Loop auf 1 gesetzt.
-        db.reset_vodafone_aktiv(conn)
+        dbm.reset_vodafone_aktiv(conn)
 
         for row in ws.iter_rows(min_row=2):
             raw_gsm   = _cell_value(row, cols["gsm"])
@@ -308,7 +313,7 @@ def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
                 update_data["plant"] = mapped_plant
 
             try:
-                existing = db.get_participant_by_gsm(conn, gsm) if gsm else None
+                existing = dbm.get_participant_by_gsm(conn, gsm) if gsm else None
 
                 if existing:
                     pid        = existing["id"]
@@ -320,7 +325,7 @@ def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
                     if mapped_plant and old_plant and old_plant != mapped_plant:
                         plant_note = (f"Werk korrigiert: '{old_plant}' → '{mapped_plant}'")
                         log_lines.append(f"WERK: GSM={gsm} {plant_note}")
-                        db.log_import(conn, "Vodafone", "WERK", f"GSM={gsm} {plant_note}")
+                        dbm.log_import(conn, "Vodafone", "WERK", f"GSM={gsm} {plant_note}")
                         changes.append(f"Werk:  {name} ({gsm}): '{old_plant}' → '{mapped_plant}'")
 
                     # Tarifwechsel erkennen
@@ -328,9 +333,9 @@ def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
                         changes.append(
                             f"Tarif: {name} ({gsm}): '{old_tarif or '—'}' → '{tarif}'")
 
-                    db.update_participant_fields(conn, pid, update_data)
-                    db.set_vodafone_aktiv(conn, pid)
-                    db.log_import(
+                    dbm.update_participant_fields(conn, pid, update_data)
+                    dbm.set_vodafone_aktiv(conn, pid)
+                    dbm.log_import(
                         conn, "Vodafone", "UPDATE",
                         f"ID={pid} GSM={gsm} Konto={konto} Werk={mapped_plant or old_plant}"
                     )
@@ -343,8 +348,8 @@ def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
                     new_data["vodafone_aktiv"] = 1
                     new_data["bemerkung"] = "Neu aus Vodafone-Import ohne Master-Match"
 
-                    pid = db.insert_participant(conn, new_data)
-                    db.log_import(
+                    pid = dbm.insert_participant(conn, new_data)
+                    dbm.log_import(
                         conn, "Vodafone", "INSERT",
                         f"ID={pid} GSM={gsm} Konto={konto} – neu ohne Master-Match"
                     )
@@ -364,7 +369,7 @@ def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
                 logger.error(msg)
                 errors.append(msg)
                 try:
-                    db.insert_unmatched_device(conn, {
+                    dbm.insert_unmatched_device(conn, {
                         "quelle":    "Vodafone-Fehler",
                         "gsm":       gsm,
                         "benutzer":  None,
@@ -382,7 +387,7 @@ def run_vodafone_import(filepath: str | Path, dry_run: bool = False) -> dict:
             f"{created} neu angelegt, {review} zur Prüfung abgelegt, "
             f"{skipped} übersprungen, {len(errors)} Fehler"
         )
-        db.log_import(conn, "Vodafone", "SUMMARY", summary)
+        dbm.log_import(conn, "Vodafone", "SUMMARY", summary)
         log_lines.append(summary)
 
     if header_warnings:

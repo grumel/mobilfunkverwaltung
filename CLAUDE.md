@@ -19,13 +19,19 @@ nichts installiert. Es sind **personenbezogene Daten** (Namen, Rufnummern) →
   **React** — eigenes Repo **github.com/grumel/mdw-frontend** (Vite), spricht nur die
   API an. Die Jinja-UI existiert noch, ist im Produktiv-Deployment aber nicht mehr
   über Port 80 eingebunden (siehe „Starten" unten).
-- **SQLAlchemy** (DB-neutral): SQLite jetzt, **PostgreSQL-fähig**. Modelle in
+- **SQLAlchemy** (DB-neutral): SQLite jetzt, **PostgreSQL-fähig** (echt gegen
+  lokales Postgres 17 verifiziert, nicht nur theoretisch). Modelle in
   `webapp/models.py` passend zum bestehenden Schema.
 - **`modules/`** ist eine **Kopie** der gemeinsamen Logik aus der Desktop-App
   (DB-Zugriff, Vodafone-/Syno-Import, Passwort-Hashing, `paths.py`). Web-UI und API
-  nutzen daraus nur die GUI-freien Teile; die Import-Endpunkte rufen
-  `modules.vodafone_import` / `modules.syno_import` direkt auf (schreiben noch via
-  sqlite3 über `modules/database.py` — das ist der Haken für Phase 2/PostgreSQL).
+  nutzen daraus nur die GUI-freien Teile. Die Import-Funktionen
+  `modules.vodafone_import.run_vodafone_import` / `modules.syno_import.run_syno_import`
+  akzeptieren einen optionalen `db_module`-Parameter (Dependency Injection):
+  Standard = unverändert `modules.database` (sqlite3). `webapp/import_adapter.py`
+  ist ein SQLAlchemy-Backend mit derselben Funktionsoberfläche; die API
+  (`_import_db_module()` in `api.py`) wählt ihn automatisch, sobald
+  `DATABASE_URL` nicht mit `sqlite` beginnt. Dieselbe Import-Logik läuft also
+  unverändert auf beiden Backends — kein Duplicated Code.
 - **Rollen** (`webapp/security.py`): `read` < `write` < `admin`. Login-Benutzer =
   dieselben wie in der Desktop-App (users-Tabelle, alle 4 sind Admin).
 
@@ -74,17 +80,25 @@ Immer gegen eine **Kopie** der echten DB, nie gegen das Original:
   (verschieben/geprüft/löschen/kopieren/zu Aufgabe), Zusammenführen, Import
   (Vodafone mit Vorschau + Syno), Aufgaben, Statistik, Protokoll/Audit,
   Einstellungen (DB-Pfad), Härtung (Secret + CSRF).
-- Fertig (React-Frontend, Phase 3 inhaltlich abgeschlossen): Login, alle
-  Provider-Tabs + abgeleitete Ansichten, Bearbeiten/Neu, Rechtsklick-Aktionen,
-  Aufgaben, Statistik, Import, Einstellungen. **Fehlt in React noch:**
-  Zusammenführen (Merge-Modus), Protokoll/Audit-Log-Ansicht.
+- Fertig (React-Frontend, Phase 3 **vollständig**): Login, alle Provider-Tabs +
+  abgeleitete Ansichten, Bearbeiten/Neu, Rechtsklick-Aktionen, Aufgaben,
+  Statistik, Import, Einstellungen, Zusammenführen (Merge-Modus),
+  Protokoll/Audit-Log — deckt alle Funktionen des Jinja-UI ab.
 - Fertig: Linux-Deployment (Port 80, Backend **und** Frontend, `deploy/install.sh`
   idempotent/Update-fähig).
-- Offen (Details siehe **ROADMAP.md**): ThinkPad-Server aufsetzen (Phase 1),
-  Datenbank-Umbau **SQLite → PostgreSQL** inkl. **Import-Refactor** von sqlite3 auf
-  SQLAlchemy (Phase 2), HTTPS, restliche React-Lücken (Merge, Protokoll/Audit),
-  alte Jinja-Templates irgendwann entfernen.
+- Fertig (Phase 2, **PostgreSQL**, optional/bei Bedarf aktivierbar): Import-Refactor
+  (`db_module`-Parameter), `webapp/import_adapter.py`,
+  `deploy/migrate_to_postgres.py`, `deploy/POSTGRES.md`. **Echt verifiziert**
+  (nicht nur mit SQLite simuliert): lokales PostgreSQL 17 installiert, Migration
+  einer DB-Kopie (353 Teilnehmer, 5616 Logs – exakt übertragen), Web-App komplett
+  gegen Postgres getestet, **echter Vodafone-Import direkt gegen Postgres**
+  (328 aktualisiert, per SQL gegengeprüft). SQLite-Pfad dabei unverändert
+  (Regressionstest: identisches Ergebnis wie vorher).
+- Offen (Details siehe **ROADMAP.md**): **ThinkPad-Server aufsetzen (Phase 1)**
+  ist der einzige noch verbleibende Schritt vor dem Linux-Betrieb. Danach optional:
+  HTTPS, PostgreSQL im Betrieb aktivieren (nur bei Bedarf), alte Jinja-Templates
+  irgendwann entfernen.
 - Repos auf GitHub: **github.com/grumel/mdwWeb** (Backend, Remote `origin`,
   Branch `main`) und **github.com/grumel/mdw-frontend** (React-Frontend, eigenes
-  Repo, eigene `CLAUDE.md`/README empfehlenswert dort). Desktop-App separat:
+  Repo, eigene `CLAUDE.md`/README). Desktop-App separat:
   github.com/grumel/mobilfunkverwaltung.

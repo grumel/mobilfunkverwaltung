@@ -98,7 +98,10 @@ def find_by_gsm_or_name(filepath: str | Path, gsm: str | None, name: str | None)
 # Öffentliche Importfunktion
 # ---------------------------------------------------------------------------
 
-def run_syno_import(filepath: str | Path) -> dict:
+def run_syno_import(filepath: str | Path, db_module=None) -> dict:
+    """db_module: austauschbares Datenbank-Backend (Standard: modules.database,
+    SQLite). Siehe webapp/import_adapter.py für die SQLAlchemy-Variante."""
+    dbm = db_module or db
     filepath = Path(filepath)
     if not filepath.exists():
         raise FileNotFoundError(f"Syno-Datei nicht gefunden: {filepath}")
@@ -122,9 +125,9 @@ def run_syno_import(filepath: str | Path) -> dict:
     log_lines.append(f"=== Syno-Import {datetime.now().strftime('%d.%m.%Y %H:%M:%S')} ===")
     log_lines.append(f"Datei: {filepath.name}")
 
-    with db.transaction() as conn:
+    with dbm.transaction() as conn:
         # provider=None: auch Telekom-Teilnehmer für das Matching heranziehen
-        all_participants = db.get_all_participants(conn, provider=None)
+        all_participants = dbm.get_all_participants(conn, provider=None)
 
         for row in ws.iter_rows(min_row=2):
             raw_gsm  = _cell_value(row, cols["rufnummer"])
@@ -142,9 +145,9 @@ def run_syno_import(filepath: str | Path) -> dict:
 
             def _apply_device(pid: int, quelle_aktion: str, kontext: str) -> str:
                 """Gerät in freien Slot eintragen und Ergebnis protokollieren."""
-                res = db.assign_syno_device(conn, pid, syno, start_syno)
+                res = dbm.assign_syno_device(conn, pid, syno, start_syno)
                 if res == "filled":
-                    db.log_import(conn, "Syno", quelle_aktion,
+                    dbm.log_import(conn, "Syno", quelle_aktion,
                                   f"ID={pid} {kontext} Syno={syno}")
                 elif res == "full":
                     log_lines.append(
@@ -156,7 +159,7 @@ def run_syno_import(filepath: str | Path) -> dict:
             try:
                 # 1. Matching über GSM
                 if gsm:
-                    match = db.get_participant_by_gsm(conn, gsm)
+                    match = dbm.get_participant_by_gsm(conn, gsm)
                     if match:
                         res = _apply_device(match["id"], "UPDATE_GSM", f"GSM={gsm}")
                         if res == "filled":
@@ -200,14 +203,14 @@ def run_syno_import(filepath: str | Path) -> dict:
                         )
 
                 # 3. Kein Treffer → in unmatched_devices ablegen
-                db.insert_unmatched_device(conn, {
+                dbm.insert_unmatched_device(conn, {
                     "quelle":    "Syno",
                     "gsm":       gsm,
                     "benutzer":  raw_name,
                     "geraet":    syno,
                     "startdatum": start_syno,
                 })
-                db.log_import(conn, "Syno", "UNMATCHED",
+                dbm.log_import(conn, "Syno", "UNMATCHED",
                     f"GSM={gsm} Name={raw_name} Syno={syno} – kein Treffer")
                 log_lines.append(
                     f"KEIN TREFFER: GSM={gsm} Name={raw_name} Syno={syno} → 'Nicht zugeordnet'"
@@ -221,7 +224,7 @@ def run_syno_import(filepath: str | Path) -> dict:
                 logger.error(msg)
                 errors.append(msg)
                 try:
-                    db.insert_unmatched_device(conn, {
+                    dbm.insert_unmatched_device(conn, {
                         "quelle":    "Syno-Fehler",
                         "gsm":       gsm,
                         "benutzer":  raw_name,
@@ -239,7 +242,7 @@ def run_syno_import(filepath: str | Path) -> dict:
             f"{slots_full} ohne freien Slot, {unmatched} nicht zugeordnet, "
             f"{skipped} übersprungen, {len(errors)} Fehler"
         )
-        db.log_import(conn, "Syno", "SUMMARY", summary)
+        dbm.log_import(conn, "Syno", "SUMMARY", summary)
         log_lines.append(summary)
 
     if errors:

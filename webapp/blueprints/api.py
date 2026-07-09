@@ -518,6 +518,17 @@ def _require_admin():
     return None
 
 
+def _import_db_module():
+    """None (= modules.database/SQLite, unverändert) solange DATABASE_URL auf
+    SQLite zeigt; sonst der SQLAlchemy-Adapter (z. B. PostgreSQL) – siehe
+    webapp/import_adapter.py. So landen Excel-Importe immer in der tatsächlich
+    konfigurierten Datenbank, nicht versehentlich in einer lokalen SQLite-Datei."""
+    if appconfig.DATABASE_URL.startswith("sqlite"):
+        return None
+    from webapp import import_adapter
+    return import_adapter
+
+
 def _save_upload():
     f = request.files.get("file")
     if not f or not f.filename:
@@ -539,7 +550,8 @@ def import_vodafone_preview():
     if err:
         return err
     try:
-        preview = vodafone_import.run_vodafone_import(path, dry_run=True)
+        preview = vodafone_import.run_vodafone_import(
+            path, dry_run=True, db_module=_import_db_module())
     except Exception as exc:
         try: os.unlink(path)
         except OSError: pass
@@ -558,9 +570,11 @@ def import_vodafone_confirm():
     filename = session.pop("vodafone_import_name", "?")
     if not path or not os.path.exists(path):
         return jsonify(error="Import-Datei nicht mehr vorhanden – bitte erneut hochladen."), 400
+    db_module = _import_db_module()
     try:
-        ddb.create_backup()
-        result = vodafone_import.run_vodafone_import(path)
+        if db_module is None:      # SQLite: Backup wie bisher
+            ddb.create_backup()
+        result = vodafone_import.run_vodafone_import(path, db_module=db_module)
     except Exception as exc:
         return jsonify(error=f"Import fehlgeschlagen: {exc}"), 400
     finally:
@@ -577,9 +591,11 @@ def import_syno():
     path, filename, err = _save_upload()
     if err:
         return err
+    db_module = _import_db_module()
     try:
-        ddb.create_backup()
-        result = syno_import.run_syno_import(path)
+        if db_module is None:      # SQLite: Backup wie bisher
+            ddb.create_backup()
+        result = syno_import.run_syno_import(path, db_module=db_module)
     except Exception as exc:
         return jsonify(error=f"Import fehlgeschlagen: {exc}"), 400
     finally:

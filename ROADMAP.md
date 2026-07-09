@@ -1,7 +1,10 @@
 # Roadmap
 
-Geplante Ausbaustufen der Web-App. Reihenfolge bewusst so gewählt: erst eine
-laufende Lösung, dann Datenbank, dann Frontend.
+Geplante Ausbaustufen der Web-App. Tatsächliche Reihenfolge bisher: erst eine
+laufende Lösung (Server/Deployment), dann das Frontend (React), dann die
+Datenbank (PostgreSQL, Code + Migration fertig, gegen echtes Postgres
+verifiziert). **Aktueller Fokus: Phase 1 abschließen** (ThinkPad produktiv
+nehmen) — das ist der einzige noch offene Schritt vor dem Linux-Betrieb.
 
 ---
 
@@ -26,41 +29,32 @@ Stabiler Zustand als Basis für Phase 2.
 
 ---
 
-## Phase 2 — Datenbank-Umbau: SQLite → PostgreSQL
+## Phase 2 — Datenbank-Umbau: SQLite → PostgreSQL ✅ (Code fertig, echt verifiziert)
 
 **Ziel:** echte Mehrbenutzer-Gleichzeitigkeit, robustere Sperren/Backups, sauber
-für den Netzwerkbetrieb. Die Architektur ist bereits vorbereitet (SQLAlchemy,
-`DATABASE_URL`); es fehlt v. a. ein Code-Punkt (Import-Pfad) und die Migration.
+für den Netzwerkbetrieb. **Optional** — bei 2–3 Nutzern reicht SQLite weiterhin.
 
-**Voraussetzungen**
-- PostgreSQL-Server (kann auf demselben Rechner laufen)
-- `psycopg[binary]` in der venv (steht auskommentiert in `requirements-server.txt`)
+- [x] **Import-Refactor:** `modules/vodafone_import.py` / `modules/syno_import.py`
+      bekamen einen injizierbaren `db_module`-Parameter (Dependency Injection).
+      Standard (kein Parameter) = unverändertes SQLite-Verhalten — per Regressionstest
+      bestätigt (328 aktualisiert, identisch zu vorher).
+- [x] **`webapp/import_adapter.py`** — SQLAlchemy-Adapter mit derselben
+      Funktionsoberfläche wie `modules/database.py`. Die API
+      (`webapp/blueprints/api.py`, `_import_db_module()`) wählt ihn automatisch,
+      sobald `DATABASE_URL` nicht mit `sqlite` beginnt.
+- [x] **`deploy/migrate_to_postgres.py`** — Migrationsskript, Sequenzen werden
+      korrekt gesetzt.
+- [x] **`deploy/POSTGRES.md`** — Schritt-für-Schritt-Anleitung (optional, für
+      später bei Bedarf).
+- [x] **Echt verifiziert** (lokales PostgreSQL 17, nicht nur SQLite-Simulation):
+      Migration einer Kopie der echten DB (353 Teilnehmer, 5616 Protokoll-
+      Einträge – alle Zahlen exakt übertragen), Web-App komplett gegen Postgres
+      (Lesen, Schreiben, Statistik, Aufgaben), und ein **echter Vodafone-Import
+      direkt gegen Postgres** über den neuen Adapter (328 aktualisiert, korrekt
+      protokolliert, per direkter SQL-Abfrage gegengeprüft).
 
-**Schritte**
-1. **Postgres einrichten:** Dienst installieren, Datenbank + Benutzer anlegen
-   (z. B. DB `mobilfunk`, User `mobilfunk` mit Passwort).
-2. **Schema erzeugen:** empfohlen **Alembic** (versionierte Migrationen) mit einer
-   Initial-Migration aus den SQLAlchemy-Modellen (`webapp/models.py`). Pragmatisch
-   alternativ: `Base.metadata.create_all(engine)` + manuell die Sonderfälle
-   (eindeutiger Teil-Index auf `gsm`, wo nicht leer).
-3. **⚠ Import-Pfad umstellen (größter Brocken):** `modules/vodafone_import.py` und
-   `modules/syno_import.py` schreiben aktuell **direkt über sqlite3**
-   (`modules/database.py`). Für Postgres müssen die Importe auf **SQLAlchemy**
-   umgestellt (oder in der Web-App neu implementiert) werden. Bis dahin laufen auf
-   Postgres nur Lesen + die Web-Aktionen (die nutzen schon SQLAlchemy), **nicht**
-   die Excel-Importe.
-4. **Daten migrieren:** Skript, das alle Tabellen aus der SQLite-DB liest und in
-   Postgres einfügt (Modelle sind DB-neutral). Anschließend die id-Sequenzen in
-   Postgres auf `max(id)+1` setzen.
-5. **Umschalten:** in **⚙ Einstellungen** (oder `DATABASE_URL`) die Postgres-URL
-   `postgresql+psycopg://user:pw@host:5432/mobilfunk` eintragen, Dienst neu starten.
-   SQLite-Datei als Fallback/Backup behalten.
-6. **Verifizieren:** Datensatzzahlen je Tabelle vor/nach vergleichen; Login, Listen,
-   eine Bearbeitung testen. Bei Problemen einfach zurück auf die SQLite-URL.
-
-**Stand:** Phase 3 (React + JSON-API) ist bereits fertig — die API-Schicht existiert
-also schon. Der Import-Refactor (Schritt 3) ist damit der nächste konkrete Schritt
-für Phase 2, kein „zusammen mit" mehr.
+**Für den produktiven Einsatz:** siehe `deploy/POSTGRES.md`. Kein Zwang — nur
+sinnvoll bei mehr als ein paar gleichzeitigen Nutzern.
 
 ---
 
@@ -79,9 +73,10 @@ bestehenden Jinja-Oberfläche im selben Backend läuft.
       verschieben/löschen, rollenbasiert), Aufgaben (Zähler, rote Markierung),
       Statistik, Import (Vodafone Vorschau/Bestätigen, Syno), Einstellungen (DB-Pfad)
 - [x] Deployment: Caddy liefert das React-Bundle unter `/`, `/api/*` → gunicorn
-- [ ] Rest: **Zusammenführen** (Merge-Modus) und **Protokoll/Audit-Log**-Ansicht
-      fehlen in React noch (existieren im alten Jinja-UI)
-- [ ] Alte Jinja-Templates entfernen, sobald React sie vollständig abdeckt
+- [x] Zusammenführen (Merge-Modus) und Protokoll/Audit-Log — React deckt jetzt
+      **alle** Funktionen des bisherigen Web-UI ab
+- [ ] Alte Jinja-Templates entfernen, sobald sich niemand mehr auf sie verlässt
+      (bewusst noch nicht — dienen als Fallback/Vergleichsreferenz)
 
 **Mehrwert:** flüssiger (keine Reloads), Kennzahl-Kacheln/Balken, wiederverwendbare
 Komponenten, mobil-/PWA-tauglich.
