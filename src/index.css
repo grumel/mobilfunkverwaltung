@@ -149,3 +149,11 @@ tr.done td { color:var(--dim); }
   white-space:pre-wrap; margin:0; }
 .logbox.tall { max-height:420px; }
 @media (max-width: 900px) { .importgrid, .statcols { grid-template-columns:1fr; } }
+
+/* Einstellungen */
+.editcard { background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:20px 22px; max-width:720px; }
+.editcard h2 { font-size:16px; }
+.meta { margin:10px 0; font-size:13px; color:var(--dim); border:1px solid var(--line);
+  border-radius:8px; padding:8px 12px; background:var(--head); }
+.meta b { color:var(--fg); }

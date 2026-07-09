@@ -57,4 +57,8 @@ export const api = {
   vodafonePreview: (file) => upload('/api/import/vodafone/preview', file),
   vodafoneConfirm: () => req('/api/import/vodafone/confirm', { method: 'POST' }),
   synoImport: (file) => upload('/api/import/syno', file),
+
+  // Einstellungen
+  getSettings: () => req('/api/settings'),
+  saveSettings: (data) => req('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
 }

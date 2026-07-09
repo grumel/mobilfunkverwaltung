@@ -4,6 +4,7 @@ import Participants from './Participants.jsx'
 import Tasks from './Tasks.jsx'
 import Stats from './Stats.jsx'
 import Import from './Import.jsx'
+import Settings from './Settings.jsx'
 
 const PROVIDERS = [
   ['vodafone', 'Vodafone'], ['telekom', 'Telekom'], ['o2', 'O2'],
@@ -43,7 +44,10 @@ export default function Shell({ user, onLogout }) {
           </button>
           <button className={'tab' + (view === 'statistik' ? ' active' : '')} onClick={() => setView('statistik')}>Statistik</button>
           {isAdmin && (
-            <button className={'tab import' + (view === 'import' ? ' active' : '')} onClick={() => setView('import')}>Import ▾</button>
+            <>
+              <button className={'tab import' + (view === 'import' ? ' active' : '')} onClick={() => setView('import')}>Import ▾</button>
+              <button className={'tab' + (view === 'einstellungen' ? ' active' : '')} onClick={() => setView('einstellungen')}>⚙ Einstellungen</button>
+            </>
           )}
         </nav>
         <span className="spacer" />
@@ -57,8 +61,10 @@ export default function Shell({ user, onLogout }) {
             ? <Stats />
             : view === 'import'
               ? <Import />
-              : <Participants view={view} user={user}
-                              openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
+              : view === 'einstellungen'
+                ? <Settings />
+                : <Participants view={view} user={user}
+                                openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
       </main>
     </div>
   )
