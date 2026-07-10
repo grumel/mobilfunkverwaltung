@@ -82,6 +82,7 @@ td.num { text-align:right; font-variant-numeric:tabular-nums; }
 .login-card button:disabled { opacity:.6; cursor:default; }
 .flash { background:#fdecea; border:1px solid #f5b7b1; color:#922b21; padding:8px 12px;
   border-radius:8px; font-size:13px; }
+.flash.ok-flash { background:var(--ok-bg); border-color:#bfe3c7; color:var(--ok-fg); }
 .hint { margin:0; color:var(--dim); font-size:11px; text-align:center; }
 
 /* Toolbar / Tabs */

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { loadWerkKonto } from '../werkkonto.js'
 
 const FIELDS = [
   ['gsm', 'GSM-Nummer', 'text'], ['name', 'Name', 'text'], ['plant', 'Werk (Plant)', 'text'],
@@ -18,6 +19,9 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [wk, setWk] = useState({ werk_to_konto: {}, konto_to_werk: {} })
+
+  useEffect(() => { loadWerkKonto().then(setWk) }, [])
 
   function startDrag(e) {
     if (e.target.closest('.x')) return
@@ -41,6 +45,19 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
   }, [id, isNew])
 
   function set(k, v) { setP((prev) => ({ ...prev, [k]: v })) }
+
+  // Werk/Konto sind feste Paare: bei Änderung des einen das andere automatisch füllen.
+  function setField(k, v) {
+    if (k === 'plant') {
+      const konto = wk.werk_to_konto[v.trim()]
+      setP((prev) => ({ ...prev, plant: v, ...(konto ? { konto } : {}) }))
+    } else if (k === 'konto') {
+      const werk = wk.konto_to_werk[v.trim()]
+      setP((prev) => ({ ...prev, konto: v, ...(werk ? { plant: werk } : {}) }))
+    } else {
+      set(k, v)
+    }
+  }
 
   async function save(e) {
     e.preventDefault()
@@ -73,7 +90,7 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
               {FIELDS.map(([k, l, t]) => (
                 <label className="field" key={k}><span>{l}</span>
                   <input type={t === 'date' ? 'date' : 'text'} value={p[k] || ''}
-                         readOnly={!canWrite} onChange={(e) => set(k, e.target.value)} />
+                         readOnly={!canWrite} onChange={(e) => setField(k, e.target.value)} />
                 </label>
               ))}
             </div>

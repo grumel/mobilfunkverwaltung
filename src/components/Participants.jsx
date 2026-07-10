@@ -3,6 +3,7 @@ import { api } from '../api'
 import { fmtDate } from '../format.js'
 import { toastError } from '../toast.jsx'
 import EditModal from './EditModal.jsx'
+import NeuvertragModal from './NeuvertragModal.jsx'
 
 const COLS = [
   ['master_id', 'Nr.'], ['gsm', 'GSM'], ['name', 'Name'], ['plant', 'Werk'],
@@ -28,6 +29,7 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
   const [mergeMode, setMergeMode] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [sort, setSort] = useState({ key: 'name', dir: 1 })
+  const [neuvertrag, setNeuvertrag] = useState(false)
 
   const load = useCallback((query) => {
     api.participants(view, query)
@@ -132,6 +134,7 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
         {canWrite && !mergeMode && (
           <>
             <button className="btn accent" onClick={() => setEditId(null)}>+ Neu</button>
+            <button className="btn" onClick={() => setNeuvertrag(true)}>Neuvertrag</button>
             <button className="btn" onClick={toggleMergeMode}>Zusammenführen</button>
           </>
         )}
@@ -222,6 +225,11 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
         <EditModal id={editId} canWrite={canWrite}
                    onClose={() => setEditId(undefined)}
                    onSaved={() => { setEditId(undefined); load(q) }} />
+      )}
+
+      {neuvertrag && (
+        <NeuvertragModal onClose={() => setNeuvertrag(false)}
+                         onDone={() => { load(q); onChanged && onChanged() }} />
       )}
     </div>
   )

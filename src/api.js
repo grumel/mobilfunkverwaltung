@@ -48,6 +48,8 @@ export const api = {
   move: (id, provider) => req(`/api/participants/${id}/move`, { method: 'POST', body: JSON.stringify({ provider }) }),
   remove: (id) => req(`/api/participants/${id}`, { method: 'DELETE' }),
   merge: (ids) => req('/api/participants/merge', { method: 'POST', body: JSON.stringify({ ids }) }),
+  werkKonto: () => req('/api/werk-konto'),
+  neuvertrag: (data) => req('/api/neuvertrag', { method: 'POST', body: JSON.stringify(data) }),
 
   // Summary (Nav-Zähler + rote Markierung), Aufgaben, Statistik
   summary: () => req('/api/summary'),
