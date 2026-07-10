@@ -127,9 +127,10 @@ def login():
             svc.log_audit(db, {"id": user.id, "username": user.username},
                           "LOGIN", f"Anmeldung erfolgreich (IP {ip})")
             db.commit()
+            force = bool(user.force_pw_change)
             session.clear()                    # Session-Fixation vermeiden
             session["user"] = {"id": user.id, "username": user.username, "role": user.role}
-            return jsonify(user=session["user"])
+            return jsonify(user=session["user"], force_pw_change=force)
     finally:
         db.close()
 
@@ -149,7 +150,39 @@ def me():
     u = current_user()
     if not u:
         return jsonify(error="nicht angemeldet"), 401
-    return jsonify(user=u)
+    db = SessionLocal()
+    try:
+        row = db.get(User, u["id"])
+        force = bool(row.force_pw_change) if row else False
+    finally:
+        db.close()
+    return jsonify(user=u, force_pw_change=force)
+
+
+@bp.post("/me/password")
+def me_change_password():
+    """Eigenes Passwort ändern (jeder angemeldete Benutzer)."""
+    u = current_user()
+    if not u:
+        return jsonify(error="nicht angemeldet"), 401
+    data = request.get_json(silent=True) or {}
+    current = data.get("current_password") or ""
+    new = data.get("new_password") or ""
+    if len(new) < 6:
+        return jsonify(error="Neues Passwort: mindestens 6 Zeichen."), 400
+    db = SessionLocal()
+    try:
+        row = db.get(User, u["id"])
+        if not row or not verify_password(current, row.password_hash):
+            return jsonify(error="Aktuelles Passwort ist falsch."), 403
+        row.password_hash = hash_password(new)
+        row.force_pw_change = 0
+        svc.log_audit(db, u, "SELF_PASSWORD", "Eigenes Passwort geändert (API)",
+                      table_name="users", record_id=row.id)
+        db.commit()
+        return jsonify(ok=True)
+    finally:
+        db.close()
 
 
 _VERSION_CACHE = None
