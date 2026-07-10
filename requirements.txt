@@ -3,6 +3,7 @@ Flask>=3.1
 Flask-WTF>=1.2
 SQLAlchemy>=2.0
 openpyxl>=3.1
-# Optional (nur falls Desktop-Kuendigungsfunktionen genutzt werden):
-# python-docx>=1.2
+# Fuer Kuendigung/Ruecknahme: Word-Vorlage fuellen (PDF erzeugt LibreOffice).
+python-docx>=1.2
+# Nur fuer die Desktop-App (Outlook/Word-COM), im Web nicht noetig:
 # pywin32>=310

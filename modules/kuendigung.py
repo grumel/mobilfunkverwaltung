@@ -149,6 +149,38 @@ def convert_to_pdf(docx_path: Path) -> Path:
     return pdf_path
 
 
+def convert_to_pdf_soffice(docx_path: Path) -> Path:
+    """Konvertiert eine .docx über LibreOffice (headless) zu PDF – für den
+    Linux-Server (statt Word-COM). Nutzt ein eigenes, temporäres LibreOffice-
+    Profil, damit es nicht mit einer offenen LibreOffice-Sitzung kollidiert."""
+    import shutil
+    import subprocess
+    import tempfile
+
+    docx_path = Path(docx_path).resolve()
+    soffice = shutil.which("soffice") or shutil.which("libreoffice")
+    if not soffice:
+        raise RuntimeError("LibreOffice (soffice) nicht gefunden – bitte installieren.")
+
+    outdir = docx_path.parent
+    with tempfile.TemporaryDirectory(prefix="mobilfunk_soffice_") as profile:
+        cmd = [
+            soffice,
+            f"-env:UserInstallation=file://{profile}",
+            "--headless", "--nologo", "--nofirststartwizard",
+            "--convert-to", "pdf", "--outdir", str(outdir), str(docx_path),
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    pdf_path = docx_path.with_suffix(".pdf")
+    if not pdf_path.exists():
+        raise RuntimeError(
+            "PDF-Erzeugung fehlgeschlagen"
+            + (f": {proc.stderr.strip()}" if proc.stderr else ".")
+        )
+    logger.info("PDF erzeugt (LibreOffice): %s", pdf_path.name)
+    return pdf_path
+
+
 def create_outlook_draft(pdf_path: Path, subject: str, body: str = "", to: str = "") -> None:
     """Öffnet einen Outlook-Mail-Entwurf mit PDF-Anhang (nicht automatisch gesendet)."""
     import win32com.client

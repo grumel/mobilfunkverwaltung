@@ -366,6 +366,71 @@ def neuvertrag_create():
     return jsonify(id=pid, to=NEUVERTRAG_TO, subject=subject, body=body), 201
 
 
+@bp.post("/participants/<int:pid>/kuendigung")
+def participant_kuendigung(pid):
+    """Kündigung/Rücknahme: Word-Vorlage füllen → PDF (LibreOffice) → Datei
+    zum Download + Mailtext zurückgeben. Vorlagen liegen unter
+    <DATA_DIR>/Dokumente/vorlage_kündigung.docx bzw. vorlage_rücknahme.docx."""
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    kind = (request.get_json(silent=True) or {}).get("kind", "kuendigung")
+    if kind not in ("kuendigung", "ruecknahme"):
+        return jsonify(error="unbekannter Schreiben-Typ"), 400
+
+    from modules import kuendigung as kmod
+    db = SessionLocal()
+    try:
+        p = db.get(Participant, pid)
+        if not p:
+            return jsonify(error="nicht gefunden"), 404
+        gsm = (p.gsm or "").strip()
+    finally:
+        db.close()
+
+    try:
+        docx_path = kmod.generate_letter(kind, gsm)
+        pdf_path = kmod.convert_to_pdf_soffice(docx_path)
+    except FileNotFoundError as e:
+        return jsonify(error=f"Vorlage fehlt: {e}"), 400
+    except Exception as e:
+        return jsonify(error=f"PDF-Erzeugung fehlgeschlagen: {e}"), 500
+
+    db = SessionLocal()
+    try:
+        aktion = "KUENDIGUNG" if kind == "kuendigung" else "RUECKNAHME"
+        svc.log_import(db, aktion, f"ID={pid} GSM={gsm} PDF={pdf_path.name} (API)",
+                       participant_id=pid)
+        svc.log_audit(db, current_user(), aktion,
+                      f"{aktion.title()} für GSM {gsm or '-'} erzeugt (API)",
+                      table_name="participants", record_id=pid)
+        db.commit()
+    finally:
+        db.close()
+
+    gsm_txt = gsm or "unbekannt"
+    return jsonify(file=pdf_path.name, to=kmod.DEFAULT_TO,
+                   subject=kmod.SUBJECTS[kind].format(gsm=gsm_txt),
+                   body=kmod.BODIES[kind].format(gsm=gsm_txt))
+
+
+@bp.get("/kuendigung/<path:name>")
+def kuendigung_download(name):
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    from flask import send_from_directory
+    from modules import kuendigung as kmod
+    safe = os.path.basename(name)          # Path-Traversal verhindern
+    if not safe.lower().endswith(".pdf"):
+        return jsonify(error="ungültig"), 400
+    outdir = kmod.OUTPUT_DIR
+    if not (outdir / safe).exists():
+        return jsonify(error="nicht gefunden"), 404
+    return send_from_directory(str(outdir), safe, as_attachment=True,
+                               mimetype="application/pdf")
+
+
 @bp.put("/participants/<int:pid>")
 def participant_update(pid):
     if not current_user():

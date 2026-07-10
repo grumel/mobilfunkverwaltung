@@ -77,21 +77,19 @@ bestehenden Jinja-Oberfläche im selben Backend läuft.
       **alle** Funktionen des bisherigen Web-UI ab
 - [ ] Alte Jinja-Templates entfernen, sobald sich niemand mehr auf sie verlässt
       (bewusst noch nicht — dienen als Fallback/Vergleichsreferenz)
-- [ ] **Kündigung/Rücknahme/Neuvertrag fehlen noch** (im Desktop-UI vorhanden,
-      nie migriert — hängen dort an Windows-COM: Word für PDF, Outlook für
-      Mail-Entwurf, siehe `modules/kuendigung.py` / `modules/neuvertrag.py`).
-      Läuft auf dem Linux-Server so nicht. Geplanter Ansatz:
-      - Vorlage füllen (`python-docx`, bereits plattformunabhängig) → PDF
-        über **LibreOffice headless** statt Word-COM erzeugen, Download-Button
-        im React-Frontend.
-      - Statt Outlook-Entwurf: Betreff/Text zum Kopieren anzeigen, PDF wird
-        manuell an Outlook (Windows-Client) angehängt und verschickt.
-      - Neuvertrag: eigenes Formular in React fehlt komplett, plus
-        Werk→Konto-Zuordnung aus den Einstellungen (`konto_plant`) muss in
-        die Web-Einstellungen übernommen werden.
-      - Voraussetzung: LibreOffice auf dem Server installieren, Word-Vorlagen
-        (`vorlage_kündigung.docx`, `vorlage_rücknahme.docx`) auf den Server
-        übertragen.
+- [x] **Kündigung/Rücknahme/Neuvertrag migriert** (ersetzt die Windows-COM-
+      Automatisierung der Desktop-App):
+      - Kündigung/Rücknahme: `modules/kuendigung.py` füllt die Word-Vorlage
+        (`python-docx`) und erzeugt das PDF über **LibreOffice headless**
+        (`convert_to_pdf_soffice`). Endpunkte `POST /api/participants/<id>/
+        kuendigung` + `GET /api/kuendigung/<datei>` (Download). Frontend:
+        Rechtsklick → „Kündigung erstellen/zurücknehmen", Ergebnis-Modal mit
+        PDF-Download + Mailtext zum Kopieren.
+      - Neuvertrag: `POST /api/neuvertrag` legt Teilnehmer an und liefert den
+        Mailtext; React-Formular mit automatischem Werk↔Konto-Ausfüllen
+        (`GET /api/werk-konto`, feste Paare aus den Daten).
+      - Voraussetzungen (erledigt): LibreOffice auf dem Server, `python-docx`
+        in requirements.txt, Word-Vorlagen unter `<DATA_DIR>/Dokumente/`.
 
 **Mehrwert:** flüssiger (keine Reloads), Kennzahl-Kacheln/Balken, wiederverwendbare
 Komponenten, mobil-/PWA-tauglich.
