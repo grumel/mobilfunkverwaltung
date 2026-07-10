@@ -14,7 +14,7 @@ export default function Login({ onLogin, version }) {
     setBusy(true)
     try {
       const d = await api.login(username, password)
-      onLogin(d.user)
+      onLogin(d.user, d.force_pw_change)
     } catch (ex) {
       setError(ex.message)
     } finally {

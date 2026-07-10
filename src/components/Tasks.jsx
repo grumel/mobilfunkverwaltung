@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '../api'
 import { fmtDate } from '../format.js'
+import { toastError } from '../toast.jsx'
 import EditModal from './EditModal.jsx'
 
 export default function Tasks({ user, onChanged }) {
@@ -17,7 +18,7 @@ export default function Tasks({ user, onChanged }) {
   useEffect(() => { load() }, [load])
 
   async function act(fn) {
-    try { await fn(); load(); onChanged && onChanged() } catch (e) { alert(e.message) }
+    try { await fn(); load(); onChanged && onChanged() } catch (e) { toastError(e.message) }
   }
 
   return (

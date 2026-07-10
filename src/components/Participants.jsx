@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '../api'
 import { fmtDate } from '../format.js'
+import { toastError } from '../toast.jsx'
 import EditModal from './EditModal.jsx'
 
 const COLS = [
@@ -44,7 +45,7 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
 
   async function act(fn) {
     setMenu(null)
-    try { await fn(); load(q); onChanged && onChanged() } catch (e) { alert(e.message) }
+    try { await fn(); load(q); onChanged && onChanged() } catch (e) { toastError(e.message) }
   }
 
   function addTask(row) {
@@ -67,14 +68,14 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
   }
 
   async function doMerge() {
-    if (selected.size < 2) { alert('Bitte mindestens 2 Einträge auswählen.'); return }
+    if (selected.size < 2) { toastError('Bitte mindestens 2 Einträge auswählen.'); return }
     if (!confirm(selected.size + ' Einträge zusammenführen?\n\nLeere Felder des ältesten '
                  + 'Eintrags werden aus den anderen gefüllt, die übrigen gelöscht.')) return
     try {
       await api.merge(Array.from(selected))
       setMergeMode(false); setSelected(new Set())
       load(q); onChanged && onChanged()
-    } catch (e) { alert(e.message) }
+    } catch (e) { toastError(e.message) }
   }
 
   function handleRowClick(row) {
@@ -83,6 +84,32 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
 
   function toggleSort(key) {
     setSort((s) => (s.key === key ? { key, dir: -s.dir } : { key, dir: 1 }))
+  }
+
+  function csvCell(s) {
+    return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+  }
+  function exportCsv() {
+    const header = ['Status', ...COLS.map(([, l]) => l)]
+    const lines = [header]
+    sortedRows.forEach((r) => {
+      const status = r.verified === 1 ? 'geprüft' : 'offen'
+      const vals = COLS.map(([k]) => {
+        let v = r[k]
+        if (v === null || v === undefined) v = ''
+        else if (DATE_COLS.has(k)) v = fmtDate(v)
+        return String(v)
+      })
+      lines.push([status, ...vals])
+    })
+    const csv = lines.map((row) => row.map(csvCell).join(';')).join('\r\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `mobilfunk_${view}_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   function sortArrow(key) {
@@ -107,6 +134,9 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
             <button className="btn accent" onClick={() => setEditId(null)}>+ Neu</button>
             <button className="btn" onClick={toggleMergeMode}>Zusammenführen</button>
           </>
+        )}
+        {!mergeMode && (
+          <button className="btn" onClick={exportCsv} disabled={rows.length === 0}>CSV-Export</button>
         )}
         {mergeMode ? (
           <span className="hint-dim">

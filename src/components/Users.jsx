@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { fmtDate } from '../format.js'
+import { toastError, toastOk } from '../toast.jsx'
 
 const ROLE_LABELS = {
   admin: 'Admin (alles)', write: 'Schreiben (bearbeiten/importieren)', read: 'Lesen (nur ansehen)',
@@ -24,13 +25,13 @@ export default function Users({ user }) {
   async function resetPw(u) {
     const pw = prompt(`Neues Passwort für „${u.username}" (min. 6 Zeichen):`, '')
     if (pw === null) return
-    try { await api.userSetPassword(u.id, pw); alert('Passwort gesetzt.') }
-    catch (e) { alert(e.message) }
+    try { await api.userSetPassword(u.id, pw); toastOk('Passwort gesetzt.') }
+    catch (e) { toastError(e.message) }
   }
 
   async function remove(u) {
     if (!confirm(`Benutzer „${u.username}" wirklich löschen?`)) return
-    try { await api.userDelete(u.id); load() } catch (e) { alert(e.message) }
+    try { await api.userDelete(u.id); toastOk('Benutzer gelöscht.'); load() } catch (e) { toastError(e.message) }
   }
 
   return (
