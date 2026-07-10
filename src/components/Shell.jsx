@@ -43,6 +43,10 @@ export default function Shell({ user, onLogout, version }) {
   return (
     <div>
       <div className="utilbar">
+        <span className="dot" />
+        <span className="appname">Mobilfunkverwaltung</span>
+        <span className="webtag">React</span>
+        <span className="spacer" />
         {version && version.build && <span className="version" title={'Version ' + versionLabel(version)}>{versionLabel(version)}</span>}
         <span className="user">{user.username} · {user.role}</span>
         {isAdmin && (
@@ -54,9 +58,6 @@ export default function Shell({ user, onLogout, version }) {
         <button className="utilbtn logout" onClick={onLogout}>Abmelden</button>
       </div>
       <header className="topbar">
-        <span className="dot" />
-        <span className="appname">Mobilfunkverwaltung</span>
-        <span className="webtag">React</span>
         <nav className="tabs">
           {PROVIDERS.map(([k, l]) => (
             <button key={k} className={'tab' + (view === k ? ' active' : '')} onClick={() => setView(k)}>{l}</button>

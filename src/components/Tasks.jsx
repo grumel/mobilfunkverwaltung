@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '../api'
+import { fmtDate } from '../format.js'
 import EditModal from './EditModal.jsx'
 
 export default function Tasks({ user, onChanged }) {
@@ -48,7 +49,7 @@ export default function Tasks({ user, onChanged }) {
                     <td>{t.gsm || '—'}</td>
                     <td>{t.plant || '—'}</td>
                     <td>{t.kommentar || '—'}</td>
-                    <td>{t.faellig_am || '—'}</td>
+                    <td>{t.faellig_am ? fmtDate(t.faellig_am) : '—'}</td>
                     <td>{t.created_by || '—'}</td>
                     <td>{t.erledigt
                       ? <span className="badge ok">erledigt</span>

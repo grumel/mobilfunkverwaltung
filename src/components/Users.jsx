@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { fmtDate } from '../format.js'
 
 const ROLE_LABELS = {
   admin: 'Admin (alles)', write: 'Schreiben (bearbeiten/importieren)', read: 'Lesen (nur ansehen)',
@@ -56,8 +57,8 @@ export default function Users({ user }) {
                     ? <span className="badge ok">aktiv</span>
                     : <span className="badge open">gesperrt</span>}</td>
                   <td>{u.windows_login || '—'}</td>
-                  <td>{u.last_login || '—'}</td>
-                  <td>{u.created_at || '—'}</td>
+                  <td>{u.last_login ? fmtDate(u.last_login) : '—'}</td>
+                  <td>{u.created_at ? fmtDate(u.created_at) : '—'}</td>
                   <td className="rowactions">
                     <button className="linkbtn" onClick={() => setEdit(u)}>Bearbeiten</button>
                     <button className="linkbtn" onClick={() => resetPw(u)}>Passwort</button>

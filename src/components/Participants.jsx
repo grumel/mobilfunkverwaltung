@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '../api'
+import { fmtDate } from '../format.js'
 import EditModal from './EditModal.jsx'
 
 const COLS = [
@@ -10,6 +11,7 @@ const COLS = [
   ['bemerkung', 'Bemerkung'],
 ]
 const NUM = new Set(['master_id', 'konto'])
+const DATE_COLS = new Set(['vertragsbeginn', 'vertragsende', 'kuendigung', 'start_syno'])
 const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 
 export default function Participants({ view, q, user, openTaskPids = [], onChanged }) {
@@ -144,7 +146,9 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
                     : <span className="badge open">offen</span>}</td>
                   {COLS.map(([k]) => (
                     <td key={k} className={NUM.has(k) ? 'num' : ''}>
-                      {r[k] === null || r[k] === '' || r[k] === undefined ? '—' : r[k]}
+                      {r[k] === null || r[k] === '' || r[k] === undefined
+                        ? '—'
+                        : (DATE_COLS.has(k) ? fmtDate(r[k]) : r[k])}
                     </td>
                   ))}
                 </tr>

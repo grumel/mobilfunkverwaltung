@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { fmtDate } from '../format.js'
 
 export default function Logs({ kind, user }) {
   const isAudit = kind === 'audit'
@@ -34,7 +35,7 @@ export default function Logs({ kind, user }) {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.zeitpunkt || '—'}</td>
+                  <td>{r.zeitpunkt ? fmtDate(r.zeitpunkt) : '—'}</td>
                   <td>{(isAudit ? r.username : r.quelle) || '—'}</td>
                   <td>{r.aktion || '—'}</td>
                   <td>{r.details || '—'}</td>

@@ -8,8 +8,8 @@
 body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--fg); }
 .center { display:flex; align-items:center; justify-content:center; min-height:100vh; color:var(--dim); }
 
-/* Obere Leiste (unter der Adressleiste): Benutzer, Einstellungen, Abmelden */
-.utilbar { display:flex; align-items:center; justify-content:flex-end; gap:10px;
+/* Obere Leiste (unter der Adressleiste): App-Name links, Aktionen rechts */
+.utilbar { display:flex; align-items:center; gap:10px;
   padding:0 16px; height:52px; background:var(--bg); }
 .utilbtn { padding:7px 12px; border:1px solid #9aa3ad; border-radius:8px; background:#f6f7f9;
   color:var(--fg); font-size:13px; font-weight:600; cursor:pointer;
