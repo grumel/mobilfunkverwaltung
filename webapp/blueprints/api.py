@@ -285,6 +285,87 @@ def participant_create():
         db.close()
 
 
+@bp.get("/werk-konto")
+def werk_konto():
+    """Feste Werk↔Konto-Paare aus den vorhandenen Daten (häufigste Zuordnung
+    je Richtung). Das Frontend füllt damit beim Bearbeiten/Neuvertrag das
+    jeweils andere Feld automatisch aus."""
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    from collections import Counter
+    db = SessionLocal()
+    try:
+        pairs = (db.query(Participant.plant, Participant.konto)
+                 .filter(Participant.plant.isnot(None), Participant.plant != "",
+                         Participant.konto.isnot(None), Participant.konto != "").all())
+    finally:
+        db.close()
+    w_count, k_count = {}, {}
+    for plant, konto in pairs:
+        plant, konto = plant.strip(), konto.strip()
+        if not plant or not konto:
+            continue
+        w_count.setdefault(plant, Counter())[konto] += 1
+        k_count.setdefault(konto, Counter())[plant] += 1
+    werk_to_konto = {w: c.most_common(1)[0][0] for w, c in w_count.items()}
+    konto_to_werk = {k: c.most_common(1)[0][0] for k, c in k_count.items()}
+    return jsonify(werk_to_konto=werk_to_konto, konto_to_werk=konto_to_werk)
+
+
+NEUVERTRAG_TO = "nicole.dieckmann@zinxs.com"
+
+
+@bp.post("/neuvertrag")
+def neuvertrag_create():
+    """Neuvertrag bestellen: Teilnehmer anlegen (ungeprüft) und Mailtext
+    zurückgeben (der Nutzer versendet ihn selbst in Outlook)."""
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    werk = (data.get("werk") or "").strip()
+    konto = (data.get("konto") or "").strip()
+    tarif = (data.get("tarif") or "").strip()
+    if not name or not werk or not tarif:
+        return jsonify(error="Bitte Name, Werk und Tarif angeben."), 400
+
+    heute = date.today().strftime("%d.%m.%Y")
+    db = SessionLocal()
+    try:
+        p = Participant(master_id=svc.next_master_id(db), created_at=svc.now_str(),
+                        updated_at=svc.now_str(), name=name, plant=werk, konto=konto,
+                        tarif=tarif, verified=0, provider="Vodafone",
+                        pruefung_grund=f"Neuvertrag - Mail an Nicole am {heute}",
+                        bemerkung="Neuvertrag bestellt, noch nicht bei Vodafone aktiv")
+        db.add(p)
+        db.flush()
+        svc.log_import(db, "NEUVERTRAG",
+                       f"ID={p.id} Name={name} Werk={werk} Konto={konto} Tarif={tarif} (API)",
+                       participant_id=p.id)
+        svc.log_audit(db, current_user(), "NEUVERTRAG",
+                      f"Neuvertrag '{name}' angelegt (API)",
+                      table_name="participants", record_id=p.id)
+        db.commit()
+        pid = p.id
+    finally:
+        db.close()
+
+    subject = f"NV - {name}"
+    body = (
+        "Hallo liebe Nicole,\n\n"
+        f"ich hätte gerne einen Neuvertrag für {name}.\n\n"
+        f"Werk:  {werk}\n"
+        f"Konto: {konto}\n"
+        f"Tarif: {tarif}\n\n"
+        "Magst du dich bitte um die Erstellung kümmern?\n\n"
+        "Danke dir und ganz liebe Grüße\n"
+        "Holger"
+    )
+    return jsonify(id=pid, to=NEUVERTRAG_TO, subject=subject, body=body), 201
+
+
 @bp.put("/participants/<int:pid>")
 def participant_update(pid):
     if not current_user():
