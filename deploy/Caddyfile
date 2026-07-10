@@ -12,6 +12,17 @@
 :80 {
     encode gzip
 
+    # Sicherheits-Header (gelten fuer statische Dateien und API-Antworten).
+    # CSP: alles nur von der eigenen Herkunft; kein Framing (Clickjacking),
+    # keine externen Skripte/Objekte. Passt zum selbst gehosteten React-Build.
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy same-origin
+        Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        -Server
+    }
+
     handle /api/* {
         reverse_proxy 127.0.0.1:8000
     }

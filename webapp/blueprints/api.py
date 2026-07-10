@@ -84,20 +84,56 @@ def _apply_view(db, view, q):
 # --------------------------------------------------------------------------- #
 # Auth
 # --------------------------------------------------------------------------- #
+# Einfache Brute-Force-Bremse: pro Client-IP zählen; nach zu vielen
+# Fehlversuchen innerhalb des Zeitfensters wird kurz gesperrt (in-memory).
+_LOGIN_MAX = 8
+_LOGIN_WINDOW = 300      # Sekunden, in denen Fehlversuche zählen
+_login_fails = {}        # ip -> (anzahl, erster_versuch_ts)
+
+
+def _login_blocked(ip):
+    import time
+    count, first = _login_fails.get(ip, (0, 0.0))
+    if time.time() - first > _LOGIN_WINDOW:
+        return False
+    return count >= _LOGIN_MAX
+
+
+def _login_note_fail(ip):
+    import time
+    now = time.time()
+    count, first = _login_fails.get(ip, (0, now))
+    if now - first > _LOGIN_WINDOW:
+        count, first = 0, now
+    _login_fails[ip] = (count + 1, first)
+
+
 @bp.post("/login")
 def login():
+    from flask import session
+    ip = request.remote_addr or "?"
+    if _login_blocked(ip):
+        return jsonify(error="Zu viele Fehlversuche – bitte einige Minuten warten."), 429
+
     data = request.get_json(silent=True) or {}
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.username == username, User.active == 1).first()
+        if user and verify_password(password, user.password_hash):
+            _login_fails.pop(ip, None)
+            user.last_login = svc.now_str()
+            svc.log_audit(db, {"id": user.id, "username": user.username},
+                          "LOGIN", f"Anmeldung erfolgreich (IP {ip})")
+            db.commit()
+            session.clear()                    # Session-Fixation vermeiden
+            session["user"] = {"id": user.id, "username": user.username, "role": user.role}
+            return jsonify(user=session["user"])
     finally:
         db.close()
-    if user and verify_password(password, user.password_hash):
-        from flask import session
-        session["user"] = {"id": user.id, "username": user.username, "role": user.role}
-        return jsonify(user=session["user"])
+
+    _login_note_fail(ip)
     return jsonify(error="Anmeldung fehlgeschlagen – Benutzername oder Passwort falsch."), 401
 
 

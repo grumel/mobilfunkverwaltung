@@ -17,6 +17,23 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = SECRET_KEY
 
+    # Session-Cookie härten. SameSite=Lax bremst CSRF (das Cookie wird bei
+    # Cross-Site-POSTs nicht mitgeschickt) – wichtig, da die JSON-API bewusst
+    # CSRF-exempt ist. Secure nur bei HTTPS (MOBILFUNK_HTTPS=1), sonst brechen
+    # Cookies über reines HTTP im LAN.
+    app.config.update(
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.environ.get("MOBILFUNK_HTTPS", "0") == "1",
+    )
+
+    @app.after_request
+    def _security_headers(resp):
+        resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+        resp.headers.setdefault("X-Frame-Options", "DENY")
+        resp.headers.setdefault("Referrer-Policy", "same-origin")
+        return resp
+
     # CSRF-Schutz (per Umgebungsvariable MOBILFUNK_CSRF=0 abschaltbar, z. B. für Tests)
     csrf = None
     if os.environ.get("MOBILFUNK_CSRF", "1") != "0":
