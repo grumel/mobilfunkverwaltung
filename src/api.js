@@ -50,6 +50,9 @@ export const api = {
   merge: (ids) => req('/api/participants/merge', { method: 'POST', body: JSON.stringify({ ids }) }),
   werkKonto: () => req('/api/werk-konto'),
   neuvertrag: (data) => req('/api/neuvertrag', { method: 'POST', body: JSON.stringify(data) }),
+  kuendigung: (pid, kind) =>
+    req(`/api/participants/${pid}/kuendigung`, { method: 'POST', body: JSON.stringify({ kind }) }),
+  kuendigungUrl: (file) => `/api/kuendigung/${encodeURIComponent(file)}`,
 
   // Summary (Nav-Zähler + rote Markierung), Aufgaben, Statistik
   summary: () => req('/api/summary'),

@@ -4,6 +4,7 @@ import { fmtDate } from '../format.js'
 import { toastError } from '../toast.jsx'
 import EditModal from './EditModal.jsx'
 import NeuvertragModal from './NeuvertragModal.jsx'
+import MailResultModal from './MailResultModal.jsx'
 
 const COLS = [
   ['master_id', 'Nr.'], ['gsm', 'GSM'], ['name', 'Name'], ['plant', 'Werk'],
@@ -30,6 +31,7 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
   const [selected, setSelected] = useState(new Set())
   const [sort, setSort] = useState({ key: 'name', dir: 1 })
   const [neuvertrag, setNeuvertrag] = useState(false)
+  const [mailResult, setMailResult] = useState(null)   // Kündigungs-Ergebnis
 
   const load = useCallback((query) => {
     api.participants(view, query)
@@ -54,6 +56,19 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
     setMenu(null)
     const k = prompt('Kommentar zur Aufgabe:', '')
     if (k !== null) act(() => api.createTask(row.id, { kommentar: k }))
+  }
+
+  async function createKuendigung(row, kind) {
+    setMenu(null)
+    try {
+      const d = await api.kuendigung(row.id, kind)
+      setMailResult({
+        title: kind === 'kuendigung' ? 'Kündigung erstellt' : 'Rücknahme erstellt',
+        to: d.to, subject: d.subject, body: d.body,
+        downloadUrl: api.kuendigungUrl(d.file),
+      })
+      onChanged && onChanged()
+    } catch (e) { toastError(e.message) }
   }
 
   function toggleMergeMode() {
@@ -203,6 +218,10 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
               <div className="ctx-item" onClick={() => act(() => api.verify(menu.row.id))}>
                 {menu.row.verified ? 'Als offen markieren' : 'Als geprüft markieren'}
               </div>
+              <div className="ctx-sep" />
+              <div className="ctx-item" onClick={() => createKuendigung(menu.row, 'kuendigung')}>Kündigung erstellen …</div>
+              <div className="ctx-item" onClick={() => createKuendigung(menu.row, 'ruecknahme')}>Kündigung zurücknehmen …</div>
+              <div className="ctx-sep" />
               {PROVIDERS.filter((p) => p !== menu.row.provider).map((p) => (
                 <div key={p} className="ctx-item" onClick={() => act(() => api.move(menu.row.id, p))}>→ nach {p}</div>
               ))}
@@ -230,6 +249,10 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
       {neuvertrag && (
         <NeuvertragModal onClose={() => setNeuvertrag(false)}
                          onDone={() => { load(q); onChanged && onChanged() }} />
+      )}
+
+      {mailResult && (
+        <MailResultModal {...mailResult} onClose={() => setMailResult(null)} />
       )}
     </div>
   )
