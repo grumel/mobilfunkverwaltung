@@ -12,6 +12,7 @@ aktualisiert.
 """
 
 import logging
+import os
 import re
 from pathlib import Path
 from datetime import datetime, date
@@ -170,7 +171,10 @@ def convert_to_pdf_soffice(docx_path: Path) -> Path:
             "--headless", "--nologo", "--nofirststartwizard",
             "--convert-to", "pdf", "--outdir", str(outdir), str(docx_path),
         ]
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        # HOME auf das Temp-Profil setzen: der Dienstbenutzer (z. B. 'mobilfunk')
+        # hat kein nutzbares Home; ohne HOME kann LibreOffice scheitern.
+        env = dict(os.environ, HOME=profile)
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
     pdf_path = docx_path.with_suffix(".pdf")
     if not pdf_path.exists():
         raise RuntimeError(
