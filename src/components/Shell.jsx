@@ -42,6 +42,17 @@ export default function Shell({ user, onLogout, version }) {
 
   return (
     <div>
+      <div className="utilbar">
+        {version && version.build && <span className="version" title={'Version ' + versionLabel(version)}>{versionLabel(version)}</span>}
+        <span className="user">{user.username} · {user.role}</span>
+        {isAdmin && (
+          <>
+            <button className={'utilbtn' + (view === 'benutzer' ? ' active' : '')} onClick={() => setView('benutzer')}>Benutzer</button>
+            <button className={'utilbtn' + (view === 'einstellungen' ? ' active' : '')} onClick={() => setView('einstellungen')}>⚙ Einstellungen</button>
+          </>
+        )}
+        <button className="utilbtn logout" onClick={onLogout}>Abmelden</button>
+      </div>
       <header className="topbar">
         <span className="dot" />
         <span className="appname">Mobilfunkverwaltung</span>
@@ -64,15 +75,10 @@ export default function Shell({ user, onLogout, version }) {
             <>
               <button className={'tab' + (view === 'audit' ? ' active' : '')} onClick={() => setView('audit')}>Audit</button>
               <button className={'tab import' + (view === 'import' ? ' active' : '')} onClick={() => setView('import')}>Import ▾</button>
-              <button className={'tab' + (view === 'benutzer' ? ' active' : '')} onClick={() => setView('benutzer')}>Benutzer</button>
-              <button className={'tab' + (view === 'einstellungen' ? ' active' : '')} onClick={() => setView('einstellungen')}>⚙ Einstellungen</button>
             </>
           )}
         </nav>
         <span className="spacer" />
-        {version && version.build && <span className="version" title={'Version ' + versionLabel(version)}>{versionLabel(version)}</span>}
-        <span className="user">{user.username} · {user.role}</span>
-        <button className="logout" onClick={onLogout}>Abmelden</button>
       </header>
       {isParticipantsView && (
         <div className="globalbar">

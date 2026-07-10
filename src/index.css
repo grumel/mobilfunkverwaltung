@@ -8,10 +8,20 @@
 body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--fg); }
 .center { display:flex; align-items:center; justify-content:center; min-height:100vh; color:var(--dim); }
 
+/* Obere Leiste (unter der Adressleiste): Benutzer, Einstellungen, Abmelden */
+.utilbar { display:flex; align-items:center; justify-content:flex-end; gap:10px;
+  padding:0 16px; height:52px; background:var(--bg); }
+.utilbtn { padding:7px 12px; border:1px solid #9aa3ad; border-radius:8px; background:#f6f7f9;
+  color:var(--fg); font-size:13px; font-weight:600; cursor:pointer;
+  box-shadow:0 1px 2px rgba(15,23,42,.10); }
+.utilbtn:hover { background:#e8ebef; }
+.utilbtn.active { background:var(--accent); color:#fff; border-color:#a50015; }
+.utilbtn.logout { color:var(--accent); }
+.utilbtn.logout:hover { background:#fdecea; }
+
 /* Topbar */
 .topbar { display:flex; align-items:center; gap:12px; background:var(--card);
-  border-bottom:1px solid var(--line); padding:0 16px; height:52px; position:sticky; top:0; z-index:10;
-  margin-top:64px; }
+  border-bottom:1px solid var(--line); padding:0 16px; height:52px; position:sticky; top:0; z-index:10; }
 .version { font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums;
   border:1px solid var(--line); border-radius:8px; padding:2px 8px; }
 .dot { width:10px; height:10px; border-radius:50%; background:var(--accent); flex:0 0 auto; }
