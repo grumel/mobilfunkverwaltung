@@ -143,6 +143,8 @@ td.num { text-align:right; font-variant-numeric:tabular-nums; }
 .field input[readonly], .field textarea[readonly] { background:var(--readonly-bg); color:var(--dim); }
 .check { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; }
 .modal-actions { display:flex; gap:10px; margin-top:16px; }
+.matchrow { display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.matchrow .btn { padding:6px 12px; }
 
 /* Zähler-Badge, Aufgaben-Markierung */
 .badgecount { display:inline-block; min-width:16px; margin-left:6px; padding:0 5px; border-radius:9px;

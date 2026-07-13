@@ -16,9 +16,11 @@ async function req(url, opts = {}) {
 const enc = encodeURIComponent
 
 // Datei-Upload (multipart) – eigener Aufruf ohne JSON-Content-Type-Header.
-async function upload(url, file) {
+// `fields` = optionale zusätzliche Formularfelder (z. B. gsm, name).
+async function upload(url, file, fields = {}) {
   const fd = new FormData()
   fd.append('file', file)
+  for (const [k, v] of Object.entries(fields)) fd.append(k, v ?? '')
   const res = await fetch(url, { method: 'POST', credentials: 'same-origin', body: fd })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
@@ -66,6 +68,10 @@ export const api = {
   vodafonePreview: (file) => upload('/api/import/vodafone/preview', file),
   vodafoneConfirm: () => req('/api/import/vodafone/confirm', { method: 'POST' }),
   synoImport: (file) => upload('/api/import/syno', file),
+
+  // Einzel-Abgleich im Bearbeiten-Dialog (füllt Felder, speichert nicht)
+  matchVodafone: (file, gsm) => upload('/api/match/vodafone', file, { gsm }),
+  matchSyno: (file, gsm, name) => upload('/api/match/syno', file, { gsm, name }),
 
   // Einstellungen
   getSettings: () => req('/api/settings'),

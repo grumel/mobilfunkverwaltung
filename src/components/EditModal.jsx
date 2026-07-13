@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { loadWerkKonto } from '../werkkonto.js'
+import { toastOk, toastError } from '../toast.jsx'
 
 const FIELDS = [
   ['gsm', 'GSM-Nummer', 'text'], ['name', 'Name', 'text'], ['plant', 'Werk (Plant)', 'text'],
@@ -20,8 +21,42 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
   const [busy, setBusy] = useState(false)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [wk, setWk] = useState({ werk_to_konto: {}, konto_to_werk: {} })
+  const vodafoneFileRef = useRef(null)
+  const synoFileRef = useRef(null)
 
   useEffect(() => { loadWerkKonto().then(setWk) }, [])
+
+  function pickVodafone() {
+    if (!(p.gsm || '').trim()) { toastError('Bitte zuerst eine GSM-Nummer eingeben.'); return }
+    vodafoneFileRef.current.value = ''
+    vodafoneFileRef.current.click()
+  }
+  function pickSyno() {
+    if (!(p.gsm || '').trim() && !(p.name || '').trim()) {
+      toastError('Bitte zuerst eine GSM-Nummer oder einen Namen eingeben.'); return
+    }
+    synoFileRef.current.value = ''
+    synoFileRef.current.click()
+  }
+  async function runMatch(source, file) {
+    if (!file) return
+    setError('')
+    const gsm = (p.gsm || '').trim()
+    const name = (p.name || '').trim()
+    try {
+      const d = source === 'vodafone'
+        ? await api.matchVodafone(file, gsm)
+        : await api.matchSyno(file, gsm, name)
+      if (!d.match) {
+        toastError(source === 'vodafone'
+          ? `Keine Zeile mit GSM „${gsm}" in der Datei gefunden.`
+          : 'Keine passende Zeile (GSM/Name) in der Datei gefunden.')
+        return
+      }
+      setP((prev) => ({ ...prev, ...d.match }))
+      toastOk('Felder aus der Datei übernommen – bitte prüfen und speichern.')
+    } catch (ex) { toastError(ex.message) }
+  }
 
   function startDrag(e) {
     if (e.target.closest('.x')) return
@@ -94,6 +129,17 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
                 </label>
               ))}
             </div>
+            {canWrite && (
+              <div className="matchrow">
+                <span className="hint-dim">Einzel-Abgleich aus Exportdatei:</span>
+                <button type="button" className="btn" onClick={pickVodafone}>Vodafone …</button>
+                <button type="button" className="btn" onClick={pickSyno}>Syno …</button>
+                <input ref={vodafoneFileRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
+                       onChange={(e) => runMatch('vodafone', e.target.files[0])} />
+                <input ref={synoFileRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
+                       onChange={(e) => runMatch('syno', e.target.files[0])} />
+              </div>
+            )}
             <label className="field wide"><span>Bemerkung</span>
               <textarea rows="2" value={p.bemerkung || ''} readOnly={!canWrite}
                         onChange={(e) => set('bemerkung', e.target.value)} />
