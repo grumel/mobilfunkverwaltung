@@ -856,6 +856,56 @@ def import_syno():
 
 
 # --------------------------------------------------------------------------- #
+# Einzel-Abgleich (im Bearbeiten-Dialog): Felder EINES Teilnehmers aus einer
+# Export-Datei holen, ohne etwas zu speichern. Der Nutzer prüft und speichert
+# dann selbst. Braucht Schreibrechte (nicht Admin – wie im Desktop-Editor).
+# --------------------------------------------------------------------------- #
+@bp.post("/match/vodafone")
+def match_vodafone():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    gsm = (request.form.get("gsm") or "").strip()
+    if not gsm:
+        return jsonify(error="Bitte zuerst eine GSM-Nummer eingeben."), 400
+    path, filename, err = _save_upload()
+    if err:
+        return err
+    try:
+        result = vodafone_import.find_by_gsm(path, gsm)
+    except Exception as exc:
+        return jsonify(error=f"Datei konnte nicht gelesen werden: {exc}"), 400
+    finally:
+        try: os.unlink(path)
+        except OSError: pass
+    return jsonify(match=result, filename=filename)
+
+
+@bp.post("/match/syno")
+def match_syno():
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    gsm = (request.form.get("gsm") or "").strip()
+    name = (request.form.get("name") or "").strip()
+    if not gsm and not name:
+        return jsonify(error="Bitte zuerst eine GSM-Nummer oder einen Namen eingeben."), 400
+    path, filename, err = _save_upload()
+    if err:
+        return err
+    try:
+        result = syno_import.find_by_gsm_or_name(path, gsm, name)
+    except Exception as exc:
+        return jsonify(error=f"Datei konnte nicht gelesen werden: {exc}"), 400
+    finally:
+        try: os.unlink(path)
+        except OSError: pass
+    return jsonify(match=result, filename=filename)
+
+
+# --------------------------------------------------------------------------- #
 # Einstellungen (nur Admin) – Datenbankpfad (Programm/DB getrennt)
 # --------------------------------------------------------------------------- #
 @bp.get("/settings")
