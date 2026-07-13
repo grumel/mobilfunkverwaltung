@@ -8,6 +8,8 @@ import Settings from './Settings.jsx'
 import Logs from './Logs.jsx'
 import Users from './Users.jsx'
 import PasswordModal from './PasswordModal.jsx'
+import HelpModal from './HelpModal.jsx'
+import { getTheme, toggleTheme } from '../theme.js'
 
 const PROVIDERS = [
   ['vodafone', 'Vodafone'], ['telekom', 'Telekom'], ['o2', 'O2'],
@@ -30,6 +32,8 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
   const [qInput, setQInput] = useState('')
   const [q, setQ] = useState('')
   const [pwOpen, setPwOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [theme, setTheme] = useState(getTheme())
   const isAdmin = user.role === 'admin'
   const isParticipantsView = PARTICIPANT_VIEWS.has(view)
 
@@ -51,6 +55,9 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
         <span className="spacer" />
         {version && version.build && <span className="version" title={'Version ' + versionLabel(version)}>{versionLabel(version)}</span>}
         <span className="user">{user.username} · {user.role}</span>
+        <button className="themebtn" title={theme === 'dark' ? 'Zu hellem Design wechseln' : 'Zu dunklem Design wechseln'}
+                onClick={() => setTheme(toggleTheme())}>{theme === 'dark' ? '☀️' : '🌙'}</button>
+        <button className="utilbtn" onClick={() => setHelpOpen(true)}>Hilfe</button>
         <button className="utilbtn" onClick={() => setPwOpen(true)}>Passwort</button>
         {isAdmin && (
           <>
@@ -65,6 +72,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
                        onClose={() => setPwOpen(false)}
                        onDone={() => { setPwOpen(false); onPwDone && onPwDone() }} />
       )}
+      {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
       <header className="topbar">
         <nav className="tabs">
           {PROVIDERS.map(([k, l]) => (
