@@ -28,8 +28,21 @@ export default function Import() {
   const [vfResult, setVfResult] = useState(null)
   const [syFile, setSyFile] = useState(null)
   const [syResult, setSyResult] = useState(null)
+  const [enFile, setEnFile] = useState(null)
+  const [enResult, setEnResult] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  async function doEnrich(e) {
+    e.preventDefault()
+    if (!enFile) return
+    setBusy(true); setError(''); setEnResult(null)
+    try {
+      const d = await api.synoEnrich(enFile)
+      setEnResult(d)
+      setEnFile(null)
+    } catch (ex) { setError(ex.message) } finally { setBusy(false) }
+  }
 
   async function doVfPreview(e) {
     e.preventDefault()
@@ -138,6 +151,39 @@ export default function Import() {
               <h4 className="sub">Protokoll</h4>
               <pre className="logbox tall">{(syResult.log_lines || []).join('\n')}</pre>
               <button className="btn" onClick={() => setSyResult(null)}>Neuer Import</button>
+            </div>
+          )}
+        </div>
+
+        <div className="importcard">
+          <h3>Syno anreichern (vor dem Import)</h3>
+          <p className="hint-dim">Korrigiert <b>GSM</b> und <b>Namen</b> in der Syno-Datei
+             anhand deiner Datenbank und erzeugt eine farblich markierte Kopie
+             (grün = ergänzt, blau = GSM korrigiert, gelb = kein Treffer, bitte prüfen).
+             Das <b>Original wird gespeichert</b> und alles protokolliert. Die
+             angereicherte Datei danach oben unter „Syno-Import" importieren.</p>
+          {!enResult && (
+            <form onSubmit={doEnrich}>
+              <input type="file" accept=".xlsx,.xls" required
+                     onChange={(e) => setEnFile(e.target.files[0])} />
+              <button type="submit" className="btn accent" disabled={busy}>
+                {busy ? 'Reichere an…' : 'Datei anreichern'}
+              </button>
+            </form>
+          )}
+          {enResult && (
+            <div>
+              <div className="tiles">
+                <div className="tile green"><div className="tval">{enResult.summary.fixed_gsm}</div><div className="tlbl">GSM ergänzt</div></div>
+                <div className="tile blue"><div className="tval">{enResult.summary.changed_gsm}</div><div className="tlbl">GSM korrigiert</div></div>
+                <div className="tile green"><div className="tval">{enResult.summary.fixed_name}</div><div className="tlbl">Namen ergänzt</div></div>
+                <div className="tile orange"><div className="tval">{enResult.summary.no_match}</div><div className="tlbl">Ohne Treffer</div></div>
+              </div>
+              <p className="hint-dim">Original gespeichert: <b>{enResult.original}</b></p>
+              <div className="modal-actions">
+                <a className="btn accent" href={api.synoFileUrl(enResult.enriched)} download>Angereicherte Datei herunterladen</a>
+                <button className="btn" onClick={() => setEnResult(null)}>Neue Datei</button>
+              </div>
             </div>
           )}
         </div>

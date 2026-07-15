@@ -69,6 +69,8 @@ export const api = {
   vodafonePreview: (file) => upload('/api/import/vodafone/preview', file),
   vodafoneConfirm: () => req('/api/import/vodafone/confirm', { method: 'POST' }),
   synoImport: (file) => upload('/api/import/syno', file),
+  synoEnrich: (file) => upload('/api/syno/enrich', file),
+  synoFileUrl: (name) => `/api/syno/file/${encodeURIComponent(name)}`,
 
   // Einzel-Abgleich im Bearbeiten-Dialog (füllt Felder, speichert nicht)
   matchVodafone: (file, gsm) => upload('/api/match/vodafone', file, { gsm }),
