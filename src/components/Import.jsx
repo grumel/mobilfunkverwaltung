@@ -7,6 +7,7 @@ const VF_TILES = [
 ]
 const SY_TILES = [
   ['matched_gsm', 'GSM-Matches', 'blue'], ['matched_name', 'Name-Matches', 'blue'],
+  ['neu_angelegt', 'Neu angelegt', 'green'],
   ['duplicate', 'Bereits vorhanden', 'grey'], ['slots_full', 'Kein freier Slot', 'orange'],
   ['unmatched', 'Nicht zugeordnet', 'orange'], ['skipped', 'Übersprungen', 'grey'],
 ]
@@ -27,6 +28,7 @@ export default function Import() {
   const [vfPreview, setVfPreview] = useState(null)
   const [vfResult, setVfResult] = useState(null)
   const [syFile, setSyFile] = useState(null)
+  const [syCreate, setSyCreate] = useState(true)
   const [syResult, setSyResult] = useState(null)
   const [enFile, setEnFile] = useState(null)
   const [enResult, setEnResult] = useState(null)
@@ -70,7 +72,7 @@ export default function Import() {
     if (!confirm('Syno-Import jetzt ausführen? (Backup wird vorher erstellt)')) return
     setBusy(true); setError(''); setSyResult(null)
     try {
-      const d = await api.synoImport(syFile)
+      const d = await api.synoImport(syFile, syCreate)
       setSyResult(d.result)
       setSyFile(null)
     } catch (ex) { setError(ex.message) } finally { setBusy(false) }
@@ -140,6 +142,11 @@ export default function Import() {
             <form onSubmit={doSyno}>
               <input type="file" accept=".xlsx,.xls" required
                      onChange={(e) => setSyFile(e.target.files[0])} />
+              <label className="check" style={{ marginTop: 0 }}>
+                <input type="checkbox" checked={syCreate}
+                       onChange={(e) => setSyCreate(e.target.checked)} />
+                Nicht gefundene Personen als neue Teilnehmer anlegen (zur Prüfung)
+              </label>
               <button type="submit" className="btn accent" disabled={busy}>
                 {busy ? 'Importiere…' : 'Syno importieren'}
               </button>

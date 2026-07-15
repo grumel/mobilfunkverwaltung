@@ -64,11 +64,12 @@ export const api = {
   taskDone: (tid) => req(`/api/tasks/${tid}/done`, { method: 'POST' }),
   taskDelete: (tid) => req(`/api/tasks/${tid}`, { method: 'DELETE' }),
   stats: () => req('/api/stats'),
+  dataQuality: () => req('/api/dataquality'),
 
   // Import
   vodafonePreview: (file) => upload('/api/import/vodafone/preview', file),
   vodafoneConfirm: () => req('/api/import/vodafone/confirm', { method: 'POST' }),
-  synoImport: (file) => upload('/api/import/syno', file),
+  synoImport: (file, createMissing) => upload('/api/import/syno', file, { create_missing: createMissing ? '1' : '0' }),
   synoEnrich: (file) => upload('/api/syno/enrich', file),
   synoFileUrl: (name) => `/api/syno/file/${encodeURIComponent(name)}`,
 

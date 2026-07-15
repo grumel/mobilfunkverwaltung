@@ -61,7 +61,8 @@ body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--b
 .tab.active { background:var(--accent); color:#fff; font-weight:600; }
 .bar { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
 .q { flex:0 0 340px; padding:9px 12px; border:1px solid var(--line); border-radius:8px;
-  font-size:14px; outline:none; background:var(--card); }
+  font-size:14px; outline:none; background:var(--card); color:var(--fg); }
+.q::placeholder { color:var(--dim); }
 .q:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(214,0,28,.12); }
 .count { color:var(--dim); font-size:13px; }
 .err { color:var(--accent); font-size:13px; }
