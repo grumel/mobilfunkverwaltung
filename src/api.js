@@ -80,6 +80,10 @@ export const api = {
   getSettings: () => req('/api/settings'),
   saveSettings: (data) => req('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
 
+  // Dokumente (Kündigung/Rücknahme/Neuvertrag – lokal gespeichert)
+  documents: () => req('/api/documents'),
+  documentUrl: (name) => `/api/documents/${enc(name)}`,
+
   // Protokoll / Audit
   importLog: () => req('/api/logs/import'),
   auditLog: () => req('/api/logs/audit'),

@@ -7,6 +7,7 @@ import Import from './Import.jsx'
 import Settings from './Settings.jsx'
 import Logs from './Logs.jsx'
 import Users from './Users.jsx'
+import Documents from './Documents.jsx'
 import PasswordModal from './PasswordModal.jsx'
 import HelpModal from './HelpModal.jsx'
 import { getTheme, toggleTheme } from '../theme.js'
@@ -89,6 +90,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
           </button>
           <button className={'tab' + (view === 'statistik' ? ' active' : '')} onClick={() => setView('statistik')}>Statistik</button>
           <button className={'tab' + (view === 'protokoll' ? ' active' : '')} onClick={() => setView('protokoll')}>Protokoll</button>
+          <button className={'tab' + (view === 'dokumente' ? ' active' : '')} onClick={() => setView('dokumente')}>Dokumente</button>
           {isAdmin && (
             <>
               <button className={'tab' + (view === 'audit' ? ' active' : '')} onClick={() => setView('audit')}>Audit</button>
@@ -111,6 +113,8 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
           ? <Tasks user={user} onChanged={refreshSummary} />
           : view === 'statistik'
             ? <Stats />
+            : view === 'dokumente'
+              ? <Documents />
             : view === 'protokoll'
               ? <Logs kind="import" user={user} />
               : view === 'audit'
