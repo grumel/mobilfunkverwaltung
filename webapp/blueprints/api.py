@@ -318,6 +318,14 @@ def werk_konto():
 NEUVERTRAG_TO = "nicole.dieckmann@zinxs.com"
 
 
+def _documents_dir():
+    """Gemeinsamer Ordner für erzeugte Schreiben (Kündigung, Rücknahme,
+    Neuvertrag). Entspricht dem Ausgabeordner der Kündigungen."""
+    from modules import kuendigung as kmod
+    kmod.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    return kmod.OUTPUT_DIR
+
+
 @bp.post("/neuvertrag")
 def neuvertrag_create():
     """Neuvertrag bestellen: Teilnehmer anlegen (ungeprüft) und Mailtext
@@ -366,7 +374,17 @@ def neuvertrag_create():
         "Danke dir und ganz liebe Grüße\n"
         "Holger"
     )
-    return jsonify(id=pid, to=NEUVERTRAG_TO, subject=subject, body=body), 201
+    # Neuvertrag lokal als Textdatei ablegen (wie Kündigung/Rücknahme als PDF).
+    filename = None
+    try:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        fname = secure_filename(f"neuvertrag_{name}_{ts}.txt") or f"neuvertrag_{ts}.txt"
+        fpath = _documents_dir() / fname
+        fpath.write_text(f"An: {NEUVERTRAG_TO}\nBetreff: {subject}\n\n{body}\n", encoding="utf-8")
+        filename = fpath.name
+    except Exception:
+        pass
+    return jsonify(id=pid, to=NEUVERTRAG_TO, subject=subject, body=body, file=filename), 201
 
 
 @bp.post("/participants/<int:pid>/kuendigung")
@@ -432,6 +450,35 @@ def kuendigung_download(name):
         return jsonify(error="nicht gefunden"), 404
     return send_from_directory(str(outdir), safe, as_attachment=True,
                                mimetype="application/pdf")
+
+
+@bp.get("/documents")
+def documents_list():
+    """Liste der lokal gespeicherten Schreiben (Kündigung/Rücknahme-PDFs,
+    Neuvertrag-Texte) – der „Dokumente-Ordner" als Web-Ansicht."""
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    outdir = _documents_dir()
+    files = []
+    for f in outdir.iterdir():
+        if f.is_file() and f.suffix.lower() != ".docx":   # .docx-Vorstufen ausblenden
+            st = f.stat()
+            files.append({"name": f.name, "size": st.st_size,
+                          "modified": datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S")})
+    files.sort(key=lambda d: d["modified"], reverse=True)
+    return jsonify(documents=files, folder=str(outdir))
+
+
+@bp.get("/documents/<path:name>")
+def document_download(name):
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    from flask import send_from_directory
+    safe = os.path.basename(name)          # Path-Traversal verhindern
+    outdir = _documents_dir()
+    if not (outdir / safe).is_file():
+        return jsonify(error="nicht gefunden"), 404
+    return send_from_directory(str(outdir), safe, as_attachment=True)
 
 
 @bp.put("/participants/<int:pid>")
