@@ -20,7 +20,7 @@ from werkzeug.utils import secure_filename
 from pathlib import Path
 
 from webapp.db import SessionLocal
-from webapp.models import Participant, User, Task, ImportLog, AuditLog
+from webapp.models import Participant, User, Task, ImportLog, AuditLog, UnmatchedDevice
 from modules import vodafone_import, syno_import
 from modules import database as ddb
 from webapp import webconfig
@@ -800,6 +800,50 @@ def stats():
     return jsonify(tiles=tiles, werke=werke, ablauf=ablauf)
 
 
+@bp.get("/dataquality")
+def dataquality():
+    """Kennzahlen zur Datenqualität: fehlende Pflichtfelder, Duplikate,
+    ungeprüfte Einträge, verwaiste Syno-Geräte + ein Sauberkeits-Prozentwert."""
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    P = Participant
+    db = SessionLocal()
+    try:
+        def cnt(*crit):
+            qy = db.query(func.count()).select_from(P)
+            for cc in crit:
+                qy = qy.filter(cc)
+            return qy.scalar() or 0
+        empty = lambda col: or_(col.is_(None), func.trim(col) == "")
+        total = cnt()
+        # Duplikate: Teilnehmer, die zu einer mehrfach vorkommenden Namensgruppe gehören
+        norm = func.lower(func.trim(P.name))
+        dupsub = (select(norm).where(P.name.isnot(None), P.name != "")
+                  .group_by(norm).having(func.count() > 1))
+        duplikate = cnt(norm.in_(dupsub))
+        # Vollständig = GSM, Name, Werk und Konto vorhanden
+        vollstaendig = cnt(func.trim(func.coalesce(P.gsm, "")) != "",
+                           func.trim(func.coalesce(P.name, "")) != "",
+                           func.trim(func.coalesce(P.plant, "")) != "",
+                           func.trim(func.coalesce(P.konto, "")) != "")
+        verwaiste = db.query(func.count()).select_from(UnmatchedDevice).scalar() or 0
+        metrics = {
+            "total":        total,
+            "ohne_gsm":     cnt(empty(P.gsm)),
+            "ohne_name":    cnt(empty(P.name)),
+            "ohne_werk":    cnt(empty(P.plant)),
+            "ohne_konto":   cnt(empty(P.konto)),
+            "ungeprueft":   cnt(P.verified == 0),
+            "duplikate":    duplikate,
+            "verwaiste_geraete": verwaiste,
+            "vollstaendig": vollstaendig,
+        }
+    finally:
+        db.close()
+    metrics["sauberkeit"] = round(100 * vollstaendig / total, 1) if total else 100.0
+    return jsonify(metrics=metrics)
+
+
 IMPORTLOG_FIELDS = ["id", "zeitpunkt", "quelle", "aktion", "details", "participant_id"]
 AUDITLOG_FIELDS = ["id", "zeitpunkt", "user_id", "username", "aktion", "details",
                    "table_name", "record_id"]
@@ -917,11 +961,13 @@ def import_syno():
     path, filename, err = _save_upload()
     if err:
         return err
+    create_missing = (request.form.get("create_missing") or "").lower() in ("1", "true", "on", "yes")
     db_module = _import_db_module()
     try:
         if db_module is None:      # SQLite: Backup wie bisher
             ddb.create_backup()
-        result = syno_import.run_syno_import(path, db_module=db_module)
+        result = syno_import.run_syno_import(path, db_module=db_module,
+                                             create_missing=create_missing)
     except Exception as exc:
         return jsonify(error=f"Import fehlgeschlagen: {exc}"), 400
     finally:

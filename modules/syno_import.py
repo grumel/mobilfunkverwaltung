@@ -98,9 +98,12 @@ def find_by_gsm_or_name(filepath: str | Path, gsm: str | None, name: str | None)
 # Öffentliche Importfunktion
 # ---------------------------------------------------------------------------
 
-def run_syno_import(filepath: str | Path, db_module=None) -> dict:
+def run_syno_import(filepath: str | Path, db_module=None, create_missing=False) -> dict:
     """db_module: austauschbares Datenbank-Backend (Standard: modules.database,
-    SQLite). Siehe webapp/import_adapter.py für die SQLAlchemy-Variante."""
+    SQLite). Siehe webapp/import_adapter.py für die SQLAlchemy-Variante.
+
+    create_missing: Zeilen ohne Treffer, die aber einen Namen oder eine GSM
+    haben, werden als neue Teilnehmer angelegt (statt in 'Nicht zugeordnet')."""
     dbm = db_module or db
     filepath = Path(filepath)
     if not filepath.exists():
@@ -119,6 +122,7 @@ def run_syno_import(filepath: str | Path, db_module=None) -> dict:
     skipped       = 0
     duplicate     = 0   # Gerät war bereits eingetragen
     slots_full    = 0   # beide Geräte-Slots belegt
+    created_new   = 0   # neu angelegte Teilnehmer (create_missing)
     errors: list[str] = []
     log_lines: list[str] = []
 
@@ -128,6 +132,13 @@ def run_syno_import(filepath: str | Path, db_module=None) -> dict:
     with dbm.transaction() as conn:
         # provider=None: auch Telekom-Teilnehmer für das Matching heranziehen
         all_participants = dbm.get_all_participants(conn, provider=None)
+        # Normalisierter GSM-Index: robustes Matching unabhängig von der
+        # Schreibweise (Leerzeichen/Formate) – verhindert doppelte Neuanlagen.
+        gsm_index = {}
+        for _p in all_participants:
+            _ng = normalize_gsm(_p["gsm"] or "")
+            if _ng:
+                gsm_index.setdefault(_ng, _p)
 
         for row in ws.iter_rows(min_row=2):
             raw_gsm  = _cell_value(row, cols["rufnummer"])
@@ -157,9 +168,9 @@ def run_syno_import(filepath: str | Path, db_module=None) -> dict:
                 return res
 
             try:
-                # 1. Matching über GSM
+                # 1. Matching über GSM (normalisiert, robust gegen Formate)
                 if gsm:
-                    match = dbm.get_participant_by_gsm(conn, gsm)
+                    match = gsm_index.get(gsm)
                     if match:
                         res = _apply_device(match["id"], "UPDATE_GSM", f"GSM={gsm}")
                         if res == "filled":
@@ -202,7 +213,34 @@ def run_syno_import(filepath: str | Path, db_module=None) -> dict:
                             f"in 'Nicht zugeordnet' abgelegt"
                         )
 
-                # 3. Kein Treffer → in unmatched_devices ablegen
+                # 3. Kein Treffer → neuen Teilnehmer anlegen (falls gewünscht)
+                #    oder in unmatched_devices ablegen.
+                if create_missing and ((raw_name or "").strip() or gsm):
+                    new_id = dbm.insert_participant(conn, {
+                        "name":           (raw_name or "").strip() or None,
+                        "gsm":            gsm or None,
+                        "syno":           syno or None,
+                        "start_syno":     start_syno or None,
+                        "provider":       "Vodafone",
+                        "verified":       0,
+                        "pruefung_grund": "Neu aus Syno-Import angelegt",
+                        "bemerkung":      "Automatisch aus Syno-Import (kein Treffer im Bestand)",
+                    })
+                    dbm.log_import(conn, "Syno", "NEU_ANGELEGT",
+                        f"ID={new_id} Name={raw_name} GSM={gsm} Syno={syno} – neu aus Syno")
+                    log_lines.append(
+                        f"NEU ANGELEGT: Name={raw_name} GSM={gsm} Syno={syno} → ID={new_id} (zur Prüfung)"
+                    )
+                    # In die Indizes aufnehmen, damit weitere Zeilen derselben
+                    # Person nicht erneut angelegt werden.
+                    new_p = {"id": new_id, "name": (raw_name or "").strip(),
+                             "gsm": gsm, "syno": syno, "syno2": None}
+                    all_participants.append(new_p)
+                    if gsm:
+                        gsm_index.setdefault(gsm, new_p)
+                    created_new += 1
+                    continue
+
                 dbm.insert_unmatched_device(conn, {
                     "quelle":    "Syno",
                     "gsm":       gsm,
@@ -238,9 +276,9 @@ def run_syno_import(filepath: str | Path, db_module=None) -> dict:
 
         summary = (
             f"Syno-Import abgeschlossen: {matched_gsm} GSM-Matches, "
-            f"{matched_name} Name-Matches, {duplicate} bereits vorhanden, "
-            f"{slots_full} ohne freien Slot, {unmatched} nicht zugeordnet, "
-            f"{skipped} übersprungen, {len(errors)} Fehler"
+            f"{matched_name} Name-Matches, {created_new} neu angelegt, "
+            f"{duplicate} bereits vorhanden, {slots_full} ohne freien Slot, "
+            f"{unmatched} nicht zugeordnet, {skipped} übersprungen, {len(errors)} Fehler"
         )
         dbm.log_import(conn, "Syno", "SUMMARY", summary)
         log_lines.append(summary)
@@ -253,7 +291,7 @@ def run_syno_import(filepath: str | Path, db_module=None) -> dict:
     return {
         "matched_gsm":  matched_gsm,
         "matched_name": matched_name,
-        "neu_angelegt": 0,
+        "neu_angelegt": created_new,
         "duplicate":    duplicate,
         "slots_full":   slots_full,
         "unmatched":    unmatched,
