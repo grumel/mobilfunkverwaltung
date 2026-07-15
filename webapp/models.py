@@ -37,6 +37,7 @@ class Participant(Base):
     vodafone_aktiv = Column(Integer)
     pruefung_grund = Column(Text)
     provider       = Column(Text, default="Vodafone")
+    overhead       = Column(Integer, default=0)
 
 
 class User(Base):

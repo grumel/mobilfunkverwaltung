@@ -17,6 +17,13 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = SECRET_KEY
 
+    # Fehlende Spalten (z. B. overhead) nachrüsten, bevor Anfragen kommen.
+    try:
+        from webapp.db import ensure_schema
+        ensure_schema()
+    except Exception:
+        pass
+
     # Session-Cookie härten. SameSite=Lax bremst CSRF (das Cookie wird bei
     # Cross-Site-POSTs nicht mitgeschickt) – wichtig, da die JSON-API bewusst
     # CSRF-exempt ist. Secure nur bei HTTPS (MOBILFUNK_HTTPS=1), sonst brechen

@@ -6,7 +6,7 @@ Läuft auf SQLite (aktuell) oder PostgreSQL (später) – nur die DATABASE_URL
 Flask-Entwicklungsserver mehrere Threads nutzen kann.
 """
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 from webapp.config import DATABASE_URL
@@ -19,3 +19,16 @@ engine = create_engine(DATABASE_URL, future=True, echo=False,
                        connect_args=_connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, future=True)
 Base = declarative_base()
+
+
+def ensure_schema():
+    """Leichte Migration: fehlende Spalten nachrüsten (SQLite + PostgreSQL).
+    Läuft beim App-Start; bei frischer DB (Tabelle fehlt noch) passiert nichts."""
+    insp = inspect(engine)
+    try:
+        cols = {c["name"] for c in insp.get_columns("participants")}
+    except Exception:
+        return
+    if "overhead" not in cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE participants ADD COLUMN overhead INTEGER DEFAULT 0"))

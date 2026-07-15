@@ -34,7 +34,8 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 # Kurzfassung für Listen
 LIST_FIELDS = ["id", "master_id", "gsm", "name", "plant", "konto", "tarif",
                "sim_nummer", "vertragsbeginn", "vertragsende", "kuendigung",
-               "rahmenvertrag", "syno", "start_syno", "bemerkung", "verified", "provider"]
+               "rahmenvertrag", "syno", "start_syno", "bemerkung", "verified",
+               "provider", "overhead"]
 # Vollständig für die Detail-/Bearbeiten-Ansicht
 DETAIL_FIELDS = LIST_FIELDS + ["telefon", "startdatum",
                "syno2", "start_syno2", "pruefung_grund", "created_at", "updated_at"]
@@ -44,7 +45,7 @@ EDITABLE = ["gsm", "name", "plant", "konto", "telefon", "tarif", "sim_nummer",
             "kuendigung", "syno", "start_syno", "syno2", "start_syno2",
             "bemerkung", "pruefung_grund", "provider"]
 SEARCH_FIELDS = ["name", "gsm", "plant", "konto", "tarif", "bemerkung"]
-DERIVED = {"offen", "unvollstaendig", "duplikate"}
+DERIVED = {"offen", "unvollstaendig", "duplikate", "overhead"}
 
 
 def _dict(p, fields):
@@ -76,6 +77,8 @@ def _apply_view(db, view, q):
         dup = (select(norm).where(P.name.isnot(None), P.name != "")
                .group_by(norm).having(func.count() > 1))
         query = db.query(P).filter(norm.in_(dup))
+    elif view == "overhead":
+        query = db.query(P).filter(P.overhead == 1)
     else:
         query = db.query(P).filter(func.coalesce(P.provider, "Vodafone") == "Vodafone")
     return query.order_by(P.name)
@@ -473,6 +476,31 @@ def participant_verify(pid):
         svc.log_import(db, "VERIFIED", f"ID={pid} verified={p.verified} (API)", participant_id=pid)
         db.commit()
         return jsonify(id=pid, verified=p.verified)
+    finally:
+        db.close()
+
+
+@bp.post("/participants/<int:pid>/overhead")
+def participant_overhead(pid):
+    """Overhead-Markierung umschalten. Der Provider (Original-Tab) bleibt
+    unverändert – der Teilnehmer erscheint zusätzlich im Overhead-Filter."""
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("write"):
+        return jsonify(error="keine Berechtigung"), 403
+    db = SessionLocal()
+    try:
+        p = db.get(Participant, pid)
+        if not p:
+            return jsonify(error="nicht gefunden"), 404
+        p.overhead = 0 if p.overhead else 1
+        p.updated_at = svc.now_str()
+        svc.log_import(db, "OVERHEAD", f"ID={pid} overhead={p.overhead} (API)", participant_id=pid)
+        svc.log_audit(db, current_user(), "OVERHEAD",
+                      f"ID={pid} overhead={p.overhead} (API)",
+                      table_name="participants", record_id=pid)
+        db.commit()
+        return jsonify(id=pid, overhead=p.overhead)
     finally:
         db.close()
 
