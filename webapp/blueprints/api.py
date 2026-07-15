@@ -11,7 +11,7 @@ Datumsfelder werden als ISO-Strings (YYYY-MM-DD) übertragen – so wie gespeich
 
 import os
 import tempfile
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, request, jsonify, session
 from sqlalchemy import func, or_, select, case, and_
@@ -881,6 +881,71 @@ def import_syno():
         try: os.unlink(path)
         except OSError: pass
     return jsonify(result=result, filename=filename)
+
+
+SYNO_DIR_NAME = "SynoDateien"
+
+
+def _syno_dir():
+    from modules.paths import DATA_DIR
+    d = Path(DATA_DIR) / SYNO_DIR_NAME
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+@bp.post("/syno/enrich")
+def syno_enrich_upload():
+    """Syno-Datei VOR dem Import mit DB-Daten anreichern (GSM/Namen korrigieren).
+    Original wird gespeichert, eine angereicherte Kopie erzeugt, alles geloggt."""
+    err = _require_admin()
+    if err:
+        return err
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify(error="Bitte eine Excel-Datei auswählen."), 400
+    if not f.filename.lower().endswith((".xlsx", ".xls")):
+        return jsonify(error="Nur Excel-Dateien (.xlsx/.xls) werden unterstützt."), 400
+
+    from modules import syno_enrich
+    outdir = _syno_dir()
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    original = outdir / f"{ts}_{secure_filename(f.filename)}"
+    f.save(str(original))          # Original hochgeladen und gespeichert
+    try:
+        summary = syno_enrich.run_syno_enrich(original)
+    except Exception as exc:
+        return jsonify(error=f"Anreicherung fehlgeschlagen: {exc}"), 400
+    enriched = Path(summary["out_path"])
+
+    db = SessionLocal()
+    try:
+        details = (f"Original={original.name} → {enriched.name}; "
+                   f"GSM ergänzt={summary['fixed_gsm']}, GSM korrigiert={summary['changed_gsm']}, "
+                   f"Namen ergänzt={summary['fixed_name']}, ohne Treffer={summary['no_match']}")
+        svc.log_import(db, "SYNO_ANREICHERN", details + " (API)")
+        svc.log_audit(db, current_user(), "SYNO_ANREICHERN", details)
+        db.commit()
+    finally:
+        db.close()
+
+    return jsonify(original=original.name, enriched=enriched.name,
+                   summary={k: summary[k] for k in
+                            ("fixed_gsm", "changed_gsm", "fixed_name", "no_match")})
+
+
+@bp.get("/syno/file/<path:name>")
+def syno_file_download(name):
+    err = _require_admin()
+    if err:
+        return err
+    from flask import send_from_directory
+    safe = os.path.basename(name)
+    if not safe.lower().endswith((".xlsx", ".xls")):
+        return jsonify(error="ungültig"), 400
+    outdir = _syno_dir()
+    if not (outdir / safe).exists():
+        return jsonify(error="nicht gefunden"), 404
+    return send_from_directory(str(outdir), safe, as_attachment=True)
 
 
 # --------------------------------------------------------------------------- #
