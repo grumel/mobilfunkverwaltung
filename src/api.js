@@ -65,6 +65,7 @@ export const api = {
   taskDelete: (tid) => req(`/api/tasks/${tid}`, { method: 'DELETE' }),
   stats: () => req('/api/stats'),
   dataQuality: () => req('/api/dataquality'),
+  unmatchedDevices: () => req('/api/unmatched-devices'),
 
   // Import
   vodafonePreview: (file) => upload('/api/import/vodafone/preview', file),

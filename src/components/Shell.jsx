@@ -10,7 +10,16 @@ import Users from './Users.jsx'
 import Documents from './Documents.jsx'
 import PasswordModal from './PasswordModal.jsx'
 import HelpModal from './HelpModal.jsx'
+import UnmatchedDevices from './UnmatchedDevices.jsx'
 import { getTheme, toggleTheme } from '../theme.js'
+
+// Von Statistik-Kacheln aufrufbare Filter-Ansichten (Teilnehmerliste gefiltert)
+const FILTER_LABELS = {
+  alle: 'Alle Teilnehmer', verified: 'Geprüft', ohne_gsm: 'Ohne GSM', ohne_name: 'Ohne Name',
+  ohne_werk: 'Ohne Werk', ohne_konto: 'Ohne Konto', mit_syno: 'Mit Syno-Gerät',
+  abgelaufen: 'Abgelaufen', ablauf_30: 'Ablauf < 30 Tage', ablauf_60: 'Ablauf 30–60 Tage',
+  ablauf_90: 'Ablauf 60–90 Tage',
+}
 
 const PROVIDERS = [
   ['vodafone', 'Vodafone'], ['telekom', 'Telekom'], ['o2', 'O2'],
@@ -38,6 +47,9 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
   const [theme, setTheme] = useState(getTheme())
   const isAdmin = user.role === 'admin'
   const isParticipantsView = PARTICIPANT_VIEWS.has(view)
+
+  // Kachel-Klick in der Statistik: Suche zurücksetzen und Filter-Ansicht öffnen.
+  function openFromStats(v) { setQInput(''); setQ(''); setView(v) }
 
   const refreshSummary = useCallback(() => {
     api.summary().then(setSummary).catch(() => {})
@@ -108,13 +120,21 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
           <span className="hint-dim">durchsucht alle Reiter, unabhängig vom aktuell gewählten</span>
         </div>
       )}
+      {FILTER_LABELS[view] && (
+        <div className="globalbar">
+          <button className="btn" onClick={() => setView('statistik')}>← Statistik</button>
+          <span className="hint-dim">Gefiltert: <b>{FILTER_LABELS[view]}</b></span>
+        </div>
+      )}
       <main>
         {view === 'aufgaben'
           ? <Tasks user={user} onChanged={refreshSummary} />
           : view === 'statistik'
-            ? <Stats />
+            ? <Stats onOpen={openFromStats} />
             : view === 'dokumente'
               ? <Documents />
+            : view === 'unmatched'
+              ? <UnmatchedDevices onBack={() => setView('statistik')} />
             : view === 'protokoll'
               ? <Logs kind="import" user={user} />
               : view === 'audit'

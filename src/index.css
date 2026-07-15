@@ -168,6 +168,8 @@ tr.done td { color:var(--dim); }
 .tiles { display:flex; flex-wrap:wrap; gap:10px; margin:4px 0 14px; }
 .tile { border:1px solid var(--line); border-radius:10px; padding:10px 16px; min-width:96px;
   text-align:center; background:var(--head); }
+.tile.clickable { cursor:pointer; transition:border-color .12s, box-shadow .12s; }
+.tile.clickable:hover { border-color:var(--accent); box-shadow:0 2px 8px rgba(15,23,42,.14); }
 .tile .tval { font-size:22px; font-weight:700; }
 .tile .tlbl { font-size:11px; color:var(--dim); margin-top:2px; }
 .tile.blue .tval { color:#2E6DA4; } .tile.green .tval { color:#3f9142; }

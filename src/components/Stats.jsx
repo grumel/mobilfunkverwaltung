@@ -1,23 +1,26 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 
+// [Kennzahl-Schlüssel, Label, Ziel-View (klickbar), optional Farbe]
 const TILES = [
-  ['total', 'Teilnehmer'], ['verified', 'Geprüft'], ['zur_pruefung', 'Zur Prüfung'],
-  ['ohne_gsm', 'Ohne GSM'], ['mit_syno', 'Mit Syno-Gerät'], ['abgelaufen', 'Abgelaufen'],
-  ['ablauf_30', 'Ablauf < 30 T'], ['ablauf_60', 'Ablauf 30–60 T'], ['ablauf_90', 'Ablauf 60–90 T'],
+  ['total', 'Teilnehmer', 'alle'], ['verified', 'Geprüft', 'verified'], ['zur_pruefung', 'Zur Prüfung', 'offen'],
+  ['ohne_gsm', 'Ohne GSM', 'ohne_gsm'], ['mit_syno', 'Mit Syno-Gerät', 'mit_syno'], ['abgelaufen', 'Abgelaufen', 'abgelaufen'],
+  ['ablauf_30', 'Ablauf < 30 T', 'ablauf_30'], ['ablauf_60', 'Ablauf 30–60 T', 'ablauf_60'], ['ablauf_90', 'Ablauf 60–90 T', 'ablauf_90'],
 ]
 
+// [Kennzahl-Schlüssel, Label, Farbe, Ziel-View]
 const DQ_TILES = [
-  ['ohne_gsm', 'Ohne GSM', 'orange'], ['ohne_name', 'Ohne Name', 'orange'],
-  ['ohne_werk', 'Ohne Werk', 'orange'], ['ohne_konto', 'Ohne Konto', 'orange'],
-  ['ungeprueft', 'Ungeprüft', 'blue'], ['duplikate', 'Duplikate', 'red'],
-  ['verwaiste_geraete', 'Verwaiste Geräte', 'grey'],
+  ['ohne_gsm', 'Ohne GSM', 'orange', 'ohne_gsm'], ['ohne_name', 'Ohne Name', 'orange', 'ohne_name'],
+  ['ohne_werk', 'Ohne Werk', 'orange', 'ohne_werk'], ['ohne_konto', 'Ohne Konto', 'orange', 'ohne_konto'],
+  ['ungeprueft', 'Ungeprüft', 'blue', 'offen'], ['duplikate', 'Duplikate', 'red', 'duplikate'],
+  ['verwaiste_geraete', 'Verwaiste Geräte', 'grey', 'unmatched'],
 ]
 
-export default function Stats() {
+export default function Stats({ onOpen }) {
   const [s, setS] = useState(null)
   const [dq, setDq] = useState(null)
   const [error, setError] = useState('')
+  const open = (v) => onOpen && v && onOpen(v)
   useEffect(() => {
     api.stats().then(setS).catch((e) => setError(e.message))
     api.dataQuality().then((d) => setDq(d.metrics)).catch(() => {})
@@ -40,8 +43,10 @@ export default function Stats() {
               <div className="tlbl">Sauberkeit (vollständig)</div>
             </div>
             <div className="tiles" style={{ margin: 0 }}>
-              {DQ_TILES.map(([k, l, cls]) => (
-                <div key={k} className={'tile ' + cls}>
+              {DQ_TILES.map(([k, l, cls, view]) => (
+                <div key={k} className={'tile ' + cls + (view ? ' clickable' : '')}
+                     title={view ? 'Einträge anzeigen' : undefined}
+                     onClick={() => open(view)}>
                   <div className="tval">{dq[k]}</div>
                   <div className="tlbl">{l}</div>
                 </div>
@@ -56,8 +61,10 @@ export default function Stats() {
       )}
 
       <div className="tiles">
-        {TILES.map(([k, l]) => (
-          <div key={k} className="tile">
+        {TILES.map(([k, l, view]) => (
+          <div key={k} className={'tile' + (view ? ' clickable' : '')}
+               title={view ? 'Einträge anzeigen' : undefined}
+               onClick={() => open(view)}>
             <div className="tval">{s.tiles[k]}</div>
             <div className="tlbl">{l}</div>
           </div>
