@@ -17,6 +17,7 @@ const PROVIDERS = [
 ]
 const DERIVED = [
   ['offen', 'Prüfungen'], ['unvollstaendig', 'Unvollständig'], ['duplikate', 'Duplikate'],
+  ['overhead', 'Overhead'],
 ]
 
 const PARTICIPANT_VIEWS = new Set([...PROVIDERS, ...DERIVED].map(([k]) => k))

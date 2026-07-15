@@ -47,6 +47,7 @@ export const api = {
   create: (data) => req('/api/participants', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => req(`/api/participants/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   verify: (id) => req(`/api/participants/${id}/verify`, { method: 'POST' }),
+  overhead: (id) => req(`/api/participants/${id}/overhead`, { method: 'POST' }),
   move: (id, provider) => req(`/api/participants/${id}/move`, { method: 'POST', body: JSON.stringify({ provider }) }),
   remove: (id) => req(`/api/participants/${id}`, { method: 'DELETE' }),
   merge: (ids) => req('/api/participants/merge', { method: 'POST', body: JSON.stringify({ ids }) }),

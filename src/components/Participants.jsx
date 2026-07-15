@@ -218,6 +218,9 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
               <div className="ctx-item" onClick={() => act(() => api.verify(menu.row.id))}>
                 {menu.row.verified ? 'Als offen markieren' : 'Als geprüft markieren'}
               </div>
+              <div className="ctx-item" onClick={() => act(() => api.overhead(menu.row.id))}>
+                {menu.row.overhead ? 'Aus Overhead entfernen' : 'Zu Overhead schieben'}
+              </div>
               <div className="ctx-sep" />
               <div className="ctx-item" onClick={() => createKuendigung(menu.row, 'kuendigung')}>Kündigung erstellen …</div>
               <div className="ctx-item" onClick={() => createKuendigung(menu.row, 'ruecknahme')}>Kündigung zurücknehmen …</div>
