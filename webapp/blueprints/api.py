@@ -79,6 +79,35 @@ def _apply_view(db, view, q):
         query = db.query(P).filter(norm.in_(dup))
     elif view == "overhead":
         query = db.query(P).filter(P.overhead == 1)
+    elif view == "ohne_gsm":
+        query = db.query(P).filter(or_(P.gsm.is_(None), P.gsm == ""))
+    elif view == "ohne_name":
+        query = db.query(P).filter(or_(P.name.is_(None), P.name == ""))
+    elif view == "ohne_werk":
+        query = db.query(P).filter(or_(P.plant.is_(None), P.plant == ""))
+    elif view == "ohne_konto":
+        query = db.query(P).filter(or_(P.konto.is_(None), P.konto == ""))
+    elif view == "verified":
+        query = db.query(P).filter(P.verified == 1)
+    elif view == "mit_syno":
+        query = db.query(P).filter(or_(and_(P.syno.isnot(None), P.syno != ""),
+                                       and_(P.syno2.isnot(None), P.syno2 != "")))
+    elif view in ("abgelaufen", "ablauf_30", "ablauf_60", "ablauf_90"):
+        today = date.today().isoformat()
+        in30 = (date.today() + timedelta(days=30)).isoformat()
+        in60 = (date.today() + timedelta(days=60)).isoformat()
+        in90 = (date.today() + timedelta(days=90)).isoformat()
+        if view == "abgelaufen":
+            query = db.query(P).filter(P.vertragsende.isnot(None), P.vertragsende != "",
+                                       P.vertragsende < today)
+        elif view == "ablauf_30":
+            query = db.query(P).filter(P.vertragsende >= today, P.vertragsende <= in30)
+        elif view == "ablauf_60":
+            query = db.query(P).filter(P.vertragsende > in30, P.vertragsende <= in60)
+        else:
+            query = db.query(P).filter(P.vertragsende > in60, P.vertragsende <= in90)
+    elif view == "alle":
+        query = db.query(P)
     else:
         query = db.query(P).filter(func.coalesce(P.provider, "Vodafone") == "Vodafone")
     return query.order_by(P.name)
@@ -842,6 +871,21 @@ def dataquality():
         db.close()
     metrics["sauberkeit"] = round(100 * vollstaendig / total, 1) if total else 100.0
     return jsonify(metrics=metrics)
+
+
+@bp.get("/unmatched-devices")
+def unmatched_devices():
+    """Verwaiste Syno-Geräte ('Nicht zugeordnet') – Zeilen ohne Teilnehmer."""
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    fields = ["id", "quelle", "gsm", "benutzer", "geraet", "startdatum", "importdatum"]
+    db = SessionLocal()
+    try:
+        rows = db.query(UnmatchedDevice).order_by(UnmatchedDevice.id.desc()).all()
+        out = [_dict(r, fields) for r in rows]
+    finally:
+        db.close()
+    return jsonify(devices=out)
 
 
 IMPORTLOG_FIELDS = ["id", "zeitpunkt", "quelle", "aktion", "details", "participant_id"]
