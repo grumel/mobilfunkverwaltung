@@ -28,7 +28,7 @@ Auf einem frischen Debian/Ubuntu genügen drei Befehle:
 ```bash
 sudo apt update && sudo apt install -y git
 sudo git clone https://github.com/grumel/mdwWeb.git /opt/mobilfunk-web
-sudo bash /opt/mobilfunk-web/deploy/install.sh            # optional: ... install.sh /pfad/zur/mobilfunk.db
+sudo bash /opt/mobilfunk-web/deploy/linux/install.sh      # optional: ... install.sh /pfad/zur/mobilfunk.db
 ```
 
 `install.sh` erledigt **beide** Teile: Pakete, Benutzer `mobilfunk`,
@@ -110,7 +110,7 @@ sudo chown -R mobilfunk:mobilfunk /var/lib/mobilfunk
 ## 7. Secret erzeugen und Backend-Dienst einrichten
 ```bash
 python3 -c "import secrets; print(secrets.token_hex(32))"     # Ausgabe merken
-sudo cp deploy/mobilfunk-web.service /etc/systemd/system/
+sudo cp deploy/linux/mobilfunk-web.service /etc/systemd/system/
 sudoedit /etc/systemd/system/mobilfunk-web.service            # MOBILFUNK_SECRET eintragen
 sudo systemctl daemon-reload
 sudo systemctl enable --now mobilfunk-web
@@ -119,7 +119,7 @@ sudo systemctl status mobilfunk-web                           # sollte "active (
 
 ## 8. Reverse-Proxy (Port 80, React + API)
 ```bash
-sudo cp /opt/mobilfunk-web/deploy/Caddyfile /etc/caddy/Caddyfile
+sudo cp /opt/mobilfunk-web/deploy/linux/Caddyfile /etc/caddy/Caddyfile
 sudo systemctl restart caddy
 ```
 
@@ -149,7 +149,7 @@ sudo chmod +x /etc/cron.daily/mobilfunk-backup
 Am einfachsten: Installer erneut ausführen (idempotent, holt **beide** Repos
 selbst per `git pull` – auch das Backend – und baut das Frontend neu):
 ```bash
-sudo bash /opt/mobilfunk-web/deploy/install.sh
+sudo bash /opt/mobilfunk-web/deploy/linux/install.sh
 ```
 > Der Installer aktualisiert sich zu Beginn selbst; ändert sich dabei das
 > Installer-Skript, startet er sich einmalig mit dem neuen Stand neu.

@@ -46,10 +46,13 @@ Session-Secret: `MOBILFUNK_SECRET` oder persistenter Zufallswert
 (`webconfig.get_or_create_secret()` → `secret.key` neben der Konfig).
 
 ## Starten
+- **Plattformneutral/lokal:** `python run.py` → http://127.0.0.1:5001.
+  `run_webapp.py` bleibt als kompatibler Alias erhalten.
 - **Windows/lokal, Backend:** `run_webapp.bat` → http://127.0.0.1:5001 (Flask-Dev-Server).
 - **Windows/lokal, Frontend:** im `mdw-frontend`-Repo `npm run dev` → http://localhost:5173
   (Vite-Dev-Proxy leitet `/api` an Port 5001 weiter, dadurch same-origin/kein CORS).
-- **Server (Linux, Port 80):** siehe `deploy/INSTALL.md` bzw. `deploy/install.sh`
+- **Server (Linux, Port 80):** siehe `deploy/linux/INSTALL.md` bzw.
+  `deploy/linux/install.sh`
   (idempotent, macht auch Updates). Topologie: **Caddy** auf Port 80 → `/api/*` zu
   **gunicorn** (127.0.0.1:8000, Backend-Repo `/opt/mobilfunk-web`), alles andere
   liefert Caddy als **statisches React-Bundle** (`/opt/mobilfunk-frontend/dist`,
@@ -84,11 +87,11 @@ Immer gegen eine **Kopie** der echten DB, nie gegen das Original:
   abgeleitete Ansichten, Bearbeiten/Neu, Rechtsklick-Aktionen, Aufgaben,
   Statistik, Import, Einstellungen, Zusammenführen (Merge-Modus),
   Protokoll/Audit-Log — deckt alle Funktionen des Jinja-UI ab.
-- Fertig: Linux-Deployment (Port 80, Backend **und** Frontend, `deploy/install.sh`
+- Fertig: Linux-Deployment (Port 80, Backend **und** Frontend, `deploy/linux/install.sh`
   idempotent/Update-fähig).
 - Fertig (Phase 2, **PostgreSQL**, optional/bei Bedarf aktivierbar): Import-Refactor
   (`db_module`-Parameter), `webapp/import_adapter.py`,
-  `deploy/migrate_to_postgres.py`, `deploy/POSTGRES.md`. **Echt verifiziert**
+  `deploy/linux/migrate_to_postgres.py`, `deploy/linux/POSTGRES.md`. **Echt verifiziert**
   (nicht nur mit SQLite simuliert): lokales PostgreSQL 17 installiert, Migration
   einer DB-Kopie (353 Teilnehmer, 5616 Logs – exakt übertragen), Web-App komplett
   gegen Postgres getestet, **echter Vodafone-Import direkt gegen Postgres**

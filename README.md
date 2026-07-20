@@ -7,6 +7,9 @@ von der Desktop-App **und** von der Datenbank.
 
 Doppelklick auf **`run_webapp.bat`** → der Browser öffnet <http://127.0.0.1:5001>.
 Anmeldung mit denselben Benutzern/Passwörtern wie in der Desktop-App.
+Der gemeinsame lokale Einstiegspunkt ist außerdem `python run.py` und kann auf
+Linux und Windows verwendet werden. `run_webapp.py` bleibt als kompatibler
+Alias bestehen.
 
 ## Einmalige Einrichtung
 
@@ -14,6 +17,36 @@ Anmeldung mit denselben Benutzern/Passwörtern wie in der Desktop-App.
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
 ```
+
+## Build und Deployment
+
+Plattformspezifische Installationsdateien liegen getrennt unter `deploy/`:
+
+- **Linux:** produktionsreifer Installer, systemd-Dienst und Caddy-Konfiguration
+  unter [`deploy/linux`](deploy/linux/INSTALL.md)
+- **Windows:** dokumentierter Vorbereitungsstand unter
+  [`deploy/windows`](deploy/windows/README.md); noch kein produktionsreifer
+  Windows-Dienst-Installer
+
+Die gemeinsamen Build-Schritte und die Abgrenzung der Plattformen beschreibt
+[`deploy/README.md`](deploy/README.md). Das bestehende Linux-Deployment bleibt
+unverändert nutzbar; lediglich der Installer-Pfad lautet jetzt
+`deploy/linux/install.sh`.
+
+### Gemeinsame Architektur
+
+- `webapp/` enthält Flask-App, REST-API und servergerenderte Fallback-Oberfläche.
+- `modules/` enthält die gemeinsam genutzte Fach- und Importlogik.
+- `platform_support/` kapselt Betriebssystemerkennung und Basispfade.
+- `run.py` ist der gemeinsame lokale Einstiegspunkt.
+- `deploy/linux/` enthält das unveränderte produktive Linux-Betriebsmodell mit
+  gunicorn, systemd und Caddy.
+- `deploy/windows/` reserviert die künftigen PowerShell-, Waitress- und
+  Dienstkonfigurationen. Diese Dateien sind noch nicht produktionsbereit.
+
+Eine vollständige Liste der gefundenen Plattformbindungen und bewusst nicht
+bereinigten Duplikate steht in
+[`deploy/PLATFORM_ANALYSIS.md`](deploy/PLATFORM_ANALYSIS.md).
 
 ## Datenbank (Programm und DB getrennt)
 
@@ -33,9 +66,12 @@ PostgreSQL eine vollständige `DATABASE_URL` hinterlegen (SQLAlchemy-fähig).
 ```
 webapp/          Flask-App (Blueprints, Templates, static, Konfig)
 modules/         gemeinsame Datenbank-/Import-/Hilfslogik
-run_webapp.py    Startpunkt (Flask-Entwicklungsserver)
-run_webapp.bat   Doppelklick-Starter (setzt DB-Standardpfad + venv)
+platform_support/ zentrale Betriebssystem- und Basispfadauflösung
+run.py           gemeinsamer lokaler Startpunkt
+run_webapp.py    kompatibler Alias für den bisherigen Startpunkt
+run_webapp.bat   Windows-Doppelklick-Starter (setzt DB-Standardpfad + venv)
 requirements.txt Abhängigkeiten
+deploy/          Build- und Deployment-Dateien, nach Plattform getrennt
 ```
 
 ## Funktionen

@@ -29,7 +29,7 @@ sudo -u mobilfunk .venv/bin/pip install -r requirements-server.txt
 Die App läuft währenddessen weiter auf SQLite (Quelle wird nur gelesen):
 ```bash
 cd /opt/mobilfunk-web
-sudo -u mobilfunk .venv/bin/python deploy/migrate_to_postgres.py \
+sudo -u mobilfunk .venv/bin/python deploy/linux/migrate_to_postgres.py \
     --sqlite /var/lib/mobilfunk/mobilfunk.db \
     --postgres "postgresql+psycopg://mobilfunk:BITTE-AENDERN@localhost:5432/mobilfunk"
 ```

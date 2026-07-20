@@ -19,22 +19,8 @@ RESOURCE_DIR
     Entwicklung  -> Projektwurzel.
 """
 
-import os
-import sys
-from pathlib import Path
+from platform_support import get_data_directory, get_resource_directory
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-_FROZEN = getattr(sys, "frozen", False)
 
-if _FROZEN:
-    RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", _PROJECT_ROOT))
-else:
-    RESOURCE_DIR = _PROJECT_ROOT
-
-_env_data = os.environ.get("MOBILFUNK_DATA_DIR")
-if _env_data:
-    DATA_DIR = Path(_env_data).expanduser().resolve()
-elif _FROZEN:
-    DATA_DIR = Path(sys.executable).resolve().parent
-else:
-    DATA_DIR = _PROJECT_ROOT
+DATA_DIR = get_data_directory()
+RESOURCE_DIR = get_resource_directory()

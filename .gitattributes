@@ -3,3 +3,5 @@ deploy/** text eol=lf
 *.service text eol=lf
 *.sh text eol=lf
 run_webapp.py text eol=lf
+run.py text eol=lf
+*.ps1 text eol=crlf

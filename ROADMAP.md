@@ -11,9 +11,9 @@ nehmen) — das ist der einzige noch offene Schritt vor dem Linux-Betrieb.
 ## Phase 1 — Server-Go-Live (aktuell)
 
 Kleiner Linux-Rechner (Lenovo ThinkPad, Ubuntu/Debian Desktop genügt) im eigenen
-Netz. Automatischer Installer `deploy/install.sh` richtet **beide** Repos ein:
+Netz. Automatischer Installer `deploy/linux/install.sh` richtet **beide** Repos ein:
 Backend (gunicorn) + Frontend (React-Build) hinter Caddy (Port 80), systemd-Dienst,
-Node.js, Backup-Cron, „Immer-an". Details: `deploy/INSTALL.md`.
+Node.js, Backup-Cron, „Immer-an". Details: `deploy/linux/INSTALL.md`.
 
 Topologie: `Caddy :80` → `/api/*` zu gunicorn (Backend-JSON-API),
 `/*` statisches React-Bundle (`mdw-frontend/dist`). Man kann kein fertiges
@@ -42,9 +42,9 @@ für den Netzwerkbetrieb. **Optional** — bei 2–3 Nutzern reicht SQLite weite
       Funktionsoberfläche wie `modules/database.py`. Die API
       (`webapp/blueprints/api.py`, `_import_db_module()`) wählt ihn automatisch,
       sobald `DATABASE_URL` nicht mit `sqlite` beginnt.
-- [x] **`deploy/migrate_to_postgres.py`** — Migrationsskript, Sequenzen werden
+- [x] **`deploy/linux/migrate_to_postgres.py`** — Migrationsskript, Sequenzen werden
       korrekt gesetzt.
-- [x] **`deploy/POSTGRES.md`** — Schritt-für-Schritt-Anleitung (optional, für
+- [x] **`deploy/linux/POSTGRES.md`** — Schritt-für-Schritt-Anleitung (optional, für
       später bei Bedarf).
 - [x] **Echt verifiziert** (lokales PostgreSQL 17, nicht nur SQLite-Simulation):
       Migration einer Kopie der echten DB (353 Teilnehmer, 5616 Protokoll-
@@ -53,7 +53,7 @@ für den Netzwerkbetrieb. **Optional** — bei 2–3 Nutzern reicht SQLite weite
       direkt gegen Postgres** über den neuen Adapter (328 aktualisiert, korrekt
       protokolliert, per direkter SQL-Abfrage gegengeprüft).
 
-**Für den produktiven Einsatz:** siehe `deploy/POSTGRES.md`. Kein Zwang — nur
+**Für den produktiven Einsatz:** siehe `deploy/linux/POSTGRES.md`. Kein Zwang — nur
 sinnvoll bei mehr als ein paar gleichzeitigen Nutzern.
 
 ---

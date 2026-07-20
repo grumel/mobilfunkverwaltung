@@ -10,7 +10,7 @@
 # einfach erneut ausfuehren, holt beide Repos per 'git pull' und baut neu).
 #
 # Aufruf (aus dem geklonten Backend-Repo):
-#     sudo bash deploy/install.sh [/pfad/zur/mobilfunk.db]
+#     sudo bash deploy/linux/install.sh [/pfad/zur/mobilfunk.db]
 #
 # Umgebungsvariablen:
 #     KEEP_SLEEP=1      Ruhezustand NICHT deaktivieren
@@ -22,7 +22,7 @@ set -euo pipefail
 APP_USER=mobilfunk
 DATA_DIR=/var/lib/mobilfunk
 ENV_FILE="$DATA_DIR/mobilfunk.env"
-APP_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"   # Backend-Repo-Wurzel
+APP_DIR="$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)"   # Backend-Repo-Wurzel
 FRONTEND_DIR=/opt/mobilfunk-frontend
 FRONTEND_REPO="${FRONTEND_REPO:-https://github.com/grumel/mdw-frontend.git}"
 DB_SRC="${1:-}"
@@ -42,7 +42,7 @@ set_logind() {
   fi
 }
 
-[ "$(id -u)" -eq 0 ] || die "Bitte mit root/sudo ausfuehren:  sudo bash deploy/install.sh"
+[ "$(id -u)" -eq 0 ] || die "Bitte mit root/sudo ausfuehren:  sudo bash deploy/linux/install.sh"
 [ -f "$APP_DIR/requirements.txt" ] || die "requirements.txt nicht gefunden – Skript aus dem Backend-Repo heraus starten."
 
 log "Backend-Verzeichnis: $APP_DIR"
@@ -59,7 +59,7 @@ if [ "${SKIP_SELF_UPDATE:-0}" != "1" ] && [ -d "$APP_DIR/.git" ]; then
     if [ "$before" != "$after" ] && [ "${SELF_UPDATED:-0}" != "1" ]; then
       log "      Neue Version geladen – Installer wird mit neuem Stand neu gestartet"
       export SELF_UPDATED=1
-      exec bash "$APP_DIR/deploy/install.sh" "$@"
+      exec bash "$APP_DIR/deploy/linux/install.sh" "$@"
     fi
   else
     warn "Backend 'git pull' fehlgeschlagen – fahre mit vorhandenem Stand fort."
@@ -170,7 +170,7 @@ else
 fi
 
 log "9/11  Reverse-Proxy Caddy (Port 80)"
-install -m 644 "$APP_DIR/deploy/Caddyfile" /etc/caddy/Caddyfile
+install -m 644 "$APP_DIR/deploy/linux/Caddyfile" /etc/caddy/Caddyfile
 systemctl restart caddy
 
 log "10/11  Backup-Cron"
@@ -217,8 +217,8 @@ if [ "$DB_MISSING" -eq 1 ]; then
   echo "     Kopieren und Dienst neu starten, z. B.:"
   echo "       scp mobilfunk.db BENUTZER@$(hostname):$DATA_DIR/"
   echo "       sudo systemctl restart mobilfunk-web"
-  echo "     (oder Installer erneut mit DB-Pfad: sudo bash deploy/install.sh /pfad/zur/mobilfunk.db)"
+  echo "     (oder Installer erneut mit DB-Pfad: sudo bash deploy/linux/install.sh /pfad/zur/mobilfunk.db)"
 fi
 echo ""
 echo "  Update spaeter (holt beide Repos automatisch + Neubau):"
-echo "       sudo bash $APP_DIR/deploy/install.sh"
+echo "       sudo bash $APP_DIR/deploy/linux/install.sh"

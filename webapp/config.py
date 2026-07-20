@@ -14,14 +14,10 @@ Für PostgreSQL: DATABASE_URL bzw. database_url auf
 import os
 from pathlib import Path
 
+from platform_support import get_database_path
 from webapp.webconfig import load as _load_webcfg, get_or_create_secret as _get_secret
 
-try:
-    from modules.paths import DATA_DIR
-    _default_db = DATA_DIR / "mobilfunk.db"
-except Exception:
-    # Fallback: Projektwurzel (…/WebApp/webapp/config.py -> parents[2])
-    _default_db = Path(__file__).resolve().parents[2] / "mobilfunk.db"
+_default_db = get_database_path()
 
 
 def _sqlite_url(path) -> str:

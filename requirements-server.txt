@@ -1,5 +1,5 @@
 # Nur fuer den Server-Betrieb (Linux). Zusaetzlich zu requirements.txt.
 gunicorn>=21.2
-# Fuer PostgreSQL (optional, siehe deploy/POSTGRES.md): Zeile einkommentieren
+# Fuer PostgreSQL (optional, siehe deploy/linux/POSTGRES.md): Zeile einkommentieren
 # und "pip install -r requirements-server.txt" erneut ausfuehren.
 # psycopg[binary]>=3.2

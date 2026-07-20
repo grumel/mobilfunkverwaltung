@@ -10,16 +10,14 @@ Override des Speicherorts per Umgebungsvariable MOBILFUNK_WEBCONFIG_DIR.
 """
 
 import json
-import os
 import secrets
 from pathlib import Path
 
+from platform_support import get_config_directory
+
 
 def config_dir() -> Path:
-    base = (os.environ.get("MOBILFUNK_WEBCONFIG_DIR")
-            or os.environ.get("LOCALAPPDATA")
-            or str(Path.home()))
-    return Path(base) / "MobilfunkWeb"
+    return get_config_directory()
 
 
 def config_file() -> Path:

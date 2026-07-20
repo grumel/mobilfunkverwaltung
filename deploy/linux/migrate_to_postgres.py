@@ -7,7 +7,7 @@ Die SQLite-Quelle bleibt unverändert (nur Lesen) – dient danach weiter als
 Fallback/Backup.
 
 Aufruf:
-    .venv/bin/python deploy/migrate_to_postgres.py \\
+    .venv/bin/python deploy/linux/migrate_to_postgres.py \\
         --sqlite /var/lib/mobilfunk/mobilfunk.db \\
         --postgres postgresql+psycopg://mobilfunk:PASSWORT@localhost:5432/mobilfunk
 
@@ -19,7 +19,7 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
