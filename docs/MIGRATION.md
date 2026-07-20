@@ -26,6 +26,11 @@ Historie übernommen.
 - Die getrennten Ignore-Dateien wurden in einer gemeinsamen `.gitignore` für
   Python, Node, Laufzeitdaten und lokale Werkzeuge zusammengeführt.
 
+`deploy/windows/` war im importierten Backend bereits mit einer frühen
+Waitress-/Caddy-Laufzeitvorbereitung belegt. Diese Dateien wurden zur
+Verlustfreiheit übernommen und nur an die Monorepo-Pfade angepasst; sie gelten
+nicht automatisch als vollständig produktionsreifes Windows-Deployment.
+
 ## Notwendige Pfadanpassungen
 
 Die Änderungen betreffen ausschließlich den neuen Speicherort:
@@ -77,3 +82,5 @@ im Migrationsbericht des Abschlusscommits festgehalten.
 - Bestehenden Produktionsserver kontrolliert vom alten Checkout auf den neuen
   Pfad umstellen.
 - Native Windows- und Linux-Deploymenttests in CI ergänzen.
+- Die in [CLEANUP.md](CLEANUP.md) dokumentierten Kandidaten erst nach separater
+  Nutzungsanalyse und Regressionstests bereinigen.

@@ -28,7 +28,9 @@ mobilfunkverwaltung/
 
 Die vollständigen Historien der früheren Repositories `mdweb` und
 `mdw-frontend` sind in der Git-Historie dieses Repositories enthalten. Details
-zur Zusammenführung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
+zur Zusammenführung stehen in [docs/MIGRATION.md](docs/MIGRATION.md). Bewusst
+nicht bereinigte Alt- und Parallelstrukturen sind in
+[docs/CLEANUP.md](docs/CLEANUP.md) erfasst.
 
 ## Entwicklungsumgebung
 
