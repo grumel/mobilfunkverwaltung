@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtuelle Umgebung (maschinenlokal, separat einrichten)
+.venv/
+
+# Datenbank / Laufzeitdaten (liegen bewusst ausserhalb des Programms)
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+logs/
+backups/
+mobilfunk.lock
+
+# Secrets / lokale Konfiguration
+.env
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

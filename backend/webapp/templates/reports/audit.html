@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Audit-Log · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="bar"><span id="count">Letzte {{ rows|length }} Audit-Einträge (nur Admin)</span></div>
+  <div class="tablecard">
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Zeitpunkt</th><th>Benutzer</th><th>Aktion</th><th>Details</th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.zeitpunkt or '—' }}</td>
+            <td>{{ r.username or '—' }}</td>
+            <td>{{ r.aktion or '—' }}</td>
+            <td>{{ r.details or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

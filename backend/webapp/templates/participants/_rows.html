@@ -1,0 +1,16 @@
+{% for r in rows %}
+<tr data-id="{{ r.id }}" data-name="{{ r.name or '' }}" data-verified="{{ r.verified }}"
+    class="{{ 'hastask' if (open_task_pids and r.id in open_task_pids) else '' }}">
+  <td class="status">
+    {% if r.verified == 1 %}
+      <span class="badge ok">geprüft</span>
+    {% else %}
+      <span class="badge open">offen</span>
+    {% endif %}
+  </td>
+  {% for key, _ in columns %}
+    {% set v = r | attr(key) %}
+    <td class="{{ 'num' if key in ('master_id', 'konto') else '' }}">{{ v if v not in (None, '') else '—' }}</td>
+  {% endfor %}
+</tr>
+{% endfor %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="editwrap">
+  <div class="editcard">
+    <div class="edithead"><h2>Einstellungen – Datenbank</h2></div>
+    <p class="hint-dim">Programm und Datenbank sind getrennt: Das Programm liegt in seinem
+       Verzeichnis, die Datenbank kann beliebig woanders liegen (lokal, Netzlaufwerk, OneDrive).
+       Hier legst du fest, welche Datenbank die Web-App verwendet.</p>
+
+    <div class="meta">
+      <span>Aktive Datenbank (seit Start): <b>{{ current_url }}</b></span>
+    </div>
+    <p class="hint-dim">Konfigurationsdatei: <code>{{ config_file }}</code><br>
+       Standard-Datenbank: <code>{{ default_path }}</code></p>
+
+    {% if env_override %}
+      <div class="warnbox">
+        <b>Hinweis:</b> Die Umgebungsvariable <code>DATABASE_URL</code> ist gesetzt und hat
+        <b>Vorrang</b>. Einstellungen hier werden erst wirksam, wenn die Variable entfernt wird.
+      </div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('settings.index') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="field wide">
+        <span>Datenbank-Datei (SQLite) <em>– vollständiger Pfad zur .db-Datei</em></span>
+        <input type="text" name="db_path" value="{{ cfg.db_path or '' }}"
+               placeholder="z. B. D:\Daten\Mobilfunk\mobilfunk.db oder \\server\share\mobilfunk.db">
+      </label>
+
+      <details style="margin:8px 0">
+        <summary class="hint-dim">Erweitert: volle DATABASE_URL (z. B. für PostgreSQL)</summary>
+        <label class="field wide" style="margin-top:8px">
+          <span>DATABASE_URL</span>
+          <input type="text" name="database_url" value="{{ cfg.database_url or '' }}"
+                 placeholder="postgresql+psycopg://user:pw@host:5432/mobilfunk">
+        </label>
+        <p class="hint-dim">Wenn gesetzt, hat dies Vorrang vor dem Datei-Pfad oben.</p>
+      </details>
+
+      <div class="warnbox" style="background:#eef4ff;border-color:#bcd0f0;color:#33507a">
+        <b>Datenbank verschieben?</b> Erst die Datei <code>mobilfunk.db</code> an den neuen Ort
+        <b>kopieren</b>, dann hier den neuen Pfad eintragen. Anschließend die Web-App neu starten.
+      </div>
+
+      <div class="editactions">
+        <button type="submit" class="btn accent">Speichern</button>
+        <a class="btn" href="{{ url_for('participants.index') }}">Zurück</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

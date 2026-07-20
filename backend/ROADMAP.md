@@ -1,0 +1,102 @@
+# Roadmap
+
+Geplante Ausbaustufen der Web-App. Tatsächliche Reihenfolge bisher: erst eine
+laufende Lösung (Server/Deployment), dann das Frontend (React), dann die
+Datenbank (PostgreSQL, Code + Migration fertig, gegen echtes Postgres
+verifiziert). **Aktueller Fokus: Phase 1 abschließen** (ThinkPad produktiv
+nehmen) — das ist der einzige noch offene Schritt vor dem Linux-Betrieb.
+
+---
+
+## Phase 1 — Server-Go-Live (aktuell)
+
+Kleiner Linux-Rechner (Lenovo ThinkPad, Ubuntu/Debian Desktop genügt) im eigenen
+Netz. Automatischer Installer `deploy/linux/install.sh` richtet **beide** Repos ein:
+Backend (gunicorn) + Frontend (React-Build) hinter Caddy (Port 80), systemd-Dienst,
+Node.js, Backup-Cron, „Immer-an". Details: `deploy/linux/INSTALL.md`.
+
+Topologie: `Caddy :80` → `/api/*` zu gunicorn (Backend-JSON-API),
+`/*` statisches React-Bundle (`mdw-frontend/dist`). Man kann kein fertiges
+Windows-Verzeichnis kopieren (`.venv/`, `node_modules/` sind plattformgebunden) —
+beide Repos werden auf dem Server geklont und dort gebaut; der Installer macht das.
+
+- [x] Härtung: persistentes Secret + CSRF
+- [x] Deployment-Paket + Installer (Port 80, Backend + Frontend)
+- [ ] Server aufsetzen, DB `mobilfunk.db` übertragen, erster Lauf
+- [ ] Danach optional **HTTPS** (im `Caddyfile` `:80` → DNS-Name; Caddy holt das Zertifikat)
+
+Stabiler Zustand als Basis für Phase 2.
+
+---
+
+## Phase 2 — Datenbank-Umbau: SQLite → PostgreSQL ✅ (Code fertig, echt verifiziert)
+
+**Ziel:** echte Mehrbenutzer-Gleichzeitigkeit, robustere Sperren/Backups, sauber
+für den Netzwerkbetrieb. **Optional** — bei 2–3 Nutzern reicht SQLite weiterhin.
+
+- [x] **Import-Refactor:** `modules/vodafone_import.py` / `modules/syno_import.py`
+      bekamen einen injizierbaren `db_module`-Parameter (Dependency Injection).
+      Standard (kein Parameter) = unverändertes SQLite-Verhalten — per Regressionstest
+      bestätigt (328 aktualisiert, identisch zu vorher).
+- [x] **`webapp/import_adapter.py`** — SQLAlchemy-Adapter mit derselben
+      Funktionsoberfläche wie `modules/database.py`. Die API
+      (`webapp/blueprints/api.py`, `_import_db_module()`) wählt ihn automatisch,
+      sobald `DATABASE_URL` nicht mit `sqlite` beginnt.
+- [x] **`deploy/linux/migrate_to_postgres.py`** — Migrationsskript, Sequenzen werden
+      korrekt gesetzt.
+- [x] **`deploy/linux/POSTGRES.md`** — Schritt-für-Schritt-Anleitung (optional, für
+      später bei Bedarf).
+- [x] **Echt verifiziert** (lokales PostgreSQL 17, nicht nur SQLite-Simulation):
+      Migration einer Kopie der echten DB (353 Teilnehmer, 5616 Protokoll-
+      Einträge – alle Zahlen exakt übertragen), Web-App komplett gegen Postgres
+      (Lesen, Schreiben, Statistik, Aufgaben), und ein **echter Vodafone-Import
+      direkt gegen Postgres** über den neuen Adapter (328 aktualisiert, korrekt
+      protokolliert, per direkter SQL-Abfrage gegengeprüft).
+
+**Für den produktiven Einsatz:** siehe `deploy/linux/POSTGRES.md`. Kein Zwang — nur
+sinnvoll bei mehr als ein paar gleichzeitigen Nutzern.
+
+---
+
+## Phase 3 — Komplettes Frontend in React ✅ (inhaltlich fertig)
+
+**Ziel:** app-artige, interaktivere Oberfläche; Flask als JSON-API.
+Die Geschäftslogik (`modules/`, SQLAlchemy, Rollen) bleibt erhalten.
+
+Eigenes Repo: **github.com/grumel/mdw-frontend** (Vite + React). Spricht die
+JSON-API (`webapp/blueprints/api.py`, Präfix `/api`) an, die **parallel** zur
+bestehenden Jinja-Oberfläche im selben Backend läuft.
+
+- [x] JSON-API in Flask (`api.py`, Session-Auth, CSRF-exempt für React)
+- [x] React-App: Login, alle Provider-Tabs + abgeleitete Ansichten (Prüfungen/
+      Unvollständig/Duplikate), Bearbeiten/Neu, Rechtsklick-Aktionen (geprüft/
+      verschieben/löschen, rollenbasiert), Aufgaben (Zähler, rote Markierung),
+      Statistik, Import (Vodafone Vorschau/Bestätigen, Syno), Einstellungen (DB-Pfad)
+- [x] Deployment: Caddy liefert das React-Bundle unter `/`, `/api/*` → gunicorn
+- [x] Zusammenführen (Merge-Modus) und Protokoll/Audit-Log — React deckt jetzt
+      **alle** Funktionen des bisherigen Web-UI ab
+- [ ] Alte Jinja-Templates entfernen, sobald sich niemand mehr auf sie verlässt
+      (bewusst noch nicht — dienen als Fallback/Vergleichsreferenz)
+- [x] **Kündigung/Rücknahme/Neuvertrag migriert** (ersetzt die Windows-COM-
+      Automatisierung der Desktop-App):
+      - Kündigung/Rücknahme: `modules/kuendigung.py` füllt die Word-Vorlage
+        (`python-docx`) und erzeugt das PDF über **LibreOffice headless**
+        (`convert_to_pdf_soffice`). Endpunkte `POST /api/participants/<id>/
+        kuendigung` + `GET /api/kuendigung/<datei>` (Download). Frontend:
+        Rechtsklick → „Kündigung erstellen/zurücknehmen", Ergebnis-Modal mit
+        PDF-Download + Mailtext zum Kopieren.
+      - Neuvertrag: `POST /api/neuvertrag` legt Teilnehmer an und liefert den
+        Mailtext; React-Formular mit automatischem Werk↔Konto-Ausfüllen
+        (`GET /api/werk-konto`, feste Paare aus den Daten).
+      - Voraussetzungen (erledigt): LibreOffice auf dem Server, `python-docx`
+        in requirements.txt, Word-Vorlagen unter `<DATA_DIR>/Dokumente/`.
+
+**Mehrwert:** flüssiger (keine Reloads), Kennzahl-Kacheln/Balken, wiederverwendbare
+Komponenten, mobil-/PWA-tauglich.
+
+---
+
+## Querschnitt (jederzeit)
+- **HTTPS** produktiv (Caddy)
+- **Alembic** für versionierte Schema-Änderungen (spätestens mit Phase 2)
+- **Tests** je Ausbaustufe (wie bisher: gegen eine DB-Kopie)
