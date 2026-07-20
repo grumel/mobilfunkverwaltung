@@ -58,6 +58,7 @@ def create_app() -> Flask:
     from webapp.blueprints.reports import bp as reports_bp
     from webapp.blueprints.settings import bp as settings_bp
     from webapp.blueprints.api import bp as api_bp
+    from webapp.blueprints.unmatched_api import bp as unmatched_api_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(participants_bp)
     app.register_blueprint(tabs_bp)
@@ -66,9 +67,11 @@ def create_app() -> Flask:
     app.register_blueprint(reports_bp)
     app.register_blueprint(settings_bp)
     app.register_blueprint(api_bp)
-    # JSON-API ist Session-basiert – CSRF-Token-Zwang hier ausnehmen (React-Frontend)
+    app.register_blueprint(unmatched_api_bp)
+    # JSON-APIs sind Session-basiert – CSRF-Token-Zwang hier ausnehmen (React-Frontend)
     if csrf is not None:
         csrf.exempt(api_bp)
+        csrf.exempt(unmatched_api_bp)
 
     from webapp.service import NAV_PROVIDERS
 
