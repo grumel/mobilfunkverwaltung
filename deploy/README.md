@@ -10,7 +10,7 @@ gemeinsame lokale Einstiegspunkt ist `run.py`.
 ```text
 deploy/
 ├── linux/      produktionsreifes Debian-/Ubuntu-Deployment
-└── windows/    dokumentierter Platzhalter für ein künftiges Windows-Deployment
+└── windows/    erster Windows-Webbetrieb mit Waitress und Caddy
 ```
 
 ## Gemeinsamer Build
@@ -50,5 +50,5 @@ Der Linux-Produktivstart bleibt davon unberührt und verwendet weiterhin
 
 - [Linux-Installation](linux/INSTALL.md) – vollständig unterstützt und weiterhin
   der produktive Standard.
-- [Windows-Deployment](windows/README.md) – `install.ps1`, `start.ps1` und
-  `waitress.conf` sind als klar markierte, nicht produktive Platzhalter vorhanden.
+- [Windows-Deployment](windows/README.md) – Setup und Start des Webbetriebs mit
+  Waitress, Caddy und dem bestehenden React-Build.

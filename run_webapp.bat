@@ -15,4 +15,5 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 echo Web-App laeuft auf http://127.0.0.1:5001  (Fenster offen lassen; Strg+C beendet)
+set "MOBILFUNK_SERVER=flask"
 ".venv\Scripts\python.exe" run.py

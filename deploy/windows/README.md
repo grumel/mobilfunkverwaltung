@@ -1,37 +1,102 @@
-# Windows-Deployment (Vorbereitung)
+# Windows-Webbetrieb mit Waitress und Caddy
 
-Dieses Verzeichnis reserviert die Windows-spezifische Deployment-Struktur.
-Ein produktionsreifer Windows-Dienst-Installer ist noch nicht implementiert.
-Für lokale Entwicklung bleibt der vorhandene Start über `run_webapp.bat`
-unverändert.
+Die Anwendung läuft unter Windows als Webanwendung im Browser. Waitress hostet
+Flask ausschließlich auf `127.0.0.1:8000`; Caddy liefert das gebaute
+React-Frontend auf Port 80 aus und leitet `/api/*` an Waitress weiter.
 
-## Vorgesehene Artefakte
-
-- `install.ps1` – idempotente Einrichtung von Python, Backend, Frontend-Build,
-  Datenverzeichnis und Dienst
-- `start.ps1` – kontrollierter Start des produktiven WSGI-Servers
-- `waitress.conf` – Parameter für den vorgesehenen Windows-WSGI-Server
-- `mobilfunk-web.xml` oder eine entsprechende Dienstdefinition für WinSW/NSSM
-- `Caddyfile` – Reverse-Proxy und Auslieferung des React-Bundles unter Windows
-- `INSTALL.md` – Installation, Update, Backup, Diagnose und Deinstallation
-
-`install.ps1` und `start.ps1` brechen derzeit absichtlich mit einer eindeutigen
-Fehlermeldung ab; `waitress.conf` enthält nur Kommentare. Vor einer Umsetzung
-müssen insbesondere Dienstkonto,
-Verzeichnisrechte, Secret-Verwaltung, Firewall, Backup und Update-Rollback
-festgelegt und getestet werden.
-
-## Aktueller lokaler Start
-
-```bat
-python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-run_webapp.bat
+```text
+Browser -> Caddy :80 -> /api/* -> Waitress :8000 -> Flask -> SQLite
+                    -> /*      -> React dist/
 ```
 
-Alternativ steht mit `python run.py` der gemeinsame lokale Einstiegspunkt für
-Linux und Windows bereit.
+Dies ist keine Desktop-Version, kein Windows-Dienst und kein EXE-Installer.
+`install.ps1` ist ein wiederholbares Setup-Skript für bereits installierte
+Werkzeuge.
 
-Dies startet den Flask-Entwicklungsserver und ist kein Produktionsdeployment.
-Das React-Frontend wird für die Entwicklung weiterhin separat im Frontend-Repo
-mit `npm run dev` gestartet.
+## Voraussetzungen
+
+- Windows 10 oder 11 beziehungsweise Windows Server
+- Python 3.12 oder neuer im `PATH`
+- Node.js LTS einschließlich npm im `PATH`
+- Caddy für Windows (`caddy.exe`) im `PATH`
+- LibreOffice für die bestehende PDF-Erzeugung; der Standardpfad unter
+  `%ProgramFiles%\LibreOffice\program` wird automatisch übernommen
+- Backend- und Frontend-Repository in getrennten Verzeichnissen
+
+Waitress wird vom Setup-Skript als Python-Abhängigkeit installiert.
+
+## Verzeichnisbeispiel
+
+```text
+C:\Mobilfunkverwaltung\
+├── mdwWeb\
+└── mdw-frontend\
+```
+
+Bei einer anderen Struktur werden `-BackendDir` und `-FrontendDir` angegeben.
+
+## Einrichten
+
+PowerShell **als Administrator** öffnen und aus dem Backend-Repository ausführen:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1 `
+  -FrontendDir C:\Mobilfunkverwaltung\mdw-frontend
+```
+
+Das Skript:
+
+1. prüft Python, Node, npm, Caddy und LibreOffice,
+2. erstellt beziehungsweise aktiviert `.venv`,
+3. installiert Backend-Abhängigkeiten einschließlich Waitress,
+4. führt im Frontend `npm ci` und `npm run build` aus,
+5. erstellt unter `%ProgramData%\Mobilfunkverwaltung` Daten- und Logverzeichnis,
+6. erzeugt einmalig ein persistentes Session-Secret.
+
+Eine vorhandene `mobilfunk.db` kann vor dem ersten Start nach
+`%ProgramData%\Mobilfunkverwaltung\mobilfunk.db` kopiert werden. Das Setup selbst
+verändert keine Datenbank und legt kein Schema um.
+
+## Starten
+
+Auch zum Starten ist wegen Caddys Port 80 eine PowerShell als Administrator
+erforderlich.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1 `
+  -FrontendDir C:\Mobilfunkverwaltung\mdw-frontend
+```
+
+Oder per Doppelklick beziehungsweise Eingabeaufforderung:
+
+```bat
+deploy\windows\start.bat -FrontendDir C:\Mobilfunkverwaltung\mdw-frontend
+```
+
+Danach ist die Anwendung unter <http://localhost/> erreichbar. Beim Beenden von
+Caddy wird auch der von `start.ps1` gestartete Waitress-Prozess beendet.
+
+## Konfiguration und Logs
+
+- Waitress: `deploy/windows/waitress.conf`
+- Caddy: `deploy/windows/Caddyfile`
+- Laufzeitumgebung: `%ProgramData%\Mobilfunkverwaltung\mobilfunk.env.ps1`
+- SQLite und Dokumente: `%ProgramData%\Mobilfunkverwaltung`
+- Backend-Log: `%ProgramData%\Mobilfunkverwaltung\logs\mobilfunk-web.log`
+
+Die Pfade werden mit `Join-Path` beziehungsweise Python-`pathlib` gebildet.
+Caddy erhält den absoluten Frontendpfad über `MOBILFUNK_FRONTEND_DIST`.
+
+## Updates
+
+Nach dem Aktualisieren beider Repositories `install.ps1` erneut ausführen. Es
+installiert die aktuellen Abhängigkeiten und baut das Frontend reproduzierbar
+neu. Danach `start.ps1` erneut starten.
+
+## Noch nicht enthalten
+
+- Installation von Python, Node oder Caddy
+- Registrierung als Windows-Dienst
+- automatische Firewall-Regel
+- EXE- oder Desktop-Paket
+- automatische Backups oder Update-Rollbacks

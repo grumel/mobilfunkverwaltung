@@ -1,0 +1,28 @@
+# Windows: React-Bundle ausliefern und /api/* an Waitress weiterleiten.
+# MOBILFUNK_FRONTEND_DIST wird von start.ps1 mit Vorwärtsschrägstrichen gesetzt.
+
+:80 {
+    encode gzip
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy same-origin
+        Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        -Server
+    }
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    handle {
+        root * "{$MOBILFUNK_FRONTEND_DIST}"
+        @assets path /assets/*
+        header @assets Cache-Control "public, max-age=31536000, immutable"
+        @spa not path /assets/* /manifest.webmanifest /icon-*.png
+        header @spa Cache-Control "no-cache, no-store, must-revalidate"
+        try_files {path} /index.html
+        file_server
+    }
+}

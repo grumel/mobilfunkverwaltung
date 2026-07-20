@@ -167,7 +167,7 @@ def convert_to_pdf_soffice(docx_path: Path) -> Path:
     with tempfile.TemporaryDirectory(prefix="mobilfunk_soffice_") as profile:
         cmd = [
             soffice,
-            f"-env:UserInstallation=file://{profile}",
+            f"-env:UserInstallation={Path(profile).resolve().as_uri()}",
             "--headless", "--nologo", "--nofirststartwizard",
             "--convert-to", "pdf", "--outdir", str(outdir), str(docx_path),
         ]

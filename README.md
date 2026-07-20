@@ -3,13 +3,14 @@
 Web-Version der Mobilfunkverwaltung (Flask). Eigenständiges Programm, getrennt
 von der Desktop-App **und** von der Datenbank.
 
-## Start (Windows)
+## Lokaler Start (Windows)
 
 Doppelklick auf **`run_webapp.bat`** → der Browser öffnet <http://127.0.0.1:5001>.
 Anmeldung mit denselben Benutzern/Passwörtern wie in der Desktop-App.
 Der gemeinsame lokale Einstiegspunkt ist außerdem `python run.py` und kann auf
 Linux und Windows verwendet werden. `run_webapp.py` bleibt als kompatibler
-Alias bestehen.
+Alias bestehen. Der Batch-Starter behält bewusst den lokalen Flask-Modus; das
+Windows-Deployment unter `deploy/windows` startet Waitress.
 
 ## Einmalige Einrichtung
 
@@ -24,14 +25,31 @@ Plattformspezifische Installationsdateien liegen getrennt unter `deploy/`:
 
 - **Linux:** produktionsreifer Installer, systemd-Dienst und Caddy-Konfiguration
   unter [`deploy/linux`](deploy/linux/INSTALL.md)
-- **Windows:** dokumentierter Vorbereitungsstand unter
-  [`deploy/windows`](deploy/windows/README.md); noch kein produktionsreifer
-  Windows-Dienst-Installer
+- **Windows:** Webbetrieb mit Waitress und Caddy unter
+  [`deploy/windows`](deploy/windows/README.md); noch kein Windows-Dienst oder
+  Desktop-/EXE-Installer
 
 Die gemeinsamen Build-Schritte und die Abgrenzung der Plattformen beschreibt
 [`deploy/README.md`](deploy/README.md). Das bestehende Linux-Deployment bleibt
 unverändert nutzbar; lediglich der Installer-Pfad lautet jetzt
 `deploy/linux/install.sh`.
+
+### Windows-Webbetrieb
+
+Benötigt werden Python 3.12+, Node.js LTS, Caddy und LibreOffice für Windows.
+Waitress wird als Python-Abhängigkeit installiert. In einer PowerShell als
+Administrator:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1 `
+  -FrontendDir C:\Mobilfunkverwaltung\mdw-frontend
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1 `
+  -FrontendDir C:\Mobilfunkverwaltung\mdw-frontend
+```
+
+Anschließend ist die Anwendung unter <http://localhost/> erreichbar. Details zu
+Datenverzeichnis, Logs, Updates und abweichenden Repository-Pfaden stehen in der
+[Windows-Anleitung](deploy/windows/README.md).
 
 ### Gemeinsame Architektur
 
@@ -41,8 +59,8 @@ unverändert nutzbar; lediglich der Installer-Pfad lautet jetzt
 - `run.py` ist der gemeinsame lokale Einstiegspunkt.
 - `deploy/linux/` enthält das unveränderte produktive Linux-Betriebsmodell mit
   gunicorn, systemd und Caddy.
-- `deploy/windows/` reserviert die künftigen PowerShell-, Waitress- und
-  Dienstkonfigurationen. Diese Dateien sind noch nicht produktionsbereit.
+- `deploy/windows/` enthält PowerShell-Setup und -Start, Waitress-Konfiguration
+  sowie Caddyfile für den ersten Windows-Webbetrieb.
 
 Eine vollständige Liste der gefundenen Plattformbindungen und bewusst nicht
 bereinigten Duplikate steht in
@@ -83,8 +101,8 @@ rollenbasiert (Lesen/Schreiben/Admin).
 
 ## Technologie
 
-Python 3.12 · Flask · SQLAlchemy · SQLite (PostgreSQL-fähig) · openpyxl
+Python 3.12 · Flask · SQLAlchemy · SQLite (PostgreSQL-fähig) · openpyxl ·
+gunicorn (Linux) · Waitress (Windows) · Caddy
 
-> Hinweis: Der eingebaute Flask-Server ist für lokalen Betrieb/Test gedacht. Für
-> einen echten Server-Betrieb einen produktiven WSGI-Server + Reverse-Proxy und
-> CSRF-Schutz/`MOBILFUNK_SECRET` ergänzen.
+> Hinweis: Der eingebaute Flask-Server ist ausschließlich für lokale Entwicklung.
+> Produktiv laufen gunicorn beziehungsweise Waitress hinter Caddy.
