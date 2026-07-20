@@ -3,28 +3,27 @@
 # Automatischer Installer – Mobilfunkverwaltung Web (Debian/Ubuntu, Port 80).
 #
 # Richtet Backend UND Frontend ein: Systempakete, Benutzer, venv + Abhaengigkeiten,
-# Secret, systemd-Dienst (gunicorn), Node.js + React-Build (mdw-frontend),
+# Secret, systemd-Dienst (gunicorn), Node.js + React-Build,
 # Reverse-Proxy Caddy (Port 80, React als UI + /api -> gunicorn), Backup-Cron
 # und "Immer-an" (kein Ruhezustand, Deckel-zuklappen ignorieren) fuer Laptop-Server.
 # Idempotent – kann gefahrlos mehrfach ausgefuehrt werden (auch fuer Updates:
-# einfach erneut ausfuehren, holt beide Repos per 'git pull' und baut neu).
+# einfach erneut ausfuehren, aktualisiert das Monorepo und baut neu).
 #
-# Aufruf (aus dem geklonten Backend-Repo):
+# Aufruf (aus dem geklonten Monorepo):
 #     sudo bash deploy/linux/install.sh [/pfad/zur/mobilfunk.db]
 #
 # Umgebungsvariablen:
 #     KEEP_SLEEP=1      Ruhezustand NICHT deaktivieren
 #     SKIP_FRONTEND=1   React-Frontend NICHT einrichten (nur Backend/API)
-#     FRONTEND_REPO=…   abweichende Git-URL des Frontend-Repos
 #
 set -euo pipefail
 
 APP_USER=mobilfunk
 DATA_DIR=/var/lib/mobilfunk
 ENV_FILE="$DATA_DIR/mobilfunk.env"
-APP_DIR="$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)"   # Backend-Repo-Wurzel
-FRONTEND_DIR=/opt/mobilfunk-frontend
-FRONTEND_REPO="${FRONTEND_REPO:-https://github.com/grumel/mdw-frontend.git}"
+APP_ROOT="$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)"  # Monorepo-Wurzel
+APP_DIR="$APP_ROOT/backend"
+FRONTEND_DIR="$APP_ROOT/frontend"
 DB_SRC="${1:-}"
 
 log()  { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
@@ -43,26 +42,25 @@ set_logind() {
 }
 
 [ "$(id -u)" -eq 0 ] || die "Bitte mit root/sudo ausfuehren:  sudo bash deploy/linux/install.sh"
-[ -f "$APP_DIR/requirements.txt" ] || die "requirements.txt nicht gefunden – Skript aus dem Backend-Repo heraus starten."
+[ -f "$APP_DIR/requirements.txt" ] || die "backend/requirements.txt nicht gefunden – Skript aus dem Monorepo heraus starten."
 
 log "Backend-Verzeichnis: $APP_DIR"
 
-# 0/11  Backend-Repo selbst aktualisieren (sonst haengt das Backend bei Updates
-# zurueck – der Installer zog frueher nur das Frontend). Aendert sich dabei der
+# 0/11  Monorepo selbst aktualisieren. Aendert sich dabei der
 # Installer selbst, wird er einmalig mit dem neuen Stand neu gestartet.
-if [ "${SKIP_SELF_UPDATE:-0}" != "1" ] && [ -d "$APP_DIR/.git" ]; then
-  log "0/11  Backend aktualisieren (git pull)"
-  git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
-  before="$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo none)"
-  if git -C "$APP_DIR" pull --ff-only; then
-    after="$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo none)"
+if [ "${SKIP_SELF_UPDATE:-0}" != "1" ] && [ -d "$APP_ROOT/.git" ]; then
+  log "0/11  Monorepo aktualisieren (git pull)"
+  git config --global --add safe.directory "$APP_ROOT" 2>/dev/null || true
+  before="$(git -C "$APP_ROOT" rev-parse HEAD 2>/dev/null || echo none)"
+  if git -C "$APP_ROOT" pull --ff-only; then
+    after="$(git -C "$APP_ROOT" rev-parse HEAD 2>/dev/null || echo none)"
     if [ "$before" != "$after" ] && [ "${SELF_UPDATED:-0}" != "1" ]; then
       log "      Neue Version geladen – Installer wird mit neuem Stand neu gestartet"
       export SELF_UPDATED=1
-      exec bash "$APP_DIR/deploy/linux/install.sh" "$@"
+      exec bash "$APP_ROOT/deploy/linux/install.sh" "$@"
     fi
   else
-    warn "Backend 'git pull' fehlgeschlagen – fahre mit vorhandenem Stand fort."
+    warn "Monorepo 'git pull' fehlgeschlagen – fahre mit vorhandenem Stand fort."
   fi
 fi
 
@@ -114,8 +112,8 @@ else
   log "      vorhanden – unveraendert (Secret bleibt stabil)"
 fi
 
-log "6/11  Dateirechte setzen (Backend)"
-chown -R "$APP_USER":"$APP_USER" "$APP_DIR" "$DATA_DIR"
+log "6/11  Dateirechte setzen (Monorepo)"
+chown -R "$APP_USER":"$APP_USER" "$APP_ROOT" "$DATA_DIR"
 
 log "7/11  systemd-Dienst 'mobilfunk-web' (gunicorn, Backend-API)"
 cat > /etc/systemd/system/mobilfunk-web.service <<EOF
@@ -143,7 +141,7 @@ FRONTEND_BUILT=0
 if [ "${SKIP_FRONTEND:-0}" = "1" ]; then
   log "8/11  React-Frontend uebersprungen (SKIP_FRONTEND=1)"
 else
-  log "8/11  Node.js + React-Frontend ($FRONTEND_REPO)"
+  log "8/11  Node.js + React-Frontend ($FRONTEND_DIR)"
   NODE_OK=0
   if command -v node >/dev/null 2>&1; then
     NODE_MAJOR="$(node -v | sed -E 's/^v([0-9]+).*/\1/')"
@@ -155,22 +153,13 @@ else
     apt-get install -y nodejs
   fi
 
-  if [ -d "$FRONTEND_DIR/.git" ]; then
-    log "      Frontend aktualisieren (git pull)"
-    git -C "$FRONTEND_DIR" pull --ff-only
-  else
-    log "      Frontend klonen"
-    git clone "$FRONTEND_REPO" "$FRONTEND_DIR"
-  fi
-
   log "      npm install + Produktions-Build"
   ( cd "$FRONTEND_DIR" && npm install --no-fund --no-audit && npm run build )
-  chown -R "$APP_USER":"$APP_USER" "$FRONTEND_DIR"
   FRONTEND_BUILT=1
 fi
 
 log "9/11  Reverse-Proxy Caddy (Port 80)"
-install -m 644 "$APP_DIR/deploy/linux/Caddyfile" /etc/caddy/Caddyfile
+install -m 644 "$APP_ROOT/deploy/linux/Caddyfile" /etc/caddy/Caddyfile
 systemctl restart caddy
 
 log "10/11  Backup-Cron"
@@ -220,5 +209,5 @@ if [ "$DB_MISSING" -eq 1 ]; then
   echo "     (oder Installer erneut mit DB-Pfad: sudo bash deploy/linux/install.sh /pfad/zur/mobilfunk.db)"
 fi
 echo ""
-echo "  Update spaeter (holt beide Repos automatisch + Neubau):"
-echo "       sudo bash $APP_DIR/deploy/linux/install.sh"
+echo "  Update spaeter (aktualisiert das Monorepo + Neubau):"
+echo "       sudo bash $APP_ROOT/deploy/linux/install.sh"

@@ -15,14 +15,15 @@ deploy/
 
 ## Gemeinsamer Build
 
-Backend und Frontend bleiben zwei getrennte Repositories.
+Backend und Frontend liegen gemeinsam im Monorepository, behalten aber getrennte
+Build-Umgebungen.
 
 Backend-Abhängigkeiten werden in einer plattformeigenen virtuellen Umgebung
 installiert:
 
 ```text
-python -m venv .venv
-python -m pip install -r requirements.txt
+python -m venv backend/.venv
+backend/.venv/bin/python -m pip install -r backend/requirements.txt
 ```
 
 Für den Serverbetrieb kommen die Abhängigkeiten aus
@@ -30,6 +31,7 @@ Für den Serverbetrieb kommen die Abhängigkeiten aus
 Repository gebaut:
 
 ```text
+cd frontend
 npm ci
 npm run build
 ```
@@ -40,11 +42,12 @@ Linux und Windows kopiert, sondern auf der jeweiligen Zielplattform neu erstellt
 Für einen lokalen Funktionscheck ohne plattformspezifischen Dienst:
 
 ```text
+cd backend
 python run.py
 ```
 
 Der Linux-Produktivstart bleibt davon unberührt und verwendet weiterhin
-`gunicorn --chdir /opt/mobilfunk-web ... "webapp:create_app()"`.
+`gunicorn --chdir /opt/mobilfunkverwaltung/backend ... "webapp:create_app()"`.
 
 ## Plattformen
 

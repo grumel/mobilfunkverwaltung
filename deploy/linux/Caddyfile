@@ -3,7 +3,7 @@
 #
 # Topologie:
 #   /api/*  -> gunicorn (127.0.0.1:8000), die Flask-JSON-API
-#   /*      -> statisches React-Bundle (mdw-frontend, "npm run build" -> dist/)
+#   /*      -> statisches React-Bundle (frontend/, "npm run build" -> dist/)
 #
 # Die alte Server-gerenderte Jinja-Oberflaeche der Flask-App bleibt bestehen,
 # ist ueber Port 80 aber nicht mehr eingebunden (React ist die Standard-UI).
@@ -28,7 +28,7 @@
     }
 
     handle {
-        root * /opt/mobilfunk-frontend/dist
+        root * /opt/mobilfunkverwaltung/frontend/dist
         try_files {path} /index.html
         file_server
     }
@@ -41,5 +41,5 @@
 # mobilfunk.intern.alpla {
 #     encode gzip
 #     handle /api/* { reverse_proxy 127.0.0.1:8000 }
-#     handle { root * /opt/mobilfunk-frontend/dist; try_files {path} /index.html; file_server }
+#     handle { root * /opt/mobilfunkverwaltung/frontend/dist; try_files {path} /index.html; file_server }
 # }

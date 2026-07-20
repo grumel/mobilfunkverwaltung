@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$BackendDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..")),
-    [string]$FrontendDir = (Join-Path (Split-Path (Resolve-Path (Join-Path $PSScriptRoot "..\..")) -Parent) "mdw-frontend"),
+    [string]$BackendDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..\backend")),
+    [string]$FrontendDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..\frontend")),
     [string]$DataDir = (Join-Path $env:ProgramData "Mobilfunkverwaltung")
 )
 

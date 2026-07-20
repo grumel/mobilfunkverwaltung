@@ -13,7 +13,7 @@ gelöscht, weil diese Änderung ausschließlich die Architektur vorbereitet.
 | Installer | `deploy/linux/install.sh` | Bash, `apt-get`, `curl`, `grep`, `sed`, `awk`, `hostname`, `git`, `npm` |
 | Rechte | `deploy/linux/install.sh`, `deploy/linux/INSTALL.md` | `chmod`, `chown`, Unix-Benutzer und Gruppen |
 | Reverse-Proxy | `deploy/linux/Caddyfile`, Installer und Installationsanleitung | `/etc/caddy`, Caddy-Dienst |
-| Dateisystem | Linux-Deploymentdateien | `/opt/mobilfunk-web`, `/opt/mobilfunk-frontend`, `/var/lib/mobilfunk`, `/etc/cron.daily` |
+| Dateisystem | Linux-Deploymentdateien | `/opt/mobilfunkverwaltung/backend`, `/opt/mobilfunkverwaltung/frontend`, `/var/lib/mobilfunk`, `/etc/cron.daily` |
 | Datensicherung | `deploy/linux/install.sh`, `deploy/linux/INSTALL.md` | Cron und POSIX-Shell-Kommandos |
 | Laptop-Betrieb | `deploy/linux/install.sh` | systemd-Sleep-Targets und `/etc/systemd/logind.conf` |
 | PDF-Erzeugung | `modules/kuendigung.py` | `subprocess.run()` mit LibreOffice/`soffice`, temporäres `HOME` |

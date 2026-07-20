@@ -20,7 +20,7 @@ sudo -u postgres psql -c "CREATE DATABASE mobilfunk OWNER mobilfunk;"
 
 ## 2. Treiber installieren
 ```bash
-cd /opt/mobilfunk-web
+cd /opt/mobilfunkverwaltung/backend
 sudo -u mobilfunk sed -i 's/^# psycopg/psycopg/' requirements-server.txt
 sudo -u mobilfunk .venv/bin/pip install -r requirements-server.txt
 ```
@@ -28,8 +28,8 @@ sudo -u mobilfunk .venv/bin/pip install -r requirements-server.txt
 ## 3. Daten migrieren
 Die App läuft währenddessen weiter auf SQLite (Quelle wird nur gelesen):
 ```bash
-cd /opt/mobilfunk-web
-sudo -u mobilfunk .venv/bin/python deploy/linux/migrate_to_postgres.py \
+cd /opt/mobilfunkverwaltung
+sudo -u mobilfunk backend/.venv/bin/python deploy/linux/migrate_to_postgres.py \
     --sqlite /var/lib/mobilfunk/mobilfunk.db \
     --postgres "postgresql+psycopg://mobilfunk:BITTE-AENDERN@localhost:5432/mobilfunk"
 ```

@@ -21,7 +21,7 @@ Werkzeuge.
 - Caddy für Windows (`caddy.exe`) im `PATH`
 - LibreOffice für die bestehende PDF-Erzeugung; der Standardpfad unter
   `%ProgramFiles%\LibreOffice\program` wird automatisch übernommen
-- Backend- und Frontend-Repository in getrennten Verzeichnissen
+- geklontes Monorepository mit `backend/` und `frontend/`
 
 Waitress wird vom Setup-Skript als Python-Abhängigkeit installiert.
 
@@ -29,19 +29,19 @@ Waitress wird vom Setup-Skript als Python-Abhängigkeit installiert.
 
 ```text
 C:\Mobilfunkverwaltung\
-├── mdwWeb\
-└── mdw-frontend\
+├── backend\
+├── frontend\
+└── deploy\
 ```
 
-Bei einer anderen Struktur werden `-BackendDir` und `-FrontendDir` angegeben.
+Die Standards werden direkt aus der Monorepo-Struktur ermittelt.
 
 ## Einrichten
 
-PowerShell **als Administrator** öffnen und aus dem Backend-Repository ausführen:
+PowerShell **als Administrator** öffnen und aus der Monorepo-Wurzel ausführen:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1 `
-  -FrontendDir C:\Mobilfunkverwaltung\mdw-frontend
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1
 ```
 
 Das Skript:
@@ -63,14 +63,13 @@ Auch zum Starten ist wegen Caddys Port 80 eine PowerShell als Administrator
 erforderlich.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1 `
-  -FrontendDir C:\Mobilfunkverwaltung\mdw-frontend
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
 ```
 
 Oder per Doppelklick beziehungsweise Eingabeaufforderung:
 
 ```bat
-deploy\windows\start.bat -FrontendDir C:\Mobilfunkverwaltung\mdw-frontend
+deploy\windows\start.bat
 ```
 
 Danach ist die Anwendung unter <http://localhost/> erreichbar. Beim Beenden von
@@ -89,7 +88,7 @@ Caddy erhält den absoluten Frontendpfad über `MOBILFUNK_FRONTEND_DIST`.
 
 ## Updates
 
-Nach dem Aktualisieren beider Repositories `install.ps1` erneut ausführen. Es
+Nach dem Aktualisieren des Monorepositories `install.ps1` erneut ausführen. Es
 installiert die aktuellen Abhängigkeiten und baut das Frontend reproduzierbar
 neu. Danach `start.ps1` erneut starten.
 

@@ -1,10 +1,10 @@
 # Server-Installation (Linux, Port 80)
 
 Anleitung für einen kleinen Linux-Server (z. B. Lenovo ThinkPad mit Debian 12
-oder Ubuntu Server) im eigenen Netz. Zwei getrennte Repos werden zusammengeführt:
+oder Ubuntu Server) im eigenen Netz. Das Monorepository enthält beide Anwendungsteile:
 
-- **Backend** (`mdwWeb`) – Flask, liefert die JSON-API. Läuft als **gunicorn**-Dienst.
-- **Frontend** (`mdw-frontend`) – React, wird zu statischen Dateien **gebaut**
+- **Backend** (`backend/`) – Flask, liefert die JSON-API. Läuft als **gunicorn**-Dienst.
+- **Frontend** (`frontend/`) – React, wird zu statischen Dateien **gebaut**
   (kein eigener Node-Prozess im Betrieb) und von **Caddy** ausgeliefert.
 
 Caddy ist der einzige Dienst auf **Port 80**: `/api/*` reicht er an gunicorn
@@ -13,12 +13,12 @@ LAN erreichbar.
 
 ```
 [Browser] --80--> [Caddy] ---> /api/*  --8000--> [gunicorn -> Flask-API] --> mobilfunk.db
-                          \--> /*      --> statisches React-Bundle (mdw-frontend/dist)
+                          \--> /*      --> statisches React-Bundle (frontend/dist)
 ```
 
 > Hinweis: Man kann **kein** fertiges Windows-Verzeichnis auf den Linux-Server
 > kopieren – `.venv/` (Backend) und `node_modules/` (Frontend) enthalten
-> plattformgebundene Binaries. Stattdessen werden beide Repos direkt auf dem
+> plattformgebundene Binaries. Stattdessen wird das Monorepo direkt auf dem
 > Server geklont und dort neu gebaut (der Installer erledigt das automatisch).
 
 ## Schnellweg: Automatischer Installer (empfohlen)
@@ -27,16 +27,15 @@ Auf einem frischen Debian/Ubuntu genügen drei Befehle:
 
 ```bash
 sudo apt update && sudo apt install -y git
-sudo git clone https://github.com/grumel/mdwWeb.git /opt/mobilfunk-web
-sudo bash /opt/mobilfunk-web/deploy/linux/install.sh      # optional: ... install.sh /pfad/zur/mobilfunk.db
+sudo git clone <repository-url> /opt/mobilfunkverwaltung
+sudo bash /opt/mobilfunkverwaltung/deploy/linux/install.sh      # optional: ... install.sh /pfad/zur/mobilfunk.db
 ```
 
 `install.sh` erledigt **beide** Teile: Pakete, Benutzer `mobilfunk`,
 `/var/lib/mobilfunk`, Backend-venv + Abhängigkeiten, zufälliges Secret,
-systemd-Dienst (gunicorn) — **und** Node.js (falls nötig), klont
-`mdw-frontend` nach `/opt/mobilfunk-frontend`, baut es (`npm install && npm run
-build`) — sowie Caddy (Port 80) und Backup-Cron. Er ist **idempotent**
-(mehrfach ausführbar; ruft er erneut auf, holt er beide Repos per `git pull`
+systemd-Dienst (gunicorn) — **und** Node.js (falls nötig), baut `frontend/`
+(`npm install && npm run build`) — sowie Caddy (Port 80) und Backup-Cron. Er ist **idempotent**
+(mehrfach ausführbar; ruft er erneut auf, holt er das Monorepo per `git pull`
 und baut neu — das ist auch der **Update-Weg**).
 
 Danach die Datenbank nach `/var/lib/mobilfunk/mobilfunk.db` bringen (falls
@@ -46,7 +45,6 @@ Aufruf danach: `http://<server-ip>/`
 
 Optionen (Umgebungsvariablen vor dem Aufruf setzen):
 - `SKIP_FRONTEND=1` — nur Backend/API einrichten, kein React-Build
-- `FRONTEND_REPO=…` — abweichende Git-URL fürs Frontend
 - `KEEP_SLEEP=1` — Ruhezustand nicht deaktivieren
 
 > Die folgenden Abschnitte beschreiben dieselben Schritte **manuell** (falls du
@@ -74,19 +72,18 @@ sudo apt install -y nodejs
 ## 2. Benutzer und Ordner
 ```bash
 sudo useradd --system --create-home --shell /usr/sbin/nologin mobilfunk
-sudo mkdir -p /opt/mobilfunk-web /var/lib/mobilfunk
+sudo mkdir -p /opt/mobilfunkverwaltung /var/lib/mobilfunk
 ```
 
-## 3. Beide Repos auf den Server bringen
+## 3. Monorepository auf den Server bringen
 ```bash
-sudo git clone https://github.com/grumel/mdwWeb.git /opt/mobilfunk-web
-sudo git clone https://github.com/grumel/mdw-frontend.git /opt/mobilfunk-frontend
-sudo chown -R mobilfunk:mobilfunk /opt/mobilfunk-web /opt/mobilfunk-frontend
+sudo git clone <repository-url> /opt/mobilfunkverwaltung
+sudo chown -R mobilfunk:mobilfunk /opt/mobilfunkverwaltung
 ```
 
 ## 4. Backend: venv + Abhängigkeiten
 ```bash
-cd /opt/mobilfunk-web
+cd /opt/mobilfunkverwaltung/backend
 sudo -u mobilfunk python3 -m venv .venv
 sudo -u mobilfunk .venv/bin/pip install --upgrade pip
 sudo -u mobilfunk .venv/bin/pip install -r requirements.txt -r requirements-server.txt
@@ -94,7 +91,7 @@ sudo -u mobilfunk .venv/bin/pip install -r requirements.txt -r requirements-serv
 
 ## 5. Frontend bauen
 ```bash
-cd /opt/mobilfunk-frontend
+cd /opt/mobilfunkverwaltung/frontend
 sudo -u mobilfunk npm install
 sudo -u mobilfunk npm run build          # erzeugt dist/ (statische Dateien)
 ```
@@ -110,7 +107,7 @@ sudo chown -R mobilfunk:mobilfunk /var/lib/mobilfunk
 ## 7. Secret erzeugen und Backend-Dienst einrichten
 ```bash
 python3 -c "import secrets; print(secrets.token_hex(32))"     # Ausgabe merken
-sudo cp deploy/linux/mobilfunk-web.service /etc/systemd/system/
+sudo cp /opt/mobilfunkverwaltung/deploy/linux/mobilfunk-web.service /etc/systemd/system/
 sudoedit /etc/systemd/system/mobilfunk-web.service            # MOBILFUNK_SECRET eintragen
 sudo systemctl daemon-reload
 sudo systemctl enable --now mobilfunk-web
@@ -119,7 +116,7 @@ sudo systemctl status mobilfunk-web                           # sollte "active (
 
 ## 8. Reverse-Proxy (Port 80, React + API)
 ```bash
-sudo cp /opt/mobilfunk-web/deploy/linux/Caddyfile /etc/caddy/Caddyfile
+sudo cp /opt/mobilfunkverwaltung/deploy/linux/Caddyfile /etc/caddy/Caddyfile
 sudo systemctl restart caddy
 ```
 
@@ -146,17 +143,18 @@ sudo chmod +x /etc/cron.daily/mobilfunk-backup
 ---
 
 ## Updates einspielen
-Am einfachsten: Installer erneut ausführen (idempotent, holt **beide** Repos
-selbst per `git pull` – auch das Backend – und baut das Frontend neu):
+Am einfachsten: Installer erneut ausführen (idempotent, aktualisiert das
+Monorepository per `git pull` und baut das Frontend neu):
 ```bash
-sudo bash /opt/mobilfunk-web/deploy/linux/install.sh
+sudo bash /opt/mobilfunkverwaltung/deploy/linux/install.sh
 ```
 > Der Installer aktualisiert sich zu Beginn selbst; ändert sich dabei das
 > Installer-Skript, startet er sich einmalig mit dem neuen Stand neu.
 Manuell äquivalent:
 ```bash
-cd /opt/mobilfunk-web && sudo -u mobilfunk git pull && sudo systemctl restart mobilfunk-web
-cd /opt/mobilfunk-frontend && sudo -u mobilfunk git pull && sudo -u mobilfunk npm install && sudo -u mobilfunk npm run build
+cd /opt/mobilfunkverwaltung && sudo -u mobilfunk git pull
+cd backend && sudo systemctl restart mobilfunk-web
+cd ../frontend && sudo -u mobilfunk npm install && sudo -u mobilfunk npm run build
 ```
 
 ## Später erweitern / tunen
