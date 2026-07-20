@@ -1,6 +1,7 @@
 name: Monorepo structure
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
