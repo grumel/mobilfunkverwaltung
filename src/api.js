@@ -66,6 +66,12 @@ export const api = {
   stats: () => req('/api/stats'),
   dataQuality: () => req('/api/dataquality'),
   unmatchedDevices: () => req('/api/unmatched-devices'),
+  unmatchedUpdate: (id, data) => req(`/api/unmatched-devices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  unmatchedDelete: (id) => req(`/api/unmatched-devices/${id}`, { method: 'DELETE' }),
+  unmatchedAssign: (id, participant_id, slot = 'auto') =>
+    req(`/api/unmatched-devices/${id}/assign`, { method: 'POST', body: JSON.stringify({ participant_id, slot }) }),
+  unmatchedCreateParticipant: (id, data) =>
+    req(`/api/unmatched-devices/${id}/create-participant`, { method: 'POST', body: JSON.stringify(data) }),
 
   // Import
   vodafonePreview: (file) => upload('/api/import/vodafone/preview', file),
