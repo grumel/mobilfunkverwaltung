@@ -134,7 +134,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
             : view === 'dokumente'
               ? <Documents />
             : view === 'unmatched'
-              ? <UnmatchedDevices onBack={() => setView('statistik')} />
+              ? <UnmatchedDevices user={user} onBack={() => setView('statistik')} />
             : view === 'protokoll'
               ? <Logs kind="import" user={user} />
               : view === 'audit'
@@ -143,10 +143,10 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
                   ? <Import />
                   : view === 'benutzer'
                     ? <Users user={user} />
-                  : view === 'einstellungen'
-                    ? <Settings />
-                    : <Participants view={view} q={q} user={user}
-                                    openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
+                    : view === 'einstellungen'
+                      ? <Settings />
+                      : <Participants view={view} q={q} user={user}
+                                      openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
       </main>
     </div>
   )
