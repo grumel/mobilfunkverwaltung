@@ -12,8 +12,8 @@ import PasswordModal from './PasswordModal.jsx'
 import HelpModal from './HelpModal.jsx'
 import UnmatchedDevices from './UnmatchedDevices.jsx'
 import { getTheme, toggleTheme } from '../theme.js'
+import '../shell-v2.css'
 
-// Von Statistik-Kacheln aufrufbare Filter-Ansichten (Teilnehmerliste gefiltert)
 const FILTER_LABELS = {
   alle: 'Alle Teilnehmer', verified: 'Geprüft', ohne_gsm: 'Ohne GSM', ohne_name: 'Ohne Name',
   ohne_werk: 'Ohne Werk', ohne_konto: 'Ohne Konto', mit_syno: 'Mit Syno-Gerät',
@@ -32,6 +32,26 @@ const DERIVED = [
 
 const PARTICIPANT_VIEWS = new Set([...PROVIDERS, ...DERIVED].map(([k]) => k))
 
+function SignalMark() {
+  return (
+    <svg className="shell-v2-logo-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M32 47V29" />
+      <circle cx="32" cy="51" r="3" />
+      <path d="M22 39a14 14 0 0 1 20 0" />
+      <path d="M14 31a25 25 0 0 1 36 0" />
+      <path d="M7 23a35 35 0 0 1 50 0" />
+    </svg>
+  )
+}
+
+function IconButton({ title, onClick, children, className = '' }) {
+  return (
+    <button className={`shell-v2-icon-btn ${className}`} title={title} aria-label={title} onClick={onClick}>
+      {children}
+    </button>
+  )
+}
+
 export function versionLabel(version) {
   if (!version || !version.build) return ''
   return 'v' + version.build + (version.commit ? ' · ' + version.commit : '')
@@ -48,7 +68,6 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
   const isAdmin = user.role === 'admin'
   const isParticipantsView = PARTICIPANT_VIEWS.has(view)
 
-  // Kachel-Klick in der Statistik: Suche zurücksetzen und Filter-Ansicht öffnen.
   function openFromStats(v) { setQInput(''); setQ(''); setView(v) }
 
   const refreshSummary = useCallback(() => {
@@ -62,31 +81,55 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
 
   return (
     <div>
-      <div className="utilbar">
-        <span className="dot" />
-        <span className="appname">Mobilfunkverwaltung</span>
-        <span className="webtag">React</span>
-        <span className="spacer" />
-        {version && version.build && <span className="version" title={'Version ' + versionLabel(version)}>{versionLabel(version)}</span>}
-        <span className="user">{user.username} · {user.role}</span>
-        <button className="themebtn" title={theme === 'dark' ? 'Zu hellem Design wechseln' : 'Zu dunklem Design wechseln'}
-                onClick={() => setTheme(toggleTheme())}>{theme === 'dark' ? '☀️' : '🌙'}</button>
-        <button className="utilbtn" onClick={() => setHelpOpen(true)}>Hilfe</button>
-        <button className="utilbtn" onClick={() => setPwOpen(true)}>Passwort</button>
+      <div className="shell-v2-header">
+        <div className="shell-v2-brand">
+          <span className="shell-v2-logo"><SignalMark /></span>
+          <span className="shell-v2-brand-copy">
+            <strong>Mobilfunkverwaltung</strong>
+            <small>Verträge · Geräte · Teilnehmer</small>
+          </span>
+        </div>
+
+        <div className="shell-v2-header-spacer" />
+
+        {version && version.build && (
+          <span className="shell-v2-version" title={'Version ' + versionLabel(version)}>
+            {versionLabel(version)}
+          </span>
+        )}
+
+        <div className="shell-v2-user">
+          <span className="shell-v2-avatar">{user.username.slice(0, 1).toUpperCase()}</span>
+          <span className="shell-v2-user-copy">
+            <strong>{user.username}</strong>
+            <small>{user.role}</small>
+          </span>
+        </div>
+
+        <IconButton
+          title={theme === 'dark' ? 'Zu hellem Design wechseln' : 'Zu dunklem Design wechseln'}
+          onClick={() => setTheme(toggleTheme())}
+        >
+          {theme === 'dark' ? '☀' : '☾'}
+        </IconButton>
+        <button className="shell-v2-action" onClick={() => setHelpOpen(true)}>Hilfe</button>
+        <button className="shell-v2-action" onClick={() => setPwOpen(true)}>Passwort</button>
         {isAdmin && (
           <>
-            <button className={'utilbtn' + (view === 'benutzer' ? ' active' : '')} onClick={() => setView('benutzer')}>Benutzer</button>
-            <button className={'utilbtn' + (view === 'einstellungen' ? ' active' : '')} onClick={() => setView('einstellungen')}>⚙ Einstellungen</button>
+            <button className={'shell-v2-action' + (view === 'benutzer' ? ' active' : '')} onClick={() => setView('benutzer')}>Benutzer</button>
+            <button className={'shell-v2-action' + (view === 'einstellungen' ? ' active' : '')} onClick={() => setView('einstellungen')}>Einstellungen</button>
           </>
         )}
-        <button className="utilbtn logout" onClick={onLogout}>Abmelden</button>
+        <button className="shell-v2-logout" onClick={onLogout}>Abmelden</button>
       </div>
+
       {(forcePw || pwOpen) && (
         <PasswordModal forced={forcePw}
                        onClose={() => setPwOpen(false)}
                        onDone={() => { setPwOpen(false); onPwDone && onPwDone() }} />
       )}
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+
       <header className="topbar">
         <nav className="tabs">
           {PROVIDERS.map(([k, l]) => (
@@ -112,6 +155,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
         </nav>
         <span className="spacer" />
       </header>
+
       {isParticipantsView && (
         <div className="globalbar">
           <input className="q" type="search" value={qInput} autoFocus
@@ -137,16 +181,16 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
               ? <UnmatchedDevices user={user} onBack={() => setView('statistik')} />
             : view === 'protokoll'
               ? <Logs kind="import" user={user} />
-              : view === 'audit'
-                ? <Logs kind="audit" user={user} />
-                : view === 'import'
-                  ? <Import />
-                  : view === 'benutzer'
-                    ? <Users user={user} />
-                    : view === 'einstellungen'
-                      ? <Settings />
-                      : <Participants view={view} q={q} user={user}
-                                      openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
+            : view === 'audit'
+              ? <Logs kind="audit" user={user} />
+            : view === 'import'
+              ? <Import />
+            : view === 'benutzer'
+              ? <Users user={user} />
+            : view === 'einstellungen'
+              ? <Settings />
+            : <Participants view={view} q={q} user={user}
+                            openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
       </main>
     </div>
   )
