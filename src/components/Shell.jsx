@@ -12,8 +12,6 @@ import PasswordModal from './PasswordModal.jsx'
 import HelpModal from './HelpModal.jsx'
 import UnmatchedDevices from './UnmatchedDevices.jsx'
 import { getTheme, toggleTheme } from '../theme.js'
-import '../shell-v2.css'
-import '../app-v2.css'
 
 const FILTER_LABELS = {
   alle: 'Alle Teilnehmer', verified: 'Geprüft', ohne_gsm: 'Ohne GSM', ohne_name: 'Ohne Name',
