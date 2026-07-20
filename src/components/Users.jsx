@@ -125,7 +125,7 @@ function UserModal({ u, onClose, onSaved }) {
             onClick={(e) => e.stopPropagation()} onSubmit={save}>
         <div className="modal-head" onMouseDown={startDrag}>
           <h3>{isNew ? 'Neuer Benutzer' : `Bearbeiten: ${u.username}`}</h3>
-          <button type="button" className="x" onClick={onClose}>×</button>
+          <button type="button" className="x" aria-label="Dialog schließen" onClick={onClose}>×</button>
         </div>
         {error && <div className="flash">{error}</div>}
         <div className="grid">

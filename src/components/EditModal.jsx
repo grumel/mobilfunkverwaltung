@@ -110,7 +110,7 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
             style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}>
         <div className="modal-head" onMouseDown={startDrag}>
           <h3>{isNew ? 'Neuer Teilnehmer' : ('Bearbeiten: ' + ((p && p.name) || ('ID ' + id)))}</h3>
-          <button type="button" className="x" onClick={onClose}>×</button>
+          <button type="button" className="x" aria-label="Dialog schließen" onClick={onClose}>×</button>
         </div>
         {error && <div className="flash">{error}</div>}
         {!p ? <p className="hint-dim">Lädt…</p> : (

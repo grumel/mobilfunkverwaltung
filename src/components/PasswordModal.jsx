@@ -29,7 +29,7 @@ export default function PasswordModal({ forced, onClose, onDone }) {
       <form className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()} onSubmit={save}>
         <div className="modal-head">
           <h3>Passwort ändern</h3>
-          {!forced && <button type="button" className="x" onClick={onClose}>×</button>}
+          {!forced && <button type="button" className="x" aria-label="Dialog schließen" onClick={onClose}>×</button>}
         </div>
         {forced && <div className="flash">Bitte vergib ein neues Passwort, bevor du fortfährst.</div>}
         {error && <div className="flash">{error}</div>}

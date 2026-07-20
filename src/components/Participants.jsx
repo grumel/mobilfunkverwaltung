@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { api } from '../api'
 import { fmtDate } from '../format.js'
 import { toastError } from '../toast.jsx'
@@ -20,7 +20,7 @@ const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 export default function Participants({ view, q, user, openTaskPids = [], onChanged }) {
   const canWrite = user.role === 'write' || user.role === 'admin'
   const canDelete = user.role === 'admin'
-  const taskSet = new Set(openTaskPids)
+  const taskSet = useMemo(() => new Set(openTaskPids), [openTaskPids])
 
   const [rows, setRows] = useState([])
   const [total, setTotal] = useState(0)
@@ -130,31 +130,41 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
   }
 
   function sortArrow(key) {
-    if (sort.key !== key) return null
-    return <span className="sortarrow">{sort.dir === 1 ? ' ▲' : ' ▼'}</span>
+    if (sort.key !== key) return <span className="sortarrow muted" aria-hidden="true">↕</span>
+    return <span className="sortarrow" aria-hidden="true">{sort.dir === 1 ? '↑' : '↓'}</span>
   }
 
-  const sortedRows = [...rows].sort((a, b) => {
+  function sortLabel(key, label) {
+    const active = sort.key === key
+    return (
+      <button className="sortbutton" onClick={() => toggleSort(key)}
+              aria-label={`${label} sortieren${active ? (sort.dir === 1 ? ', aufsteigend' : ', absteigend') : ''}`}>
+        <span>{label}</span>{sortArrow(key)}
+      </button>
+    )
+  }
+
+  const sortedRows = useMemo(() => [...rows].sort((a, b) => {
     const av = a[sort.key], bv = b[sort.key]
     if (av === bv) return 0
     if (av === null || av === undefined || av === '') return 1
     if (bv === null || bv === undefined || bv === '') return -1
     if (NUM.has(sort.key) || sort.key === 'verified') return (Number(av) - Number(bv)) * sort.dir
     return String(av).localeCompare(String(bv), 'de') * sort.dir
-  })
+  }), [rows, sort])
 
   return (
     <div className="wrap">
       <div className="bar">
         {canWrite && !mergeMode && (
-          <>
-            <button className="btn accent" onClick={() => setEditId(null)}>+ Neu</button>
-            <button className="btn" onClick={() => setNeuvertrag(true)}>Neuvertrag</button>
-            <button className="btn" onClick={toggleMergeMode}>Zusammenführen</button>
-          </>
+          <div className="action-group">
+            <button className="btn accent" onClick={() => setEditId(null)}><span aria-hidden="true">＋</span> Neu</button>
+            <button className="btn" onClick={() => setNeuvertrag(true)}><span aria-hidden="true">▤</span> Neuvertrag</button>
+            <button className="btn" onClick={toggleMergeMode}><span aria-hidden="true">⇄</span> Zusammenführen</button>
+          </div>
         )}
         {!mergeMode && (
-          <button className="btn" onClick={exportCsv} disabled={rows.length === 0}>CSV-Export</button>
+          <button className="btn" onClick={exportCsv} disabled={rows.length === 0}><span aria-hidden="true">↓</span> CSV-Export</button>
         )}
         {mergeMode ? (
           <span className="hint-dim">
@@ -163,7 +173,7 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
           </span>
         ) : (
           <>
-            <span className="count">{total} Treffer{q ? ' (alle Reiter)' : ''}</span>
+            <span className="count toolbar-count">{total} Treffer{q ? ' (alle Reiter)' : ''}</span>
             {error && <span className="err">{error}</span>}
             <span className="hint-dim">Rechtsklick = Aktionen · Doppelklick = Bearbeiten · Spaltenkopf = Sortieren</span>
           </>
@@ -175,9 +185,9 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
           <table>
             <thead>
               <tr>
-                <th className="sortable" onClick={() => toggleSort('verified')}>Status{sortArrow('verified')}</th>
+                <th className="sortable" aria-sort={sort.key === 'verified' ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>{sortLabel('verified', 'Status')}</th>
                 {COLS.map(([k, l]) => (
-                  <th key={k} className="sortable" onClick={() => toggleSort(k)}>{l}{sortArrow(k)}</th>
+                  <th key={k} className="sortable" aria-sort={sort.key === k ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>{sortLabel(k, l)}</th>
                 ))}
               </tr>
             </thead>

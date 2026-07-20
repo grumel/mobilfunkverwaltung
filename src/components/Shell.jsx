@@ -130,25 +130,27 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
 
       <header className="topbar">
-        <nav className="tabs">
+        <nav className="tabs" aria-label="Hauptnavigation">
           {PROVIDERS.map(([k, l]) => (
-            <button key={k} className={'tab' + (view === k ? ' active' : '')} onClick={() => setView(k)}>{l}</button>
+            <button key={k} className={'tab' + (view === k ? ' active' : '')}
+                    aria-current={view === k ? 'page' : undefined} onClick={() => setView(k)}>{l}</button>
           ))}
           <span className="tabsep" />
           {DERIVED.map(([k, l]) => (
-            <button key={k} className={'tab' + (view === k ? ' active' : '')} onClick={() => setView(k)}>{l}</button>
+            <button key={k} className={'tab' + (view === k ? ' active' : '')}
+                    aria-current={view === k ? 'page' : undefined} onClick={() => setView(k)}>{l}</button>
           ))}
           <span className="tabsep" />
-          <button className={'tab' + (view === 'aufgaben' ? ' active' : '')} onClick={() => setView('aufgaben')}>
+          <button className={'tab' + (view === 'aufgaben' ? ' active' : '')} aria-current={view === 'aufgaben' ? 'page' : undefined} onClick={() => setView('aufgaben')}>
             Aufgaben{summary.open_tasks > 0 && <span className="badgecount">{summary.open_tasks}</span>}
           </button>
-          <button className={'tab' + (view === 'statistik' ? ' active' : '')} onClick={() => setView('statistik')}>Statistik</button>
-          <button className={'tab' + (view === 'protokoll' ? ' active' : '')} onClick={() => setView('protokoll')}>Protokoll</button>
-          <button className={'tab' + (view === 'dokumente' ? ' active' : '')} onClick={() => setView('dokumente')}>Dokumente</button>
+          <button className={'tab' + (view === 'statistik' ? ' active' : '')} aria-current={view === 'statistik' ? 'page' : undefined} onClick={() => setView('statistik')}>Statistik</button>
+          <button className={'tab' + (view === 'protokoll' ? ' active' : '')} aria-current={view === 'protokoll' ? 'page' : undefined} onClick={() => setView('protokoll')}>Protokoll</button>
+          <button className={'tab' + (view === 'dokumente' ? ' active' : '')} aria-current={view === 'dokumente' ? 'page' : undefined} onClick={() => setView('dokumente')}>Dokumente</button>
           {isAdmin && (
             <>
-              <button className={'tab' + (view === 'audit' ? ' active' : '')} onClick={() => setView('audit')}>Audit</button>
-              <button className={'tab import' + (view === 'import' ? ' active' : '')} onClick={() => setView('import')}>Import ▾</button>
+              <button className={'tab' + (view === 'audit' ? ' active' : '')} aria-current={view === 'audit' ? 'page' : undefined} onClick={() => setView('audit')}>Audit</button>
+              <button className={'tab import' + (view === 'import' ? ' active' : '')} aria-current={view === 'import' ? 'page' : undefined} onClick={() => setView('import')}>Import ▾</button>
             </>
           )}
         </nav>
@@ -156,10 +158,17 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
       </header>
 
       {isParticipantsView && (
-        <div className="globalbar">
-          <input className="q" type="search" value={qInput} autoFocus
-                 placeholder="Globale Suche: Name, GSM, Werk, Konto, Tarif, Bemerkung …"
-                 onChange={(e) => setQInput(e.target.value)} />
+        <div className="globalbar searchbar">
+          <label className="searchbox">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m16 16 4 4" />
+            </svg>
+            <span className="sr-only">Globale Suche</span>
+            <input className="q" type="search" value={qInput} autoFocus
+                   placeholder="Name, GSM, Werk, Konto, Tarif oder Bemerkung suchen …"
+                   onChange={(e) => setQInput(e.target.value)} />
+          </label>
           <span className="hint-dim">durchsucht alle Reiter, unabhängig vom aktuell gewählten</span>
         </div>
       )}

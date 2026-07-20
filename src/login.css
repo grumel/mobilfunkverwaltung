@@ -203,7 +203,7 @@
   border-radius:12px;
   background:rgba(255,255,255,.86);
   box-shadow:0 1px 2px rgba(15,35,65,.04);
-  transition:border-color .16s, box-shadow .16s, background .16s;
+  transition:border-color .15s, box-shadow .15s, background .15s;
 }
 
 .login-v2-input-wrap:focus-within {
@@ -250,7 +250,7 @@
   font-size:14px;
   font-weight:750;
   cursor:pointer;
-  transition:transform .16s, box-shadow .16s, background-position .3s;
+  transition:transform .15s, box-shadow .15s, background-position .15s;
 }
 
 .login-v2-submit:hover:not(:disabled) {

@@ -14,7 +14,7 @@ export default function MailResultModal({ title, to, subject, body, downloadUrl,
       <form className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()} onSubmit={(e) => e.preventDefault()}>
         <div className="modal-head">
           <h3>{title}</h3>
-          <button type="button" className="x" onClick={onClose}>×</button>
+          <button type="button" className="x" aria-label="Dialog schließen" onClick={onClose}>×</button>
         </div>
         <div className="flash ok-flash">
           {downloadUrl ? 'PDF erzeugt. ' : ''}Mailtext an <b>{to}</b> kopieren und in Outlook versenden{downloadUrl ? ' (PDF anhängen)' : ''}:

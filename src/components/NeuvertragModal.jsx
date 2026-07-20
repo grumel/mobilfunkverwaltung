@@ -46,7 +46,7 @@ export default function NeuvertragModal({ onClose, onDone }) {
       <form className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <div className="modal-head">
           <h3>Neuvertrag bestellen</h3>
-          <button type="button" className="x" onClick={onClose}>×</button>
+          <button type="button" className="x" aria-label="Dialog schließen" onClick={onClose}>×</button>
         </div>
         {error && <div className="flash">{error}</div>}
 

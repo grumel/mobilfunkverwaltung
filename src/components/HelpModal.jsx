@@ -5,7 +5,7 @@ export default function HelpModal({ onClose }) {
       <div className="modal help" style={{ maxWidth: 760 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head" style={{ cursor: 'default' }}>
           <h3>Hilfe &amp; Anleitung</h3>
-          <button type="button" className="x" onClick={onClose}>×</button>
+          <button type="button" className="x" aria-label="Dialog schließen" onClick={onClose}>×</button>
         </div>
 
         <div className="help-body">
