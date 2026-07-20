@@ -7,12 +7,9 @@ User=mobilfunk
 Group=mobilfunk
 WorkingDirectory=/opt/mobilfunkverwaltung/backend
 
-# Datenbank und Konfig liegen getrennt vom Programm (schreibbar):
-Environment=MOBILFUNK_DATA_DIR=/var/lib/mobilfunk
-Environment=MOBILFUNK_WEBCONFIG_DIR=/var/lib/mobilfunk
-# WICHTIG: eigenes Secret setzen! Erzeugen mit:
-#   python3 -c "import secrets; print(secrets.token_hex(32))"
-Environment=MOBILFUNK_SECRET=BITTE-DURCH-EIGENEN-ZUFALLSWERT-ERSETZEN
+# Datenbank, Dokumente, Konfiguration und Secret liegen außerhalb des Checkouts.
+# Die Datei muss root gehören und Modus 600 besitzen.
+EnvironmentFile=/var/lib/mobilfunk/mobilfunk.env
 
 # gunicorn laeuft lokal auf 8000; Port 80 macht der Reverse-Proxy (Caddy) davor.
 ExecStart=/opt/mobilfunkverwaltung/backend/.venv/bin/gunicorn --chdir /opt/mobilfunkverwaltung/backend \

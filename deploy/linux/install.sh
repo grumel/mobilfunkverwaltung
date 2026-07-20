@@ -153,8 +153,8 @@ else
     apt-get install -y nodejs
   fi
 
-  log "      npm install + Produktions-Build"
-  ( cd "$FRONTEND_DIR" && npm install --no-fund --no-audit && npm run build )
+  log "      npm ci + Produktions-Build"
+  ( cd "$FRONTEND_DIR" && npm ci --no-fund --no-audit && npm run build )
   FRONTEND_BUILT=1
 fi
 
