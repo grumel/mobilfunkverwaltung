@@ -75,12 +75,47 @@ Flask-App, Login und authentifizierter API-Aufruf mit SQLite sowie eine
 Validierung des Caddyfiles gegen `frontend/dist`. Die konkreten Ergebnisse sind
 im Migrationsbericht des Abschlusscommits festgehalten.
 
+## Remote- und Branch-Struktur
+
+Das Monorepository verwendet folgende Remotes:
+
+| Remote | URL | Zweck |
+| --- | --- | --- |
+| `origin` | `https://github.com/grumel/mobilfunkverwaltung.git` | neues gemeinsames Repository |
+| `legacy-backend` | `https://github.com/grumel/mdwWeb.git` | historische Referenz |
+| `legacy-frontend` | `https://github.com/grumel/mdw-frontend.git` | historische Referenz |
+
+Die Migration wird auf `chore/monorepo-migration` veröffentlicht. Das bereits
+vorhandene `origin/main` wird nicht überschrieben; die Übernahme erfolgt nach
+erfolgreicher CI über einen Pull Request beziehungsweise einen kontrollierten
+Merge.
+
+## Gemeinsame CI
+
+- `.github/workflows/backend.yml` kompiliert das Backend und prüft Flask,
+  Login, Session-API und SQLite mit einer temporären Datenbank.
+- `.github/workflows/frontend.yml` installiert reproduzierbar mit `npm ci`,
+  führt vorhandene Tests aus und baut das Vite-Produktionsbundle.
+- `.github/workflows/monorepo.yml` prüft Pflichtverzeichnisse, Shell-Syntax und
+  Python-Kompilierung.
+
+Die Workflows laufen auf Pull Requests nach `main` sowie auf Pushes nach `main`
+und `chore/monorepo-migration`.
+
+## Verbleibende Produktionsschritte
+
+Die tatsächliche Serverumstellung ist absichtlich nicht Teil der
+Repository-Migration. Sie muss auf dem Produktionsserver anhand von
+[PRODUCTION_MIGRATION.md](PRODUCTION_MIGRATION.md) erfolgen. Erforderlich sind
+insbesondere verifizierte Backups, Übernahme der bestehenden Environment-Datei
+und Datenverzeichnisse, Installation der neuen systemd-/Caddy-Pfade,
+Smoke-Tests und eine dokumentierte Rollback-Entscheidung.
+
 ## Offene Punkte
 
-- Ziel-Remote des neuen Repositories konfigurieren und Branch pushen.
-- Gemeinsame CI unter `.github/workflows/` einrichten.
-- Bestehenden Produktionsserver kontrolliert vom alten Checkout auf den neuen
-  Pfad umstellen.
+- Migrationsbranch nach erfolgreicher CI kontrolliert in `main` übernehmen.
+- Bestehenden Produktionsserver anhand der rückrollbaren Anleitung vom alten
+  Checkout auf den neuen Pfad umstellen.
 - Native Windows- und Linux-Deploymenttests in CI ergänzen.
 - Die in [CLEANUP.md](CLEANUP.md) dokumentierten Kandidaten erst nach separater
   Nutzungsanalyse und Regressionstests bereinigen.

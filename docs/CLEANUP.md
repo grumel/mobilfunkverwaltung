@@ -73,8 +73,9 @@ zugreifen können und die Migration keine Funktionalität entfernen darf.
 - `backend/CLAUDE.md` und `frontend/CLAUDE.md` enthalten projektspezifische
   Arbeitsanweisungen. Eine Zusammenführung wäre möglich, könnte aber
   komponentenspezifischen Kontext verlieren.
-- Automatisierte Tests und gemeinsame CI-Workflows fehlen derzeit. `.github/`
-  und `scripts/` sind deshalb absichtlich nur vorbereitet.
+- Umfassende fachliche Unit-/Integrationstests fehlen weiterhin. Die gemeinsame
+  CI prüft derzeit Kompilierung, Struktur, Frontend-Build und einen isolierten
+  Backend-Smoke-Test; sie ersetzt keine vollständige Regressionstest-Suite.
 
 ## Empfohlene Reihenfolge einer späteren Bereinigung
 
