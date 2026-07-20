@@ -1,0 +1,354 @@
+/* Modernisierte Anwendungsoberfläche – ergänzt die bestehende CSS-Datei. */
+
+:root {
+  --app-blue-950:#081b3a;
+  --app-blue-900:#0b2f68;
+  --app-blue-700:#1554a3;
+  --app-blue-100:#e9f2ff;
+  --app-surface:#ffffff;
+  --app-surface-soft:#f7f9fc;
+  --app-border:#d8e0ea;
+  --app-shadow:0 10px 30px rgba(15,23,42,.08);
+}
+
+body {
+  background:linear-gradient(180deg,#f4f7fb 0%,#eef3f8 100%);
+}
+
+.topbar {
+  height:auto;
+  min-height:58px;
+  padding:8px 18px;
+  background:rgba(255,255,255,.92);
+  border-bottom:1px solid var(--app-border);
+  box-shadow:0 5px 18px rgba(15,23,42,.05);
+  backdrop-filter:blur(10px);
+}
+
+.tabs {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:0;
+}
+
+.tab {
+  min-height:36px;
+  padding:0 13px;
+  border:1px solid transparent;
+  border-radius:9px;
+  color:#334155;
+  font-size:12.5px;
+  font-weight:600;
+  transition:background .14s ease,border-color .14s ease,color .14s ease,transform .14s ease;
+}
+
+.tab:hover {
+  background:#f1f5f9;
+  border-color:#dce4ee;
+  transform:translateY(-1px);
+}
+
+.tab.active,
+.tab.import.active {
+  color:#fff;
+  background:linear-gradient(135deg,var(--app-blue-900),var(--app-blue-700));
+  border-color:transparent;
+  box-shadow:0 6px 14px rgba(21,84,163,.22);
+}
+
+.tab.import {
+  border:1px solid #cbd5e1;
+  border-radius:9px;
+}
+
+.tabsep {
+  height:24px;
+  margin:0 5px;
+  background:#d7dee8;
+}
+
+.globalbar {
+  gap:14px;
+  padding:13px 22px;
+  background:rgba(255,255,255,.76);
+  border-bottom:1px solid var(--app-border);
+}
+
+.q {
+  flex:0 1 520px;
+  min-width:280px;
+  padding:11px 14px;
+  border:1px solid #cbd5e1;
+  border-radius:11px;
+  background:#fff;
+  box-shadow:0 2px 7px rgba(15,23,42,.04);
+}
+
+.q:focus {
+  border-color:#3b82f6;
+  box-shadow:0 0 0 4px rgba(59,130,246,.13);
+}
+
+.wrap {
+  padding:18px 22px 24px;
+}
+
+.bar {
+  gap:10px;
+  margin-bottom:14px;
+  padding:12px;
+  border:1px solid var(--app-border);
+  border-radius:13px;
+  background:rgba(255,255,255,.72);
+  box-shadow:0 4px 16px rgba(15,23,42,.04);
+}
+
+.btn,
+.utilbtn {
+  min-height:38px;
+  padding:0 15px;
+  border:1px solid #c7d1dd;
+  border-radius:10px;
+  background:#fff;
+  color:#1e293b;
+  box-shadow:0 3px 8px rgba(15,23,42,.07);
+}
+
+.btn:hover,
+.utilbtn:hover {
+  background:#f8fafc;
+  border-color:#94a3b8;
+  box-shadow:0 6px 14px rgba(15,23,42,.10);
+}
+
+.btn.accent,
+.utilbtn.active {
+  color:#fff;
+  background:linear-gradient(135deg,var(--app-blue-900),var(--app-blue-700));
+  border-color:transparent;
+}
+
+.tablecard,
+.importcard,
+.editcard {
+  border:1px solid var(--app-border);
+  border-radius:14px;
+  background:rgba(255,255,255,.95);
+  box-shadow:var(--app-shadow);
+}
+
+.tablecard {
+  overflow:hidden;
+}
+
+table {
+  font-size:12.8px;
+}
+
+thead th {
+  padding:12px 14px;
+  color:#334155;
+  background:#edf3f9;
+  border-bottom:1px solid #d7e0ea;
+  font-size:12px;
+  letter-spacing:.01em;
+}
+
+thead th.sortable:hover {
+  background:#e5eef8;
+}
+
+tbody td {
+  padding:10px 14px;
+  border-bottom:1px solid #e5eaf0;
+}
+
+tbody tr:nth-child(even) {
+  background:#f8fafc;
+}
+
+tbody tr:hover {
+  background:#edf5ff;
+}
+
+.badge {
+  padding:3px 9px;
+  border-radius:999px;
+  font-weight:600;
+}
+
+.badge.ok {
+  background:#e6f6ed;
+  color:#18713a;
+}
+
+.badge.open {
+  background:#fff0f0;
+  color:#b42318;
+}
+
+.badgecount {
+  min-width:20px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:#ef4444;
+}
+
+.tiles {
+  gap:14px;
+  margin:6px 0 18px;
+}
+
+.tile {
+  min-width:130px;
+  padding:16px 18px;
+  border:1px solid var(--app-border);
+  border-radius:14px;
+  background:linear-gradient(180deg,#fff,#f7faff);
+  box-shadow:0 7px 20px rgba(15,23,42,.06);
+}
+
+.tile.clickable:hover {
+  border-color:#8bb7ef;
+  box-shadow:0 12px 26px rgba(21,84,163,.14);
+  transform:translateY(-2px);
+}
+
+.tile .tval {
+  font-size:27px;
+}
+
+.cardhead {
+  padding:12px 14px;
+  color:#26364a;
+  background:#edf3f9;
+}
+
+.importgrid,
+.statcols {
+  gap:18px;
+}
+
+.importcard,
+.editcard {
+  padding:22px;
+}
+
+.importcard h3,
+.editcard h2 {
+  margin-top:0;
+  color:#163b69;
+}
+
+.modal {
+  border:1px solid rgba(255,255,255,.6);
+  border-radius:17px;
+  box-shadow:0 28px 80px rgba(15,23,42,.28);
+}
+
+.overlay {
+  background:rgba(8,27,58,.48);
+  backdrop-filter:blur(5px);
+}
+
+.modal-head {
+  padding-bottom:12px;
+  border-bottom:1px solid var(--app-border);
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding:10px 12px;
+  border-color:#cbd5e1;
+  border-radius:10px;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color:#3b82f6;
+  box-shadow:0 0 0 4px rgba(59,130,246,.12);
+}
+
+.ctxmenu {
+  border-color:var(--app-border);
+  border-radius:11px;
+  box-shadow:0 18px 45px rgba(15,23,42,.18);
+}
+
+.ctx-item {
+  border-radius:8px;
+}
+
+.logbox {
+  border:1px solid #22324d;
+  border-radius:11px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.toast {
+  border-radius:12px;
+  box-shadow:0 14px 34px rgba(15,23,42,.18);
+}
+
+:root[data-theme="dark"] body {
+  background:linear-gradient(180deg,#111827 0%,#151b24 100%);
+}
+
+:root[data-theme="dark"] .topbar,
+:root[data-theme="dark"] .globalbar,
+:root[data-theme="dark"] .bar {
+  background:rgba(31,41,55,.88);
+  border-color:#374151;
+}
+
+:root[data-theme="dark"] .tab {
+  color:#d5dbe5;
+}
+
+:root[data-theme="dark"] .tab:hover {
+  background:#2b3544;
+  border-color:#445064;
+}
+
+:root[data-theme="dark"] .q,
+:root[data-theme="dark"] .tablecard,
+:root[data-theme="dark"] .importcard,
+:root[data-theme="dark"] .editcard,
+:root[data-theme="dark"] .btn {
+  background:#202936;
+  border-color:#3b4758;
+}
+
+:root[data-theme="dark"] thead th,
+:root[data-theme="dark"] .cardhead {
+  background:#263140;
+  color:#e5e7eb;
+}
+
+:root[data-theme="dark"] tbody tr:nth-child(even) {
+  background:#1d2531;
+}
+
+:root[data-theme="dark"] tbody tr:hover {
+  background:#26364b;
+}
+
+@media (max-width:900px) {
+  .globalbar {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .q {
+    width:100%;
+    min-width:0;
+  }
+
+  .wrap {
+    padding:14px;
+  }
+}
