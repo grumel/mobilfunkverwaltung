@@ -1,0 +1,7 @@
+# Nur fuer den Server-Betrieb. Zusaetzlich zu requirements.txt.
+# Linux bleibt bei gunicorn; Windows verwendet Waitress.
+gunicorn>=21.2; platform_system != "Windows"
+waitress>=3.0,<4; platform_system == "Windows"
+# Fuer PostgreSQL (optional, siehe deploy/linux/POSTGRES.md): Zeile einkommentieren
+# und "pip install -r requirements-server.txt" erneut ausfuehren.
+# psycopg[binary]>=3.2

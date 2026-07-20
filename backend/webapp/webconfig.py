@@ -1,0 +1,61 @@
+"""
+webconfig.py – Persistente Web-Konfiguration (Datenbankpfad).
+
+Bewusst getrennt vom Programm: Die Konfig liegt in einem schreibbaren,
+programm-unabhängigen Ort (Standard: %LOCALAPPDATA%\\MobilfunkWeb\\webconfig.json),
+damit das Programmverzeichnis auch schreibgeschützt sein darf (z. B. Program Files)
+und die Datenbank frei woanders liegen kann.
+
+Override des Speicherorts per Umgebungsvariable MOBILFUNK_WEBCONFIG_DIR.
+"""
+
+import json
+import secrets
+from pathlib import Path
+
+from platform_support import get_config_directory
+
+
+def config_dir() -> Path:
+    return get_config_directory()
+
+
+def config_file() -> Path:
+    return config_dir() / "webconfig.json"
+
+
+def load() -> dict:
+    f = config_file()
+    if f.exists():
+        try:
+            return json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+
+def save(data: dict) -> None:
+    d = config_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    config_file().write_text(json.dumps(data, ensure_ascii=False, indent=2),
+                             encoding="utf-8")
+
+
+def get_or_create_secret() -> str:
+    """Persistenter, zufälliger Session-Schlüssel (falls kein MOBILFUNK_SECRET gesetzt).
+    Bleibt über Neustarts stabil, ist aber nicht der unsichere Dev-Default."""
+    f = config_dir() / "secret.key"
+    if f.exists():
+        try:
+            key = f.read_text(encoding="utf-8").strip()
+            if key:
+                return key
+        except Exception:
+            pass
+    key = secrets.token_hex(32)
+    try:
+        config_dir().mkdir(parents=True, exist_ok=True)
+        f.write_text(key, encoding="utf-8")
+    except Exception:
+        pass
+    return key

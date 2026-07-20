@@ -1,0 +1,198 @@
+.shell-v2-header {
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 18% -80%, rgba(96, 165, 250, .42), transparent 42%),
+    linear-gradient(118deg, #081b3a 0%, #0d3b8e 48%, #1f5fbf 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 8px 24px rgba(8, 27, 58, .18);
+}
+
+.shell-v2-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 232px;
+}
+
+.shell-v2-logo {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+  backdrop-filter: blur(8px);
+}
+
+.shell-v2-logo-mark {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shell-v2-logo-mark circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.shell-v2-brand-copy,
+.shell-v2-user-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-v2-brand-copy strong {
+  font-size: 15px;
+  letter-spacing: .01em;
+}
+
+.shell-v2-brand-copy small {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, .66);
+  font-size: 10.5px;
+  letter-spacing: .02em;
+}
+
+.shell-v2-header-spacer {
+  flex: 1 1 auto;
+}
+
+.shell-v2-version {
+  max-width: 190px;
+  overflow: hidden;
+  padding: 4px 8px;
+  color: rgba(255, 255, 255, .66);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 999px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell-v2-user {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 2px 0 4px;
+  padding-left: 11px;
+  border-left: 1px solid rgba(255, 255, 255, .2);
+}
+
+.shell-v2-avatar {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .14);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.shell-v2-user-copy strong {
+  max-width: 120px;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+
+.shell-v2-user-copy small {
+  margin-top: 1px;
+  color: rgba(255, 255, 255, .6);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.shell-v2-action,
+.shell-v2-icon-btn,
+.shell-v2-logout {
+  min-height: 32px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, .08);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.shell-v2-action {
+  padding: 0 11px;
+}
+
+.shell-v2-icon-btn {
+  width: 32px;
+  padding: 0;
+  font-size: 17px;
+}
+
+.shell-v2-action:hover,
+.shell-v2-icon-btn:hover {
+  background: rgba(255, 255, 255, .16);
+  border-color: rgba(255, 255, 255, .3);
+  transform: translateY(-1px);
+}
+
+.shell-v2-action:focus-visible,
+.shell-v2-icon-btn:focus-visible,
+.shell-v2-logout:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, .55);
+}
+
+.shell-v2-action.active {
+  color: #0d3b8e;
+  background: #fff;
+  border-color: #fff;
+}
+
+.shell-v2-logout {
+  padding: 0 12px;
+  border-color: rgba(254, 202, 202, .28);
+  color: #fee2e2;
+  background: rgba(127, 29, 29, .14);
+}
+
+.shell-v2-logout:hover {
+  border-color: rgba(254, 202, 202, .5);
+  background: rgba(127, 29, 29, .32);
+}
+
+@media (max-width: 1120px) {
+  .shell-v2-brand-copy small,
+  .shell-v2-user-copy,
+  .shell-v2-version {
+    display: none;
+  }
+
+  .shell-v2-brand {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 850px) {
+  .shell-v2-header {
+    flex-wrap: wrap;
+  }
+
+  .shell-v2-header-spacer {
+    min-width: 20px;
+  }
+}

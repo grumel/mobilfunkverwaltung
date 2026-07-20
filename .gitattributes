@@ -1,0 +1,7 @@
+# Linux-Deployment-Dateien immer mit LF (systemd/Caddy/Shell vertragen kein CRLF gut)
+deploy/** text eol=lf
+*.service text eol=lf
+*.sh text eol=lf
+backend/run_webapp.py text eol=lf
+backend/run.py text eol=lf
+*.ps1 text eol=crlf

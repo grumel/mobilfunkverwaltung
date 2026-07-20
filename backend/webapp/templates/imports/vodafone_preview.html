@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Vodafone-Vorschau · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="editcard">
+    <div class="edithead">
+      <h2>Vodafone-Import – Vorschau</h2>
+      <a class="btn" href="{{ url_for('imports.index') }}">Abbrechen</a>
+    </div>
+    <p class="hint-dim">Datei: <b>{{ filename }}</b> · Es wurde noch <b>nichts</b> gespeichert.</p>
+
+    <div class="tiles">
+      {% set t = [('Aktualisiert', preview.updated, 'blue'),
+                  ('Neu angelegt', preview.created, 'green'),
+                  ('Zur Prüfung', preview.review, 'orange'),
+                  ('Übersprungen', preview.skipped, 'grey'),
+                  ('Fehler', preview.errors|length, 'red')] %}
+      {% for label, val, cls in t %}
+        <div class="tile {{ cls }}"><div class="tval">{{ val }}</div><div class="tlbl">{{ label }}</div></div>
+      {% endfor %}
+    </div>
+
+    {% if preview.header_warnings %}
+      <div class="warnbox">
+        <b>⚠ Spaltenköpfe weichen ab:</b>
+        <ul>{% for w in preview.header_warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+        Import mit falscher Zuordnung kann Daten verfälschen – bitte prüfen.
+      </div>
+    {% endif %}
+
+    {% if preview.changes %}
+      <h3 class="sub">Änderungen ({{ preview.changes|length }})</h3>
+      <pre class="logbox">{% for c in preview.changes %}{{ c }}
+{% endfor %}</pre>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('imports.vodafone_confirm') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="editactions">
+        <button type="submit" class="btn accent">Import jetzt durchführen</button>
+        <a class="btn" href="{{ url_for('imports.index') }}">Abbrechen</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

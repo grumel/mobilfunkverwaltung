@@ -1,0 +1,51 @@
+name: Monorepo structure
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - chore/monorepo-migration
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check required repository structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in backend frontend deploy/linux deploy/windows scripts docs; do
+            test -d "$path" || { echo "Required directory is missing: $path" >&2; exit 1; }
+          done
+          test -f backend/requirements.txt
+          test -f frontend/package.json
+          test -f frontend/package-lock.json
+
+      - name: Validate Linux shell scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' script; do
+            echo "Checking $script"
+            bash -n "$script"
+          done < <(find deploy/linux scripts -type f -name '*.sh' -print0)
+
+      - name: Compile Python sources
+        run: python -m compileall -q backend deploy/linux scripts/backend-ci-smoke.py

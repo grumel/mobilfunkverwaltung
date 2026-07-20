@@ -1,0 +1,45 @@
+# Reverse-Proxy auf Port 80.
+# Ablage: /etc/caddy/Caddyfile  (dann: sudo systemctl restart caddy)
+#
+# Topologie:
+#   /api/*  -> gunicorn (127.0.0.1:8000), die Flask-JSON-API
+#   /*      -> statisches React-Bundle (frontend/, "npm run build" -> dist/)
+#
+# Die alte Server-gerenderte Jinja-Oberflaeche der Flask-App bleibt bestehen,
+# ist ueber Port 80 aber nicht mehr eingebunden (React ist die Standard-UI).
+# Bei Bedarf direkt erreichbar auf dem Server selbst: http://127.0.0.1:8000/
+
+:80 {
+    encode gzip
+
+    # Sicherheits-Header (gelten fuer statische Dateien und API-Antworten).
+    # CSP: alles nur von der eigenen Herkunft; kein Framing (Clickjacking),
+    # keine externen Skripte/Objekte. Passt zum selbst gehosteten React-Build.
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy same-origin
+        Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        -Server
+    }
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    handle {
+        root * /opt/mobilfunkverwaltung/frontend/dist
+        try_files {path} /index.html
+        file_server
+    }
+}
+
+# --- Spaeter HTTPS (tunen/erweitern) -------------------------------------
+# Sobald es einen internen DNS-Namen gibt, einfach so ersetzen. Caddy holt/
+# verwaltet das Zertifikat dann automatisch (bzw. interne CA im LAN):
+#
+# mobilfunk.intern.alpla {
+#     encode gzip
+#     handle /api/* { reverse_proxy 127.0.0.1:8000 }
+#     handle { root * /opt/mobilfunkverwaltung/frontend/dist; try_files {path} /index.html; file_server }
+# }

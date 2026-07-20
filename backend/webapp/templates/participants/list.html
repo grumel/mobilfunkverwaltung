@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="bar">
+    <input id="q" type="search" value="{{ q }}" autocomplete="off" autofocus
+           placeholder="Suche: Name, GSM, Werk, Konto, Tarif …">
+    {% if can('write') %}
+      <a class="btn accent" href="{{ url_for('participants.new_participant') }}">+ Neu</a>
+      <button type="button" class="btn" id="mergeBtn" onclick="toggleMerge()">Zusammenführen</button>
+    {% endif %}
+    <span id="count">{{ total }} Treffer</span>
+    <span id="mergebar" class="hint-dim" hidden>
+      <b><span id="mergecount">0</span> ausgewählt</b> —
+      <a href="#" onclick="doMerge();return false;">zusammenführen</a> ·
+      <a href="#" onclick="toggleMerge();return false;">abbrechen</a>
+    </span>
+    <span class="hint-dim" id="defaulthint">Rechtsklick = Aktionen · Doppelklick = Bearbeiten</span>
+  </div>
+
+  <div class="tablecard">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            {% for key, label in columns %}<th>{{ label }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          {% include "participants/_rows.html" %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="ctxmenu" class="ctxmenu" hidden></div>
+<div id="toast" class="toast" hidden></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const CFG = {
+    rowsUrl:   "{{ rows_url }}",
+    provider:  {{ provider|tojson }},
+    providers: {{ providers|tojson }},
+    canWrite:  {{ can('write')|tojson }},
+    canDelete: {{ can('delete')|tojson }},
+    back:      window.location.pathname + window.location.search,
+    csrf:      {{ csrf_token()|tojson }},
+  };
+
+  // --- Live-Suche ---------------------------------------------------------
+  const input = document.getElementById('q');
+  const tbody = document.getElementById('tbody');
+  const count = document.getElementById('count');
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const res = await fetch(CFG.rowsUrl + '?q=' + encodeURIComponent(input.value));
+      tbody.innerHTML = await res.text();
+      count.textContent = tbody.querySelectorAll('tr').length + ' Treffer';
+    }, 150);
+  });
+
+  // --- Doppelklick = Bearbeiten ------------------------------------------
+  tbody.addEventListener('dblclick', (e) => {
+    if (mergeMode) return;
+    const tr = e.target.closest('tr');
+    if (tr && tr.dataset.id) location.href = '/participant/' + tr.dataset.id + '/edit';
+  });
+
+  // --- Hilfsfunktionen ----------------------------------------------------
+  function toast(text) {
+    const t = document.getElementById('toast');
+    t.textContent = text; t.hidden = false;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.hidden = true; }, 1800);
+  }
+  function postAction(url, extra) {
+    const f = document.createElement('form');
+    f.method = 'POST'; f.action = url;
+    const add = (n, v) => { const i = document.createElement('input');
+      i.type = 'hidden'; i.name = n; i.value = v; f.appendChild(i); };
+    add('back', CFG.back);
+    add('csrf_token', CFG.csrf);
+    for (const k in (extra || {})) add(k, extra[k]);
+    document.body.appendChild(f); f.submit();
+  }
+
+  // --- Kontextmenü --------------------------------------------------------
+  const menu = document.getElementById('ctxmenu');
+  function hideMenu() { menu.hidden = true; menu.innerHTML = ''; }
+  document.addEventListener('click', hideMenu);
+  document.addEventListener('scroll', hideMenu, true);
+
+  tbody.addEventListener('contextmenu', (e) => {
+    const tr = e.target.closest('tr');
+    if (!tr || !tr.dataset.id) return;
+    e.preventDefault();
+    const id = tr.dataset.id;
+    const name = tr.dataset.name || ('ID ' + id);
+    const verified = tr.dataset.verified === '1';
+    const cellText = (e.target.closest('td') || {}).innerText || '';
+
+    const items = [];
+    items.push({ label: 'Bearbeiten', act: () => location.href = '/participant/' + id + '/edit' });
+    items.push({ label: 'Zelle kopieren', act: () => {
+      navigator.clipboard.writeText(cellText.trim()).then(() => toast('Kopiert: ' + cellText.trim()));
+    }});
+    if (CFG.canWrite) {
+      items.push({ sep: true });
+      items.push({ label: 'Zu Aufgabe …', act: () => location.href = '/participant/' + id + '/task/new' });
+      items.push({ label: verified ? 'Als offen markieren' : 'Als geprüft markieren',
+                   act: () => postAction('/participant/' + id + '/verify') });
+      CFG.providers.filter(p => p !== CFG.provider).forEach(p => {
+        items.push({ label: '→ nach ' + p,
+                     act: () => postAction('/participant/' + id + '/move', { provider: p }) });
+      });
+    }
+    if (CFG.canDelete) {
+      items.push({ sep: true });
+      items.push({ label: 'Löschen', danger: true, act: () => {
+        if (confirm('Wirklich löschen?\n\n' + name)) postAction('/participant/' + id + '/delete');
+      }});
+    }
+
+    menu.innerHTML = '';
+    items.forEach(it => {
+      if (it.sep) { const s = document.createElement('div'); s.className = 'ctx-sep'; menu.appendChild(s); return; }
+      const el = document.createElement('div');
+      el.className = 'ctx-item' + (it.danger ? ' danger' : '');
+      el.textContent = it.label;
+      el.addEventListener('click', (ev) => { ev.stopPropagation(); hideMenu(); it.act(); });
+      menu.appendChild(el);
+    });
+    menu.style.left = Math.min(e.pageX, window.innerWidth - 210) + 'px';
+    menu.style.top = e.pageY + 'px';
+    menu.hidden = false;
+  });
+
+  // --- Zusammenführen (Mehrfachauswahl) ----------------------------------
+  let mergeMode = false;
+  const selected = new Set();
+  window.toggleMerge = function () {
+    mergeMode = !mergeMode;
+    selected.clear();
+    tbody.querySelectorAll('tr.selected').forEach(tr => tr.classList.remove('selected'));
+    document.body.classList.toggle('merge-mode', mergeMode);
+    document.getElementById('mergebar').hidden = !mergeMode;
+    document.getElementById('defaulthint').hidden = mergeMode;
+    const b = document.getElementById('mergeBtn');
+    if (b) b.textContent = mergeMode ? 'Auswahl beenden' : 'Zusammenführen';
+    updateMergeCount();
+  };
+  function updateMergeCount() {
+    const el = document.getElementById('mergecount'); if (el) el.textContent = selected.size;
+  }
+  tbody.addEventListener('click', (e) => {
+    if (!mergeMode) return;
+    const tr = e.target.closest('tr'); if (!tr || !tr.dataset.id) return;
+    const id = tr.dataset.id;
+    if (selected.has(id)) { selected.delete(id); tr.classList.remove('selected'); }
+    else { selected.add(id); tr.classList.add('selected'); }
+    updateMergeCount();
+  });
+  window.doMerge = function () {
+    if (selected.size < 2) { alert('Bitte mindestens 2 Einträge auswählen.'); return; }
+    if (!confirm(selected.size + ' Einträge zusammenführen?\n\nLeere Felder des ältesten '
+                 + 'Eintrags werden aus den anderen gefüllt, die übrigen gelöscht.')) return;
+    const f = document.createElement('form');
+    f.method = 'POST'; f.action = '/participants/merge';
+    const add = (n, v) => { const i = document.createElement('input');
+      i.type = 'hidden'; i.name = n; i.value = v; f.appendChild(i); };
+    add('back', CFG.back);
+    add('csrf_token', CFG.csrf);
+    selected.forEach(id => add('ids', id));
+    document.body.appendChild(f); f.submit();
+  };
+</script>
+{% endblock %}

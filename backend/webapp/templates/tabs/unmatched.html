@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Nicht zugeordnet · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="bar"><span id="count">{{ rows|length }} Geräte ohne Zuordnung</span></div>
+  <div class="tablecard">
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Quelle</th><th>GSM</th><th>Benutzer</th><th>Gerät</th>
+          <th>Startdatum</th><th>Importiert</th>
+        </tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.quelle or '—' }}</td>
+            <td>{{ r.gsm or '—' }}</td>
+            <td>{{ r.benutzer or '—' }}</td>
+            <td>{{ r.geraet or '—' }}</td>
+            <td>{{ r.startdatum or '—' }}</td>
+            <td>{{ r.importdatum or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

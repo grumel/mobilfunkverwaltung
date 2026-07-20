@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Statistik · Mobilfunkverwaltung{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="tiles">
+    {% set t = [('Teilnehmer', stats.total, 'blue'),
+                ('Geprüft', stats.verified, 'green'),
+                ('Zur Prüfung', stats.zur_pruefung, 'orange'),
+                ('Ohne GSM', stats.ohne_gsm, 'grey'),
+                ('Mit Syno-Gerät', stats.mit_syno, 'blue'),
+                ('Abgelaufen', stats.abgelaufen, 'red'),
+                ('Ablauf < 30 T', stats.ablauf_30, 'orange'),
+                ('Ablauf 30–60 T', stats.ablauf_60, 'orange'),
+                ('Ablauf 60–90 T', stats.ablauf_90, 'grey')] %}
+    {% for label, val, cls in t %}
+      <div class="tile {{ cls }}"><div class="tval">{{ val }}</div><div class="tlbl">{{ label }}</div></div>
+    {% endfor %}
+  </div>
+
+  <div class="statcols">
+    <div class="tablecard">
+      <div class="scroll" style="max-height:340px">
+        <table>
+          <thead><tr><th>Werk</th><th class="num">Teilnehmer</th></tr></thead>
+          <tbody>
+            {% for w in werke %}<tr><td>{{ w.werk }}</td><td class="num">{{ w.n }}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="tablecard">
+      <div class="bar" style="padding:8px 12px;margin:0"><b>Ablaufende Verträge (90 Tage): {{ ablauf|length }}</b></div>
+      <div class="scroll" style="max-height:340px">
+        <table>
+          <thead><tr><th>Vtg.-Ende</th><th>Name</th><th>Werk</th><th>GSM</th><th>Register</th></tr></thead>
+          <tbody>
+            {% for r in ablauf %}
+            <tr><td>{{ r.vertragsende }}</td><td>{{ r.name or '—' }}</td><td>{{ r.plant or '—' }}</td>
+                <td>{{ r.gsm or '—' }}</td><td>{{ r.provider or 'Vodafone' }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
