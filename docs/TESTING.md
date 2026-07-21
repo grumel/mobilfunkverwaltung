@@ -4,6 +4,9 @@
 
 - Backend: `compileall` und `scripts/backend-ci-smoke.py` mit temporärer
   SQLite-Datenbank, App-Factory, Version, Login und Session.
+- Phase 3: `scripts/backend-regression-tests.py` prüft zusätzlich ungültige
+  Anmeldungen, Rollenbasis, Teilnehmerliste, Summary, Tasks, Statistik,
+  Dokumentliste, Traversal-Fälle und Logout mit temporären Fixtures.
 - Frontend: `npm ci` und `npm run build`.
 - Linux: `scripts/smoke-test-linux.sh` prüft Backend, Caddy/Frontend und kann
   Login/Session über Laufzeitvariablen prüfen.
