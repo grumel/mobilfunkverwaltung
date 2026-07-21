@@ -262,3 +262,17 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
   schließen, bevor produktionsnahe interne Module verschoben werden.
 - Windows-Betrieb und optionale PostgreSQL-Nutzung in eigenen Arbeitsschritten
   bewerten.
+
+## Windows-Runtime
+
+Die erste Windows-Portierung ist als lokale Webanwendung mit Waitress und
+integrierter React-SPA-Auslieferung vorbereitet. Sie ist kein EXE-Paket und
+kein Windows-Dienst. Voraussetzungen, Pfade, Start, Backup und Einschränkungen
+stehen in [docs/WINDOWS.md](docs/WINDOWS.md).
+
+Schnellstart in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
+```
