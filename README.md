@@ -11,7 +11,10 @@ Codebasis zusammen.
 
 ## Status
 
-Die Monorepo-Migration ist abgeschlossen:
+Die Monorepo-Migration ist abgeschlossen. Der produktive Stand ist
+`v1.0.0-monorepo` (Commit `3a822f64c9ba0b2d856028939c428ff582cee61f`).
+Phase 2 „Technische Konsolidierung“ erfasst technische Schulden und Testlücken;
+funktionale Änderungen sind ausdrücklich ausgeschlossen.
 
 - Backend-Historie bis `420fb1d` unter `backend/` übernommen.
 - Frontend-Historie bis `ceaeaf4` unter `frontend/` übernommen.
@@ -19,11 +22,11 @@ Die Monorepo-Migration ist abgeschlossen:
   erhalten.
 - Backendlogik, React-Oberfläche, REST-API und Datenbankschema wurden durch die
   Migration nicht verändert.
-- Der Migrationsbranch ist `chore/monorepo-migration`; produktives `main` wird
-  ausschließlich über einen geprüften Merge aktualisiert.
-- Linux bleibt die produktive Zielplattform. Windows-Unterstützung ist später
-  geplant; vorhandene frühe Dateien unter `deploy/windows/` werden in diesem
-  Schritt weder erweitert noch als produktionsreif erklärt.
+- Produktives `main` enthält den geprüften Merge und den Produktionsbericht.
+- Der Cleanup-Arbeitsstand liegt auf `chore/project-cleanup`; Änderungen dort
+  bleiben API-, UI- und Datenbank-neutral.
+- Linux bleibt die produktive Zielplattform. Die vorhandenen frühen Dateien
+  unter `deploy/windows/` sind nicht produktionsreif und werden separat bewertet.
 
 ## Architektur
 
@@ -231,13 +234,26 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 - [Linux-Deployment](deploy/linux/INSTALL.md)
 - [Optionale PostgreSQL-Migration](deploy/linux/POSTGRES.md)
 - [Plattformanalyse](deploy/PLATFORM_ANALYSIS.md)
+- [Technische Schulden und Testprioritäten](docs/TECH_DEBT.md)
+- [Produktionsbericht](docs/PRODUCTION_DEPLOYMENT_REPORT.md)
+
+## Roadmap
+
+1. **Phase 2 – technische Konsolidierung:** technische Schulden dokumentieren,
+   Testlücken priorisieren, Sicherheits- und Pfadprüfungen verbessern, ohne
+   Verhalten zu ändern.
+2. **Phase 3 – Regressionstests:** temporäre SQLite-Fixtures für Authentifizierung,
+   Rollen, CRUD, Importe, Uploads, Dokumente und Exporte ergänzen.
+3. **Phase 4 – sichere interne Refactorings:** erst nach grünen Regressionstests
+   kleine Extraktionen durchführen und jeden Schritt separat deployen.
+4. **Später:** PostgreSQL als optionaler Skalierungspfad sowie eine eigenständige
+   Bewertung der Windows-Vorbereitung.
 
 ## Bekannte offene Punkte
 
-- Migrationsbranch per Pull Request nach `main` übernehmen.
-- Produktionsserver kontrolliert und mit geprüftem Rollback umstellen.
+- Dediziertes Testkonto für den authentifizierten Smoke-Test bereitstellen.
 - Native Deploymenttests auf einem Linux-Testhost ergänzen.
-- Windows-Betrieb erst in einem eigenen, späteren Arbeitsschritt bewerten und
-  implementieren.
-- Kandidaten aus [docs/CLEANUP.md](docs/CLEANUP.md) erst nach belastbaren
-  Regressionstests bereinigen.
+- Die priorisierten Testlücken aus [docs/TECH_DEBT.md](docs/TECH_DEBT.md)
+  schließen, bevor produktionsnahe interne Module verschoben werden.
+- Windows-Betrieb und optionale PostgreSQL-Nutzung in eigenen Arbeitsschritten
+  bewerten.
