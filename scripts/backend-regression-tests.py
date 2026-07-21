@@ -74,6 +74,27 @@ def main() -> None:
         ).status_code == 400
 
         assert client.post("/api/logout").status_code == 200
+        assert client.post("/api/login", json={"username": "reader", "password": "reader-pass"}).status_code == 200
+        assert client.post("/api/participants", json={"name": "Denied"}).status_code == 403
+        assert client.post("/api/participants/1/tasks", json={"kommentar": "Denied"}).status_code == 403
+
+        assert client.post("/api/logout").status_code == 200
+        assert client.post("/api/login", json={"username": "admin", "password": "admin-pass"}).status_code == 200
+        created = client.post("/api/participants", json={"name": "CRUD Fixture", "gsm": "491701111111"})
+        assert created.status_code == 201, created.get_data(as_text=True)
+        participant_id = created.json["participant"]["id"]
+        assert client.put(f"/api/participants/{participant_id}", json={"name": "CRUD Updated"}).status_code == 200
+        assert client.post(f"/api/participants/{participant_id}/verify").status_code == 200
+        assert client.post(f"/api/participants/{participant_id}/overhead").status_code == 200
+        assert client.post(f"/api/participants/{participant_id}/move", json={"provider": "Telekom"}).status_code == 200
+        task = client.post(f"/api/participants/{participant_id}/tasks", json={"kommentar": "CRUD Task"})
+        assert task.status_code == 201, task.get_data(as_text=True)
+        task_id = task.json["id"]
+        assert client.post(f"/api/tasks/{task_id}/done").status_code == 200
+        assert client.delete(f"/api/tasks/{task_id}").status_code == 200
+        assert client.delete(f"/api/participants/{participant_id}").status_code == 200
+
+        assert client.post("/api/logout").status_code == 200
         assert client.get("/api/me").status_code == 401
 
         print("Backend regression tests passed (temporary SQLite database).")
