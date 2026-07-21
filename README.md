@@ -235,6 +235,11 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 - [Optionale PostgreSQL-Migration](deploy/linux/POSTGRES.md)
 - [Plattformanalyse](deploy/PLATFORM_ANALYSIS.md)
 - [Technische Schulden und Testprioritäten](docs/TECH_DEBT.md)
+- [Architektur](docs/ARCHITECTURE.md)
+- [Sicherheit](docs/SECURITY.md)
+- [Performance](docs/PERFORMANCE.md)
+- [Teststrategie](docs/TESTING.md)
+- [Roadmap](docs/ROADMAP.md)
 - [Produktionsbericht](docs/PRODUCTION_DEPLOYMENT_REPORT.md)
 
 ## Roadmap
