@@ -15,6 +15,8 @@ Import-/Exportlogik, CSS und produktive Konfigurationen blieben unverändert.
 - `docs/TECH_DEBT.md` erstellt: Befunde zu Doppelstrukturen, Pfaden,
   Sicherheit, Logging, Performance, Konfiguration und Testlücken jeweils mit
   Fundstelle, Risiko, Priorität und Empfehlung.
+- `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, `docs/PERFORMANCE.md`,
+  `docs/TESTING.md` und `docs/ROADMAP.md` erstellt.
 - `README.md` aktualisiert: Produktionsversion `v1.0.0-monorepo`, aktueller
   Monorepo-/Cleanup-Status, Architekturdiagramm-Verweis, Roadmap und offene
   Punkte.
@@ -40,6 +42,8 @@ Import-/Exportlogik, CSS und produktive Konfigurationen blieben unverändert.
   verändert.
 - Keine Abhängigkeit, kein Lockfile und keine globale Installation wurde
   geändert.
+- `npm ci`, Frontend-Produktionsbuild, Shell-Syntaxprüfungen und Secret-Scan
+  erneut erfolgreich ausgeführt.
 - Git-Arbeitsbaum nach den Commits ist sauber; die Änderungen sind auf den
   Cleanup-Branch begrenzt.
 
