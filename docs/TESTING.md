@@ -11,6 +11,9 @@
 - Frontend: `npm ci` und `npm run build`.
 - Linux: `scripts/smoke-test-linux.sh` prüft Backend, Caddy/Frontend und kann
   Login/Session über Laufzeitvariablen prüfen.
+- Frontend: `scripts/frontend-regression-check.mjs` prüft nach dem Build
+  Asset-Vollständigkeit, zentrale Komponenten, API-Client-Methoden,
+  same-origin Credentials und Multipart-Unterstützung.
 - CI: Backend-, Frontend- und Monorepo-Workflows prüfen Syntax, Struktur und
   Build.
 
