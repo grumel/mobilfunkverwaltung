@@ -52,6 +52,11 @@ Die Anwendung verwendet weiterhin die vorhandene Datenwurzel
 nicht verschoben. Die Environment-Datei hat den Modus `0600` und gehört
 `root:root`; der Dienst liest sie weiterhin über systemd ein.
 
+Die vollständige Vorher-/Nachher-Erfassung steht im lokalen
+[Migrationsprotokoll](PRODUCTION_MIGRATION_LOG.md). Zum Zeitpunkt der Sicherung
+waren SQLite-WAL- und SHM-Dateien vorhanden; sie wurden im Datenarchiv
+mitgesichert.
+
 Vor der Umschaltung wurde der neue Backend-Build erfolgreich auf einem
 separaten Loopback-Port gegen die Produktionskonfiguration getestet.
 
@@ -87,10 +92,14 @@ Die endgültige Abnahme ergab:
 - Referenzbestände vor und nach der Umschaltung: unverändert
 - erwartete Sicherheits-Header: vorhanden
 - Prozess-Arbeitsverzeichnis und ausgelieferter Frontend-Pfad: Monorepo-Pfade
+- `npm audit --omit=dev`: 0 Schwachstellen; kein Audit-Fix ausgeführt
 
 Der optionale authentifizierte Smoke-Test wurde nicht ausgeführt, weil keine
 dedizierten Testzugangsdaten bereitgestellt wurden. Es wurden bewusst keine
 produktiven Datensätze verändert, um schreibende Tests durchzuführen.
+Die manuelle fachliche Abnahme (Login/Logout, reversible Schreibprüfung,
+Dokumentzugriff und Browserkonsole) bleibt daher als Beobachtungspunkt mit
+dediziertem Testkonto offen.
 
 ## Rollback- und Aufbewahrungsstatus
 
