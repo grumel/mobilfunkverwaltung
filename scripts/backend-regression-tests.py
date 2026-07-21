@@ -62,7 +62,13 @@ def main() -> None:
         assert client.get("/api/summary").status_code == 200
         assert client.get("/api/tasks").status_code == 200
         assert client.get("/api/stats").status_code == 200
+        documents_dir = Path(data_dir) / "Kuendigungen"
+        documents_dir.mkdir()
+        (documents_dir / "fixture.txt").write_text("temporary document", encoding="utf-8")
         assert client.get("/api/documents").status_code == 200
+        document = client.get("/api/documents/fixture.txt")
+        assert document.status_code == 200
+        assert document.data == b"temporary document"
         assert client.get("/api/documents/../../etc/passwd").status_code in (400, 404)
         assert client.get("/api/syno/file/../../etc/passwd").status_code == 400
         assert client.post("/api/import/vodafone/preview").status_code == 400
@@ -70,6 +76,11 @@ def main() -> None:
         assert client.post(
             "/api/import/vodafone/preview",
             data={"file": (BytesIO(b"not-an-excel-file"), "invalid.txt")},
+            content_type="multipart/form-data",
+        ).status_code == 400
+        assert client.post(
+            "/api/import/vodafone/preview",
+            data={"file": (BytesIO(b"not-a-valid-xlsx"), "fixture.xlsx")},
             content_type="multipart/form-data",
         ).status_code == 400
 
