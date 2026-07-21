@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+from io import BytesIO
 from pathlib import Path
 
 
@@ -63,6 +64,14 @@ def main() -> None:
         assert client.get("/api/stats").status_code == 200
         assert client.get("/api/documents").status_code == 200
         assert client.get("/api/documents/../../etc/passwd").status_code in (400, 404)
+        assert client.get("/api/syno/file/../../etc/passwd").status_code == 400
+        assert client.post("/api/import/vodafone/preview").status_code == 400
+        assert client.post("/api/import/syno").status_code == 400
+        assert client.post(
+            "/api/import/vodafone/preview",
+            data={"file": (BytesIO(b"not-an-excel-file"), "invalid.txt")},
+            content_type="multipart/form-data",
+        ).status_code == 400
 
         assert client.post("/api/logout").status_code == 200
         assert client.get("/api/me").status_code == 401
