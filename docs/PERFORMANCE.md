@@ -7,6 +7,13 @@ Gunicorn mit zwei synchronen Workern und SQLite; Caddy komprimiert Antworten.
 Die aktuellen Buildgrößen und Laufzeiten werden durch CI/Smoke-Test sichtbar,
 aber noch nicht als dauerhafte Zeitreihe erfasst.
 
+Eine reproduzierbare lokale Baseline kann mit
+`backend/.venv/bin/python scripts/performance-baseline.py` erzeugt werden. Die
+erste Messung mit 100 temporären Teilnehmer-Fixtures (Median aus fünf Läufen)
+ergab: `/api/participants` 2,76 ms, `/api/summary` 1,24 ms, `/api/tasks`
+1,11 ms und `/api/stats` 4,27 ms. Diese Werte sind Vergleichswerte für spätere
+Änderungen, keine Produktions-SLOs.
+
 ## Beobachtete Kandidaten
 
 - `webapp/__init__.py` berechnet offene Aufgaben im Context Processor pro Request
