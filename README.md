@@ -280,7 +280,9 @@ powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
 Environment-Datei mit frisch erzeugtem Secret an. `start.ps1` startet Waitress
 auf <http://127.0.0.1:8000/> und wartet, bis `/api/version` antwortet; mit
 `-OpenBrowser` wird zusätzlich der Browser geöffnet. Weiter stehen
-`stop.ps1`, `update.ps1`, `backup.ps1` und `start-dev.ps1` bereit.
+`stop.ps1`, `update.ps1`, `backup.ps1`, `start-dev.ps1` und `uninstall.ps1`
+bereit. `uninstall.ps1` entfernt nur Venv, Frontend-Build und Caches im
+Checkout; Datenbank, Dokumente und Secret bleiben unangetastet.
 
 Standardpfade:
 

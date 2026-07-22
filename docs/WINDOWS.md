@@ -55,6 +55,19 @@ Frontend-Roots. Logs liegen unter `%PROGRAMDATA%\Mobilfunkverwaltung\logs`.
 
 Es gibt keinen Windows-Dienst, keine Firewallregel, kein HTTPS, keine EXE und
 kein WebView2. Ein echter Windows-Hosttest einschließlich Excel, LibreOffice,
-Datei-Locking, Umlauten und langen Pfaden bleibt erforderlich. Nach einem
-geprüften Backup können Repository und Venv entfernt werden; der Datenordner
-bleibt erhalten.
+Datei-Locking, Umlauten und langen Pfaden bleibt erforderlich.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\uninstall.ps1
+```
+
+`uninstall.ps1` beendet eine laufende Instanz und entfernt danach ausschließlich
+erzeugte Laufzeitartefakte innerhalb des Checkouts: `backend\.venv`,
+`frontend\dist`, `frontend\node_modules` und die `__pycache__`-Verzeichnisse.
+Vor dem Löschen wird die Liste angezeigt und rückgefragt; `-Force` überspringt
+nur die Rückfrage, `-WhatIf` zeigt den Ablauf ohne Änderung. Das
+Datenverzeichnis mit Datenbank, Dokumenten, Logs und Secret wird nie angefasst,
+sondern nur zur Kontrolle ausgegeben — vorher `backup.ps1` ausführen und die
+Sicherung prüfen. Den Checkout selbst löschst du anschließend von Hand; da
+weder Dienst noch Registry-Einträge oder Verknüpfungen angelegt wurden, bleibt
+sonst nichts im System zurück.
