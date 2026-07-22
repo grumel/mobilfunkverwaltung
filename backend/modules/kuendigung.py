@@ -249,7 +249,6 @@ def convert_to_pdf_soffice(docx_path: Path) -> Path:
     """Konvertiert eine .docx über LibreOffice (headless) zu PDF – für den
     Linux-Server (statt Word-COM). Nutzt ein eigenes, temporäres LibreOffice-
     Profil, damit es nicht mit einer offenen LibreOffice-Sitzung kollidiert."""
-    import shutil
     import subprocess
     import tempfile
 
