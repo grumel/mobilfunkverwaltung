@@ -3,6 +3,7 @@
 [![Backend](https://github.com/grumel/mobilfunkverwaltung/actions/workflows/backend.yml/badge.svg?branch=main)](https://github.com/grumel/mobilfunkverwaltung/actions/workflows/backend.yml)
 [![Frontend](https://github.com/grumel/mobilfunkverwaltung/actions/workflows/frontend.yml/badge.svg?branch=main)](https://github.com/grumel/mobilfunkverwaltung/actions/workflows/frontend.yml)
 [![Monorepo structure](https://github.com/grumel/mobilfunkverwaltung/actions/workflows/monorepo.yml/badge.svg?branch=main)](https://github.com/grumel/mobilfunkverwaltung/actions/workflows/monorepo.yml)
+[![Windows runtime](https://github.com/grumel/mobilfunkverwaltung/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/grumel/mobilfunkverwaltung/actions/workflows/windows.yml)
 
 Webbasierte Verwaltung von Mobilfunkteilnehmern, Verträgen, Importen,
 Dokumenten und Aufgaben. Dieses Repository führt das bestehende Flask-Backend
@@ -25,10 +26,19 @@ funktionale Änderungen sind ausdrücklich ausgeschlossen.
 - Produktives `main` enthält den geprüften Merge und den Produktionsbericht.
 - Der Cleanup-Arbeitsstand liegt auf `chore/project-cleanup`; Änderungen dort
   bleiben API-, UI- und Datenbank-neutral.
-- Linux bleibt die produktive Zielplattform. Die vorhandenen frühen Dateien
-  unter `deploy/windows/` sind nicht produktionsreif und werden separat bewertet.
+- Linux bleibt die produktive Zielplattform mit Gunicorn, Caddy und systemd.
+- Die Windows-Runtime ist implementiert und liegt auf
+  `feature/windows-runtime`. Sie ist eine lokale Einzelplatz-Webanwendung mit
+  Waitress, kein Windows-Dienst und kein EXE-Paket. Linux-Pfade, REST-API,
+  Datenbankschema und React-Oberfläche bleiben unverändert.
+- `feature/windows-runtime` enthält zusätzlich die isolierten
+  Backend-Regressionstests, den Frontend-Integritätscheck und die
+  Performance-Baseline. Der Branch ist ein Fast-Forward auf `main` und wird
+  ausschließlich über einen geprüften Pull Request übernommen.
 
 ## Architektur
+
+Linux-Produktivbetrieb:
 
 ```text
 Browser
@@ -39,8 +49,24 @@ Caddy :80
    `-- /api/*  -> Gunicorn :8000 -> Flask -> SQLAlchemy -> SQLite
 ```
 
-Im Linux-Produktivbetrieb ist Caddy der öffentliche Einstiegspunkt. Gunicorn
-lauscht nur lokal. Schreibbare Daten liegen außerhalb des Git-Checkouts.
+Caddy ist der öffentliche Einstiegspunkt, Gunicorn lauscht nur lokal.
+Schreibbare Daten liegen außerhalb des Git-Checkouts.
+
+Windows-Runtime (lokaler Einzelplatz, ohne Caddy):
+
+```text
+Browser
+   |
+   v
+Waitress 127.0.0.1:8000  (backend/run_windows.py)
+   |-- /api/*  -> Flask -> SQLAlchemy -> SQLite
+   `-- /*      -> frontend/dist, SPA-Fallback auf index.html
+```
+
+Ein schlanker WSGI-Wrapper trennt `/api/*` von den statischen Dateien, liefert
+für unbekannte Pfade `index.html` aus und weist Pfade außerhalb des
+Frontend-Roots ab. Beide Plattformen benutzen denselben WSGI-Einstiegspunkt
+`backend/wsgi.py`.
 
 ## Repository-Struktur
 
@@ -52,7 +78,9 @@ mobilfunkverwaltung/
 │   ├── webapp/                 App-Factory, API, Modelle und Jinja-Fallback
 │   ├── requirements.txt
 │   ├── requirements-server.txt
-│   └── run.py
+│   ├── run.py                  plattformneutraler lokaler Start
+│   ├── run_windows.py          Waitress mit integrierter SPA-Auslieferung
+│   └── wsgi.py                 gemeinsamer WSGI-Einstiegspunkt
 ├── frontend/                   React/Vite-Oberfläche
 │   ├── public/
 │   ├── src/
@@ -60,11 +88,16 @@ mobilfunkverwaltung/
 │   └── vite.config.js
 ├── deploy/
 │   ├── linux/                  Caddy, systemd, Installer und Betriebsdoku
-│   └── windows/                übernommene frühe Vorbereitung, nicht erweitert
+│   └── windows/                PowerShell-Runtime: install, start, stop,
+│                               update, backup und Konfigurationsvorlage
 ├── scripts/
-│   ├── backend-ci-smoke.py     isolierter CI-Smoke-Test
-│   ├── smoke-test-linux.sh     Produktions-Smoke-Test
-│   └── rollback-linux.sh       nur Konfigurations-/Release-Rollback
+│   ├── backend-ci-smoke.py           isolierter CI-Smoke-Test
+│   ├── backend-regression-tests.py   isolierte Regressionstests
+│   ├── frontend-regression-check.mjs Integritätscheck des Frontend-Builds
+│   ├── performance-baseline.py       reproduzierbare Performance-Baseline
+│   ├── smoke-test-linux.sh           Produktions-Smoke-Test Linux
+│   ├── smoke-test-windows.ps1        Smoke-Test der Windows-Runtime
+│   └── rollback-linux.sh             nur Konfigurations-/Release-Rollback
 ├── docs/
 ├── .github/workflows/
 ├── .gitignore
@@ -87,7 +120,19 @@ Für Linux-Produktion zusätzlich:
 - LibreOffice für den bestehenden PDF-Export
 - optional `sqlite3` für konsistente Online-Backups
 
+Für die Windows-Runtime zusätzlich:
+
+- Windows 10/11 oder Windows Server 2019+ mit PowerShell 5.1+
+- Waitress aus `backend/requirements-server.txt` (dort plattformabhängig
+  markiert; Linux installiert weiterhin nur Gunicorn)
+- LibreOffice für den PDF-Export
+- weder Caddy noch Administratorrechte
+
 ## Lokale Entwicklung
+
+Die folgenden Schritte gelten für Linux und macOS. Unter Windows übernimmt
+`deploy\windows\start-dev.ps1` Installation, Build und Start in einem Schritt,
+siehe [Windows-Runtime](#windows-runtime).
 
 Backend einrichten und starten:
 
@@ -134,6 +179,17 @@ Der Smoke-Test erzeugt eine temporäre SQLite-Datenbank, legt ausschließlich
 einen temporären CI-Benutzer an und prüft App-Factory, `/api/version`, Login und
 authentifizierte Session. Produktive Daten werden nicht gelesen.
 
+Regressionstests, Frontend-Integrität und Performance-Baseline:
+
+```bash
+backend/.venv/bin/python scripts/backend-regression-tests.py
+node scripts/frontend-regression-check.mjs
+backend/.venv/bin/python scripts/performance-baseline.py
+```
+
+Alle drei laufen gegen temporäre Fixtures beziehungsweise den lokalen Build und
+greifen nie auf produktive Daten zu.
+
 Linux-Dateien prüfen:
 
 ```bash
@@ -143,17 +199,25 @@ caddy validate --config deploy/linux/Caddyfile --adapter caddyfile
 
 ## Continuous Integration
 
-Die Workflows laufen bei Pull Requests nach `main` sowie Pushes auf `main` und
-`chore/monorepo-migration`:
+Alle Workflows laufen bei Pull Requests nach `main`. Zusätzlich laufen
+`backend.yml`, `frontend.yml` und `monorepo.yml` bei Pushes auf `main` und
+`chore/monorepo-migration`, `windows.yml` bei Pushes auf `main`,
+`chore/project-cleanup` und `feature/windows-runtime`:
 
-- `backend.yml`: Python 3.12, pip-Cache, Abhängigkeiten, `compileall` und
-  isolierter Flask/Login/API/SQLite-Smoke-Test.
-- `frontend.yml`: Node.js 20, npm-Cache, `npm ci`, optionales `npm test` und
-  Vite-Produktionsbuild.
-- `monorepo.yml`: Pflichtstruktur, Syntax aller Linux-Shellskripte und
+- `backend.yml` (Ubuntu): Python 3.12, pip-Cache, Abhängigkeiten, `compileall`
+  und isolierter Flask/Login/API/SQLite-Smoke-Test.
+- `frontend.yml` (Ubuntu): Node.js 20, npm-Cache, `npm ci`, optionales
+  `npm test` und Vite-Produktionsbuild.
+- `monorepo.yml` (Ubuntu): Pflichtstruktur, Syntax aller Linux-Shellskripte und
   Python-Kompilierung.
+- `windows.yml` (`windows-latest`): Abhängigkeiten, `compileall`, Smoke- und
+  Regressionstests, Frontend-Build, PowerShell-Syntaxprüfung aller Skripte
+  unter `deploy/windows/` sowie ein echter Waitress-Start mit anschließendem
+  `scripts/smoke-test-windows.ps1`.
 
 Alle Jobs besitzen nur lesenden Repository-Zugriff und geben keine Secrets aus.
+Der Windows-Job verwendet ausschließlich ein CI-Secret und ein temporäres
+Datenverzeichnis unterhalb von `RUNNER_TEMP`.
 
 ## Linux-Produktion
 
@@ -198,6 +262,50 @@ die Datenbank:
 sudo /opt/mobilfunkverwaltung/scripts/rollback-linux.sh
 ```
 
+## Windows-Runtime
+
+Die Windows-Runtime ist eine lokale Webanwendung mit Waitress und integrierter
+React-SPA-Auslieferung auf einem einzigen Port. Sie benötigt keinen Caddy, keine
+Administratorrechte, keinen Windows-Dienst und kein EXE-/WebView2-Paket.
+Details, Backup und Einschränkungen stehen in [docs/WINDOWS.md](docs/WINDOWS.md).
+
+Installation und Start in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
+```
+
+`install.ps1` legt Venv, Abhängigkeiten, Frontend-Build, Datenordner und eine
+Environment-Datei mit frisch erzeugtem Secret an. `start.ps1` startet Waitress
+auf <http://127.0.0.1:8000/> und wartet, bis `/api/version` antwortet; mit
+`-OpenBrowser` wird zusätzlich der Browser geöffnet. Weiter stehen
+`stop.ps1`, `update.ps1`, `backup.ps1` und `start-dev.ps1` bereit.
+
+Standardpfade:
+
+| Zweck | Pfad |
+| --- | --- |
+| Daten, Dokumente und Logs | `%PROGRAMDATA%\Mobilfunkverwaltung` |
+| SQLite | `%PROGRAMDATA%\Mobilfunkverwaltung\mobilfunk.db` |
+| Environment/Secret | `%PROGRAMDATA%\Mobilfunkverwaltung\mobilfunk.env.ps1` |
+| Backups | `%PROGRAMDATA%\Mobilfunkverwaltung\backups\<Zeitstempel>` |
+| Frontend-Build | `frontend\dist` im Checkout |
+
+`%LOCALAPPDATA%` dient als Fallback, ein gesetztes `MOBILFUNK_DATA_DIR` hat
+Vorrang. Die Environment-Datei bleibt außerhalb des Git-Checkouts;
+`deploy/windows/mobilfunk.env.example` enthält kein echtes Secret.
+
+Laufende Installation prüfen:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test-windows.ps1
+```
+
+Offen bleibt ein echter Windows-Hosttest mit Excel-Importen, LibreOffice-Export,
+Datei-Locking, Umlauten und langen Pfaden. HTTPS, Firewallregel und ein
+Dienstmodell sind bewusst nicht enthalten.
+
 ## Persistente Daten und Secrets
 
 Der Git-Checkout ist ausschließlich Anwendungscode. Folgende Inhalte gehören
@@ -208,9 +316,12 @@ nicht hinein:
 - Dokumente, Vorlagen, Upload-/Importdaten
 - Logs und Backups
 
-Sie verbleiben unter `/var/lib/mobilfunk` und müssen separat gesichert werden.
-Die Environment-Datei soll `root:root` gehören und Modus `0600` besitzen;
-systemd übergibt ihre Werte an den Dienstbenutzer `mobilfunk`.
+Unter Linux verbleiben sie in `/var/lib/mobilfunk`, unter Windows in
+`%PROGRAMDATA%\Mobilfunkverwaltung`. Beide Orte müssen separat gesichert
+werden. Die Linux-Environment-Datei soll `root:root` gehören und Modus `0600`
+besitzen; systemd übergibt ihre Werte an den Dienstbenutzer `mobilfunk`. Unter
+Windows erbt `mobilfunk.env.ps1` die Rechte des Datenordners und wird von
+`start.ps1` in die Sitzung geladen.
 
 ## Git-Historie und Remotes
 
@@ -234,6 +345,8 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 - [Linux-Deployment](deploy/linux/INSTALL.md)
 - [Optionale PostgreSQL-Migration](deploy/linux/POSTGRES.md)
 - [Plattformanalyse](deploy/PLATFORM_ANALYSIS.md)
+- [Windows-Runtime](docs/WINDOWS.md)
+- [Windows-Deployment](deploy/windows/README.md)
 - [Technische Schulden und Testprioritäten](docs/TECH_DEBT.md)
 - [Architektur](docs/ARCHITECTURE.md)
 - [Sicherheit](docs/SECURITY.md)
@@ -241,6 +354,8 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 - [Teststrategie](docs/TESTING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Produktionsbericht](docs/PRODUCTION_DEPLOYMENT_REPORT.md)
+- [Migrationsprotokoll der Produktion](docs/PRODUCTION_MIGRATION_LOG.md)
+- [Bericht zur technischen Konsolidierung](docs/TECHNICAL_CONSOLIDATION_REPORT.md)
 
 ## Roadmap
 
@@ -251,28 +366,21 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
    Rollen, CRUD, Importe, Uploads, Dokumente und Exporte ergänzen.
 3. **Phase 4 – sichere interne Refactorings:** erst nach grünen Regressionstests
    kleine Extraktionen durchführen und jeden Schritt separat deployen.
-4. **Später:** PostgreSQL als optionaler Skalierungspfad sowie eine eigenständige
-   Bewertung der Windows-Vorbereitung.
+4. **Windows-Runtime:** implementiert und in CI geprüft; offen bleibt die
+   Abnahme auf einem echten Windows-Host.
+5. **Später:** PostgreSQL als optionaler Skalierungspfad.
 
 ## Bekannte offene Punkte
 
+- `feature/windows-runtime` per Pull Request nach `main` übernehmen.
+- Windows-Abnahme auf einem echten Host: Excel-Import, LibreOffice-Export,
+  Datei-Locking, Umlaute und lange Pfade.
 - Dediziertes Testkonto für den authentifizierten Smoke-Test bereitstellen.
 - Native Deploymenttests auf einem Linux-Testhost ergänzen.
 - Die priorisierten Testlücken aus [docs/TECH_DEBT.md](docs/TECH_DEBT.md)
   schließen, bevor produktionsnahe interne Module verschoben werden.
-- Windows-Betrieb und optionale PostgreSQL-Nutzung in eigenen Arbeitsschritten
-  bewerten.
+- `backend-regression-tests.py` und `frontend-regression-check.mjs` laufen
+  bisher nur im Windows-Workflow; sie gehören auch in `backend.yml` und
+  `frontend.yml`.
+- Optionale PostgreSQL-Nutzung in einem eigenen Arbeitsschritt bewerten.
 
-## Windows-Runtime
-
-Die erste Windows-Portierung ist als lokale Webanwendung mit Waitress und
-integrierter React-SPA-Auslieferung vorbereitet. Sie ist kein EXE-Paket und
-kein Windows-Dienst. Voraussetzungen, Pfade, Start, Backup und Einschränkungen
-stehen in [docs/WINDOWS.md](docs/WINDOWS.md).
-
-Schnellstart in PowerShell:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1
-powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
-```
