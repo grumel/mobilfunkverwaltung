@@ -8,6 +8,8 @@ Die vollständige Anleitung steht in [`docs/WINDOWS.md`](../../docs/WINDOWS.md).
 
 Wichtige Dateien:
 
+- `bootstrap.ps1` – prüft Python, Node, Git, Word und Outlook, installiert
+  Fehlendes per winget und startet danach `install.ps1`
 - `install.ps1` – Venv, Abhängigkeiten, Frontend-Build und Datenordner
 - `start.ps1` – lokaler Waitress-/SPA-Start auf `127.0.0.1:8000`
 - `start-dev.ps1` – Installieren, Bauen und Starten für Entwicklung

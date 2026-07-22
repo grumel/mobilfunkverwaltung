@@ -28,10 +28,33 @@ LibreOffice. LibreOffice muss unter Windows deshalb nicht installiert sein.
 Ist weder Word noch LibreOffice vorhanden, meldet die API einen Fehler, der
 beide Wege benennt, statt im Konverter abzustürzen.
 
+Der Bootstrap prüft die Voraussetzungen, installiert Fehlendes auf Wunsch per
+winget und startet anschließend die eigentliche Installation:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\bootstrap.ps1 -CheckOnly
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\bootstrap.ps1 -Install
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
+```
+
+`-CheckOnly` zeigt nur den Bericht. Ohne `-Install` wird nichts nachinstalliert,
+sondern nur benannt, was fehlt. `-Install` versucht Python, Node.js und Git
+zuerst im Benutzerkontext zu installieren, also ohne Administratorrechte, und
+erst danach systemweit. Word und Outlook werden nur erkannt, nie installiert.
+Bewusst gibt es keine Setup-EXE: ein unsigniertes Installationsprogramm würde in
+einem verwalteten Netz mit Softwarerichtlinien blockiert.
+
+Sind alle Werkzeuge vorhanden, genügt der direkte Weg:
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1
 powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
 ```
+
+Schlägt bereits der Aufruf fehl, ist meist die Ausführungsrichtlinie per
+Gruppenrichtlinie gesetzt; `-ExecutionPolicy Bypass` greift dann nicht. In dem
+Fall müssen die Skripte signiert oder von der IT freigegeben werden.
+`bootstrap.ps1` weist auf diesen Fall hin.
 
 Standard ist <http://127.0.0.1:8000/>. Mit `-OpenBrowser` wird der Browser
 geöffnet. Für Entwicklung: `deploy\windows\start-dev.ps1 -OpenBrowser`.

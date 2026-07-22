@@ -275,9 +275,15 @@ Details, Backup und Einschränkungen stehen in [docs/WINDOWS.md](docs/WINDOWS.md
 Installation und Start in PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1
+powershell -ExecutionPolicy Bypass -File .\deploy\windows\bootstrap.ps1 -Install
 powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
 ```
+
+`bootstrap.ps1` prüft Python, Node.js, Git, Word und Outlook, installiert
+fehlende Werkzeuge auf Wunsch per winget — nach Möglichkeit ohne
+Administratorrechte — und ruft anschließend `install.ps1` auf. Mit `-CheckOnly`
+gibt es nur den Bericht. Eine Setup-EXE gibt es bewusst nicht: unsignierte
+Installationsprogramme werden in verwalteten Netzen blockiert.
 
 `install.ps1` legt Venv, Abhängigkeiten, Frontend-Build, Datenordner und eine
 Environment-Datei mit frisch erzeugtem Secret an. `start.ps1` startet Waitress
