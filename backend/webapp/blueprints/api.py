@@ -420,7 +420,7 @@ def neuvertrag_create():
 def participant_kuendigung(pid):
     """Kündigung/Rücknahme: Word-Vorlage füllen → PDF (LibreOffice) → Datei
     zum Download + Mailtext zurückgeben. Vorlagen liegen unter
-    <DATA_DIR>/Dokumente/vorlage_kündigung.docx bzw. vorlage_rücknahme.docx."""
+    <DATA_DIR>/Dokumente/vorlage_kuendigung.docx bzw. vorlage_ruecknahme.docx."""
     if not current_user():
         return jsonify(error="nicht angemeldet"), 401
     if not can("write"):

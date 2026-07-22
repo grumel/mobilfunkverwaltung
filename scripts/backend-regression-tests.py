@@ -14,6 +14,93 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
 
+def _build_template(path: Path, split_runs: bool, with_date_tag: bool) -> None:
+    """Erzeugt eine Vorlage wie Word sie speichert.
+
+    `split_runs` bildet den Normalfall echter Vorlagen nach: Word verteilt einen
+    getippten Platzhalter über mehrere Runs, sobald der Text nachbearbeitet
+    wurde.
+    """
+    import docx
+
+    doc = docx.Document()
+    doc.add_paragraph("Berlin, {{ datum }}" if with_date_tag else "Berlin, 01.01.2020")
+    paragraph = doc.add_paragraph()
+    if split_runs:
+        for chunk in ("Betrifft Rufnummer: {{ num", "mer", " }}"):
+            paragraph.add_run(chunk)
+    else:
+        paragraph.add_run("Betrifft Rufnummer: {{ nummer }}")
+    table = doc.add_table(rows=1, cols=1)
+    table.rows[0].cells[0].paragraphs[0].add_run("Tabelle: {{ nummer }}")
+    doc.save(str(path))
+
+
+def _text_of(path: Path) -> str:
+    import docx
+
+    document = docx.Document(str(path))
+    parts = [p.text for p in document.paragraphs]
+    parts += [cell.text for table in document.tables
+              for row in table.rows for cell in row.cells]
+    return "\n".join(parts)
+
+
+def check_letter_generation(data_dir: str) -> None:
+    """Kündigung und Rücknahme: plattformneutrales Füllen der Vorlage."""
+    from datetime import date
+
+    from modules import kuendigung as kmod
+
+    template_dir = Path(data_dir) / "Dokumente"
+    template_dir.mkdir(parents=True, exist_ok=True)
+    gsm = "491701234567"
+    today = date.today().strftime("%d.%m.%Y")
+
+    # Beide Schreiben-Typen, beide Vorlagenformen und beide Datumsvarianten.
+    for kind in ("kuendigung", "ruecknahme"):
+        for split_runs in (False, True):
+            for with_date_tag in (False, True):
+                template = kmod.TEMPLATES[kind]
+                _build_template(template, split_runs, with_date_tag)
+                text = _text_of(kmod.generate_letter(kind, gsm))
+                assert f"Betrifft Rufnummer: {gsm}" in text, (kind, split_runs, text)
+                assert f"Tabelle: {gsm}" in text, (kind, split_runs, text)
+                assert "{{" not in text, (kind, split_runs, text)
+                # Mit Platzhalter füllt docxtpl das Datum, ohne Platzhalter
+                # greift die Ersetzung über das Format DD.MM.YYYY.
+                assert f"Berlin, {today}" in text, (kind, with_date_tag, text)
+                template.unlink()
+
+    # Vorlagen mit dem alten Umlaut-Namen bleiben übergangsweise lesbar.
+    legacy = template_dir / kmod.LEGACY_TEMPLATES["kuendigung"]
+    _build_template(legacy, split_runs=True, with_date_tag=True)
+    assert kmod.resolve_template("kuendigung") == legacy
+    text = _text_of(kmod.generate_letter("kuendigung", gsm))
+    assert f"Betrifft Rufnummer: {gsm}" in text, text
+    legacy.unlink()
+
+    # Fehlerfälle bleiben unterscheidbar: die API meldet sie getrennt.
+    try:
+        kmod.resolve_template("unbekannt")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Unbekannter Schreiben-Typ muss ValueError auslösen")
+    try:
+        kmod.generate_letter("kuendigung", gsm)
+    except FileNotFoundError:
+        pass
+    else:
+        raise AssertionError("Fehlende Vorlage muss FileNotFoundError auslösen")
+
+    # Ohne GSM-Nummer bleibt das Schreiben erzeugbar.
+    template = kmod.TEMPLATES["ruecknahme"]
+    _build_template(template, split_runs=False, with_date_tag=True)
+    assert "unbekannt" in _text_of(kmod.generate_letter("ruecknahme", ""))
+    template.unlink()
+
+
 def main() -> None:
     with tempfile.TemporaryDirectory(prefix="mobilfunk-regression-") as data_dir:
         os.environ.update(
@@ -107,6 +194,10 @@ def main() -> None:
 
         assert client.post("/api/logout").status_code == 200
         assert client.get("/api/me").status_code == 401
+
+        # Nur das Füllen der Vorlage, ohne PDF-Konvertierung: LibreOffice ist
+        # in CI nicht installiert und der Schritt ist plattformspezifisch.
+        check_letter_generation(data_dir)
 
         print("Backend regression tests passed (temporary SQLite database).")
 
