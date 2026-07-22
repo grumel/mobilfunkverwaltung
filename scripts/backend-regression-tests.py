@@ -101,6 +101,70 @@ def check_letter_generation(data_dir: str) -> None:
     template.unlink()
 
 
+def check_pdf_engine_selection() -> None:
+    """Auswahl des PDF-Wegs, ohne Word oder LibreOffice zu benötigen."""
+    from modules import kuendigung as kmod
+
+    calls = []
+    original = (kmod.convert_to_pdf, kmod.convert_to_pdf_soffice,
+                kmod.word_available, kmod.find_soffice)
+    kmod.convert_to_pdf = lambda path: calls.append("word") or Path(path)
+    kmod.convert_to_pdf_soffice = lambda path: calls.append("soffice") or Path(path)
+    try:
+        # Windows mit Word: Word gewinnt, LibreOffice wird nicht gebraucht.
+        kmod.word_available = lambda: True
+        kmod.find_soffice = lambda: ""
+        calls.clear()
+        kmod.convert_to_pdf_auto(Path("brief.docx"))
+        assert calls == ["word"], calls
+
+        # Linux: kein Word, LibreOffice übernimmt.
+        kmod.word_available = lambda: False
+        kmod.find_soffice = lambda: "/usr/bin/soffice"
+        calls.clear()
+        kmod.convert_to_pdf_auto(Path("brief.docx"))
+        assert calls == ["soffice"], calls
+
+        # Weder noch: verständlicher Fehler statt Absturz im Konverter.
+        kmod.find_soffice = lambda: ""
+        try:
+            kmod.convert_to_pdf_auto(Path("brief.docx"))
+        except RuntimeError as exc:
+            assert "Word" in str(exc) and "LibreOffice" in str(exc), exc
+        else:
+            raise AssertionError("Fehlende PDF-Erzeugung muss RuntimeError auslösen")
+
+        # Erzwungene Engine ignoriert die Erkennung.
+        os.environ["MOBILFUNK_PDF_ENGINE"] = "soffice"
+        calls.clear()
+        kmod.convert_to_pdf_auto(Path("brief.docx"))
+        assert calls == ["soffice"], calls
+        os.environ["MOBILFUNK_PDF_ENGINE"] = "unsinn"
+        try:
+            kmod.convert_to_pdf_auto(Path("brief.docx"))
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Unbekannte Engine muss ValueError auslösen")
+    finally:
+        os.environ.pop("MOBILFUNK_PDF_ENGINE", None)
+        (kmod.convert_to_pdf, kmod.convert_to_pdf_soffice,
+         kmod.word_available, kmod.find_soffice) = original
+
+    # Portable LibreOffice-Kopie über MOBILFUNK_SOFFICE.
+    portable = Path(os.environ["MOBILFUNK_DATA_DIR"]) / "soffice-portable"
+    portable.write_text("#!/bin/sh\n", encoding="utf-8")
+    os.environ["MOBILFUNK_SOFFICE"] = str(portable)
+    try:
+        assert kmod.find_soffice() == str(portable)
+    finally:
+        os.environ.pop("MOBILFUNK_SOFFICE", None)
+        portable.unlink()
+    # Unter Linux ist Word nie eine Option.
+    if sys.platform != "win32":
+        assert kmod.word_available() is False
+
+
 def main() -> None:
     with tempfile.TemporaryDirectory(prefix="mobilfunk-regression-") as data_dir:
         os.environ.update(
@@ -198,6 +262,7 @@ def main() -> None:
         # Nur das Füllen der Vorlage, ohne PDF-Konvertierung: LibreOffice ist
         # in CI nicht installiert und der Schritt ist plattformspezifisch.
         check_letter_generation(data_dir)
+        check_pdf_engine_selection()
 
         print("Backend regression tests passed (temporary SQLite database).")
 

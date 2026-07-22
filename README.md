@@ -125,7 +125,10 @@ Für die Windows-Runtime zusätzlich:
 - Windows 10/11 oder Windows Server 2019+ mit PowerShell 5.1+
 - Waitress aus `backend/requirements-server.txt` (dort plattformabhängig
   markiert; Linux installiert weiterhin nur Gunicorn)
-- LibreOffice für den PDF-Export
+- Microsoft Word für den PDF-Export und Outlook für Mail-Entwürfe, angesprochen
+  über COM per `pywin32`. LibreOffice wird unter Windows dadurch nicht
+  benötigt; ohne Word springt es als Ersatz ein, auch als portable Kopie über
+  `MOBILFUNK_SOFFICE`.
 - weder Caddy noch Administratorrechte
 
 ## Lokale Entwicklung

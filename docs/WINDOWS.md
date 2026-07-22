@@ -11,7 +11,22 @@ Caddy und die unveränderten Linux-Pfade.
 
 - Windows 10/11 oder Windows Server 2019+
 - Python 3.12+, Node.js 20 LTS, npm, Git und PowerShell 5.1+
-- LibreOffice nur für den bestehenden PDF-Export
+- Microsoft Word für den PDF-Export, Outlook für Mail-Entwürfe
+
+## PDF-Erzeugung
+
+Kündigung und Rücknahme werden plattformneutral über docxtpl aus der
+Word-Vorlage gefüllt. Nur die anschließende PDF-Erzeugung ist plattformabhängig
+und wählt automatisch: unter Windows das installierte Word über COM, unter Linux
+LibreOffice. LibreOffice muss unter Windows deshalb nicht installiert sein.
+
+| Variable | Wirkung |
+| --- | --- |
+| `MOBILFUNK_PDF_ENGINE` | `word` oder `soffice` erzwingen, Standard `auto` |
+| `MOBILFUNK_SOFFICE` | Pfad zu einer LibreOffice-Installation oder portablen Kopie |
+
+Ist weder Word noch LibreOffice vorhanden, meldet die API einen Fehler, der
+beide Wege benennt, statt im Konverter abzustürzen.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1

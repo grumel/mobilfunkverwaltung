@@ -4,11 +4,11 @@ als PDF speichern und als Outlook-Entwurf mit Anhang öffnen.
 
 Das Füllen der Vorlage läuft über docxtpl und ist plattformneutral: Linux und
 Windows verwenden denselben Weg, es wird weder Word noch COM benötigt. Nur die
-optionalen Schritte danach sind plattformgebunden:
-  - PDF über Word-COM (`convert_to_pdf`, nur Windows-Desktop) oder über
-    LibreOffice (`convert_to_pdf_soffice`, beide Plattformen – die Web-API
-    benutzt ausschließlich diesen Weg)
-  - Outlook-Entwurf über COM (`create_outlook_draft`, nur Windows-Desktop)
+Schritte danach sind plattformgebunden:
+  - PDF über `convert_to_pdf_auto`: Windows nimmt das installierte Word,
+    Linux LibreOffice. MOBILFUNK_PDF_ENGINE erzwingt `word` oder `soffice`,
+    MOBILFUNK_SOFFICE erlaubt eine portable LibreOffice-Kopie.
+  - Outlook-Entwurf über COM (`create_outlook_draft`, nur Windows)
 
 Platzhalter in den Vorlagen (Jinja-Syntax):
   {{ nummer }} – GSM-Nummer
@@ -29,6 +29,7 @@ import docx
 from docxtpl import DocxTemplate
 
 from modules.paths import DATA_DIR
+from platform_support import is_windows
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +186,65 @@ def convert_to_pdf(docx_path: Path) -> Path:
     return pdf_path
 
 
+def find_soffice() -> str:
+    """Sucht LibreOffice. MOBILFUNK_SOFFICE erlaubt eine portable Kopie."""
+    import shutil
+
+    configured = os.environ.get("MOBILFUNK_SOFFICE")
+    if configured:
+        candidate = Path(configured).expanduser()
+        if candidate.is_file():
+            return str(candidate)
+        found = shutil.which(configured)
+        if found:
+            return found
+        logger.warning("MOBILFUNK_SOFFICE zeigt auf %s, dort liegt nichts "
+                       "Ausführbares. Es wird im PATH weitergesucht.", configured)
+    return shutil.which("soffice") or shutil.which("libreoffice") or ""
+
+
+def word_available() -> bool:
+    """Prüft, ob Word über COM ansprechbar ist, ohne Word zu starten."""
+    if not is_windows():
+        return False
+    try:
+        import winreg
+
+        import win32com.client  # noqa: F401  – nur Verfügbarkeit prüfen
+    except ImportError:
+        return False
+    try:
+        winreg.CloseKey(winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, "Word.Application"))
+        return True
+    except OSError:
+        return False
+
+
+def convert_to_pdf_auto(docx_path: Path) -> Path:
+    """Erzeugt das PDF auf dem Weg, der auf diesem System verfügbar ist.
+
+    Windows nutzt das installierte Word, Linux LibreOffice. MOBILFUNK_PDF_ENGINE
+    erzwingt bei Bedarf `word` oder `soffice`.
+    """
+    engine = os.environ.get("MOBILFUNK_PDF_ENGINE", "auto").strip().lower()
+    if engine == "word":
+        return convert_to_pdf(docx_path)
+    if engine == "soffice":
+        return convert_to_pdf_soffice(docx_path)
+    if engine != "auto":
+        raise ValueError(f"Unbekannte PDF-Engine: {engine}")
+
+    if word_available():
+        return convert_to_pdf(docx_path)
+    if find_soffice():
+        return convert_to_pdf_soffice(docx_path)
+    raise RuntimeError(
+        "Keine PDF-Erzeugung möglich: weder Microsoft Word (nur Windows, "
+        "benötigt pywin32) noch LibreOffice gefunden. LibreOffice installieren "
+        "oder eine portable Kopie über MOBILFUNK_SOFFICE angeben."
+    )
+
+
 def convert_to_pdf_soffice(docx_path: Path) -> Path:
     """Konvertiert eine .docx über LibreOffice (headless) zu PDF – für den
     Linux-Server (statt Word-COM). Nutzt ein eigenes, temporäres LibreOffice-
@@ -194,9 +254,12 @@ def convert_to_pdf_soffice(docx_path: Path) -> Path:
     import tempfile
 
     docx_path = Path(docx_path).resolve()
-    soffice = shutil.which("soffice") or shutil.which("libreoffice")
+    soffice = find_soffice()
     if not soffice:
-        raise RuntimeError("LibreOffice (soffice) nicht gefunden – bitte installieren.")
+        raise RuntimeError(
+            "LibreOffice (soffice) nicht gefunden. Installation oder eine "
+            "portable Kopie über MOBILFUNK_SOFFICE angeben."
+        )
 
     outdir = docx_path.parent
     with tempfile.TemporaryDirectory(prefix="mobilfunk_soffice_") as profile:
@@ -238,7 +301,7 @@ def create_outlook_draft(pdf_path: Path, subject: str, body: str = "", to: str =
 def create_and_open(kind: str, gsm: str, name: str = "", to: str = "") -> Path:
     """Kompletter Ablauf: Vorlage füllen → PDF erzeugen → Outlook-Entwurf öffnen."""
     docx_path = generate_letter(kind, gsm)
-    pdf_path = convert_to_pdf(docx_path)
+    pdf_path = convert_to_pdf_auto(docx_path)
     gsm_txt = gsm or "unbekannt"
     subject = SUBJECTS[kind].format(gsm=gsm_txt)
     body = BODIES[kind].format(gsm=gsm_txt)
