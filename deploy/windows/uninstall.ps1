@@ -26,7 +26,12 @@ $targets = @(
   (Join-Path $RepositoryRoot "frontend\dist"),
   (Join-Path $RepositoryRoot "frontend\node_modules")
 )
+# __pycache__ nur in den Quellordnern; die Massen in .venv und node_modules
+# verschwinden bereits mit den Verzeichnissen oben. Wuerde man sie hier mit
+# aufnehmen, loeschte die Schleife .venv zuerst und stolperte danach ueber die
+# bereits entfernten Unterordner.
 $targets += Get-ChildItem -Path (Join-Path $RepositoryRoot "backend") -Directory -Recurse -Filter "__pycache__" -ErrorAction SilentlyContinue |
+  Where-Object { $_.FullName -notmatch '\\\.venv\\' -and $_.FullName -notmatch '\\node_modules\\' } |
   Select-Object -ExpandProperty FullName
 
 # Nie ausserhalb des Checkouts loeschen, auch nicht bei manipulierten Parametern.
@@ -42,7 +47,9 @@ if ($existing.Count -eq 0) {
   Write-Host "Folgendes wird entfernt:"
   $existing | ForEach-Object { Write-Host "  $_" }
   if ($PSCmdlet.ShouldProcess($RepositoryRoot, "Laufzeitartefakte entfernen")) {
-    foreach ($path in $existing) { Remove-Item -LiteralPath $path -Recurse -Force }
+    # SilentlyContinue: sollte ein Pfad bereits mit einem Elternordner
+    # verschwunden sein, bricht das Aufraeumen deshalb nicht ab.
+    foreach ($path in $existing) { Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host "Laufzeitartefakte entfernt."
   } else {
     Write-Host "Es wurde nichts geloescht."
