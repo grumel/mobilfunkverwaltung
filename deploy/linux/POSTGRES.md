@@ -37,8 +37,18 @@ sudo -u mobilfunk backend/.venv/bin/python deploy/linux/migrate_to_postgres.py \
     --sqlite /var/lib/mobilfunk/mobilfunk.db \
     --postgres "postgresql+psycopg://mobilfunk:BITTE-AENDERN@localhost:5432/mobilfunk"
 ```
-Gibt je Tabelle die kopierte Zeilenzahl aus – mit der SQLite-Quelle vergleichen
-(z. B. `sqlite3 mobilfunk.db "SELECT COUNT(*) FROM participants;"`).
+Gibt je Tabelle die kopierte Zeilenzahl aus. Statt von Hand zu vergleichen, das
+Verifikationsskript nutzen (prüft Zeilenzahlen **und** die id-Sequenzen):
+
+```bash
+backend/.venv/bin/python deploy/verify_migration.py \
+    --sqlite /var/lib/mobilfunk/mobilfunk.db \
+    --postgres "postgresql+psycopg://mobilfunk:BITTE-AENDERN@localhost:5432/mobilfunk"
+```
+
+Exit-Code 0 heißt: alle Tabellen zeilengleich und die Sequenzen korrekt gesetzt.
+**Vor** dem ersten Login ausführen – sobald sich jemand anmeldet, wächst
+`audit_log` und der reine Zeilenvergleich stimmt nicht mehr.
 
 ## 4. Umschalten
 In der App unter **⚙ Einstellungen** (Admin) im Feld „DATABASE_URL" die

@@ -83,8 +83,17 @@ backend\.venv\Scripts\python.exe deploy\linux\migrate_to_postgres.py `
     --postgres "postgresql+psycopg://mobilfunk:BITTE-AENDERN@DBHOST:5432/mobilfunk"
 ```
 
-Das Skript gibt je Tabelle die kopierte Zeilenzahl aus – mit der Quelle
-vergleichen. `DBHOST` ist der Name oder die IP des Datenbank-Hosts.
+Das Skript gibt je Tabelle die kopierte Zeilenzahl aus. Danach automatisch
+prüfen (Zeilenzahlen **und** id-Sequenzen), **bevor** sich jemand anmeldet:
+
+```powershell
+backend\.venv\Scripts\python.exe deploy\verify_migration.py `
+    --sqlite "C:\ProgramData\Mobilfunkverwaltung\mobilfunk.db" `
+    --postgres "postgresql+psycopg://mobilfunk:BITTE-AENDERN@DBHOST:5432/mobilfunk"
+```
+
+Exit-Code 0 = alle Tabellen zeilengleich und Sequenzen korrekt. `DBHOST` ist der
+Name oder die IP des Datenbank-Hosts.
 
 ## 4. Jeden Arbeitsplatz auf die gemeinsame Datenbank zeigen lassen
 
