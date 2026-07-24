@@ -4,6 +4,10 @@ Wechselt die Datenbank von SQLite auf PostgreSQL. Sinnvoll bei mehr
 Gleichzeitigkeit/Nutzern. Bei 2–3 Nutzern ist SQLite weiterhin völlig
 ausreichend – dieser Schritt ist **optional**.
 
+> Mehrere Windows-Arbeitsplätze gegen **eine** gemeinsame Datenbank: siehe
+> [`deploy/POSTGRES_SHARED.md`](../POSTGRES_SHARED.md). Diese Datei hier deckt
+> den einzelnen Linux-Host ab.
+
 ## 0. Voraussetzung
 `Import-Refactor` ist bereits umgesetzt: `modules/vodafone_import.py` und
 `modules/syno_import.py` akzeptieren einen `db_module`-Parameter. Die API
