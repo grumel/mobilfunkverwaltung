@@ -2,6 +2,6 @@
 # Linux bleibt bei gunicorn; Windows verwendet Waitress.
 gunicorn>=21.2; platform_system != "Windows"
 waitress>=3.0,<4; platform_system == "Windows"
-# Fuer PostgreSQL (optional, siehe deploy/linux/POSTGRES.md): Zeile einkommentieren
-# und "pip install -r requirements-server.txt" erneut ausfuehren.
-# psycopg[binary]>=3.2
+# PostgreSQL-Treiber fuer den Mehrbenutzerbetrieb (siehe deploy/linux/POSTGRES.md).
+# Plattformneutral; bei reiner SQLite-Nutzung ungenutzt, aber unschaedlich.
+psycopg[binary]>=3.2
