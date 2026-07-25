@@ -418,9 +418,9 @@ def neuvertrag_create():
 
 @bp.post("/participants/<int:pid>/kuendigung")
 def participant_kuendigung(pid):
-    """Kündigung/Rücknahme: Word-Vorlage füllen → PDF (LibreOffice) → Datei
-    zum Download + Mailtext zurückgeben. Vorlagen liegen unter
-    <DATA_DIR>/Dokumente/vorlage_kündigung.docx bzw. vorlage_rücknahme.docx."""
+    """Kündigung/Rücknahme: Word-Vorlage füllen → PDF (Word bzw. LibreOffice)
+    → Datei zum Download + Mailtext zurückgeben. Vorlagen liegen unter
+    <DATA_DIR>/Dokumente/vorlage_kuendigung.docx bzw. vorlage_ruecknahme.docx."""
     if not current_user():
         return jsonify(error="nicht angemeldet"), 401
     if not can("write"):
@@ -441,7 +441,8 @@ def participant_kuendigung(pid):
 
     try:
         docx_path = kmod.generate_letter(kind, gsm)
-        pdf_path = kmod.convert_to_pdf_soffice(docx_path)
+        # Windows nimmt das lokal installierte Word, Linux LibreOffice.
+        pdf_path = kmod.convert_to_pdf_auto(docx_path)
     except FileNotFoundError as e:
         return jsonify(error=f"Vorlage fehlt: {e}"), 400
     except Exception as e:

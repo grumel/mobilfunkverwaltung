@@ -35,6 +35,10 @@ def get_data_directory() -> Path:
     configured = os.environ.get("MOBILFUNK_DATA_DIR")
     if configured:
         return Path(configured).expanduser().resolve()
+    if is_windows():
+        base = (os.environ.get("PROGRAMDATA") or os.environ.get("LOCALAPPDATA")
+                or str(Path.home()))
+        return (Path(base) / "Mobilfunkverwaltung").resolve()
     if is_frozen():
         return Path(sys.executable).resolve().parent
     return PROJECT_ROOT

@@ -1,79 +1,24 @@
 [CmdletBinding()]
-param(
-    [string]$BackendDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..\backend")),
-    [string]$FrontendDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..\frontend")),
-    [string]$DataDir = (Join-Path $env:ProgramData "Mobilfunkverwaltung")
-)
-
+param([string]$RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")), [string]$DataDir = "", [int]$Port = 8000, [switch]$OpenBrowser)
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
-
-$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-    [Security.Principal.WindowsBuiltInRole]::Administrator
-)
-if (-not $IsAdmin) {
-    throw "PowerShell muss zum Binden von Port 80 als Administrator gestartet werden."
-}
-
-$BackendDir = (Resolve-Path $BackendDir).Path
-$FrontendDir = (Resolve-Path $FrontendDir).Path
-$VenvActivate = Join-Path $BackendDir ".venv\Scripts\Activate.ps1"
-$VenvPython = Join-Path $BackendDir ".venv\Scripts\python.exe"
-$FrontendDist = Join-Path $FrontendDir "dist"
-$EnvironmentFile = Join-Path $DataDir "mobilfunk.env.ps1"
-
-foreach ($Required in @($VenvActivate, $VenvPython, (Join-Path $FrontendDist "index.html"), $EnvironmentFile)) {
-    if (-not (Test-Path $Required)) {
-        throw "Fehlende Laufzeitdatei: $Required. Zuerst install.ps1 ausführen."
-    }
-}
-if (-not (Get-Command caddy -ErrorAction SilentlyContinue)) {
-    throw "Caddy wurde nicht im PATH gefunden."
-}
-
-. $VenvActivate
-. $EnvironmentFile
-$SofficeDir = Join-Path $env:ProgramFiles "LibreOffice\program"
-if (Test-Path (Join-Path $SofficeDir "soffice.exe")) {
-    $env:PATH = "$SofficeDir;$($env:PATH)"
-}
-
-$Settings = @{}
-Get-Content (Join-Path $PSScriptRoot "waitress.conf") | ForEach-Object {
-    if ($_ -match '^\s*([^#][^=]*)=(.*)$') {
-        $Settings[$matches[1].Trim()] = $matches[2].Trim()
-    }
-}
-
-$env:HOST = $Settings.HOST
-$env:PORT = $Settings.PORT
-$env:WAITRESS_THREADS = $Settings.THREADS
-$env:WAITRESS_CONNECTION_LIMIT = $Settings.CONNECTION_LIMIT
-$env:WAITRESS_CHANNEL_TIMEOUT = $Settings.CHANNEL_TIMEOUT
+$RepositoryRoot = (Resolve-Path $RepositoryRoot).Path
+$Backend = Join-Path $RepositoryRoot "backend"
+$Python = Join-Path $Backend ".venv\Scripts\python.exe"
+if (-not $DataDir) { $base = if ($env:PROGRAMDATA) { $env:PROGRAMDATA } elseif ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $HOME }; $DataDir = Join-Path $base "Mobilfunkverwaltung" }
+$EnvFile = Join-Path $DataDir "mobilfunk.env.ps1"
+if (-not (Test-Path $Python) -or -not (Test-Path $EnvFile) -or -not (Test-Path (Join-Path $RepositoryRoot "frontend\dist\index.html"))) { throw "Laufzeit fehlt. Zuerst install.ps1 ausführen." }
+. $EnvFile
+$env:MOBILFUNK_HOST = "127.0.0.1"
+$env:MOBILFUNK_PORT = "$Port"
 $env:MOBILFUNK_NO_BROWSER = "1"
-$env:MOBILFUNK_FRONTEND_DIST = $FrontendDist.Replace("\", "/")
-
-$Backend = Start-Process -FilePath $VenvPython -ArgumentList @("run.py") `
-    -WorkingDirectory $BackendDir -PassThru -NoNewWindow
+$process = Start-Process -FilePath $Python -ArgumentList (Join-Path $Backend "run_windows.py") -WorkingDirectory $Backend -PassThru
 try {
-    $Ready = $false
-    for ($Attempt = 0; $Attempt -lt 30; $Attempt++) {
-        if ($Backend.HasExited) {
-            throw "Waitress wurde unerwartet beendet (Exit-Code $($Backend.ExitCode))."
-        }
-        try {
-            $Response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$($env:PORT)/api/version" -TimeoutSec 1
-            if ($Response.StatusCode -eq 200) { $Ready = $true; break }
-        } catch {
-            Start-Sleep -Milliseconds 250
-        }
-    }
-    if (-not $Ready) { throw "Waitress ist nicht innerhalb des Zeitlimits bereit geworden." }
-    Write-Host "Mobilfunkverwaltung: http://localhost/" -ForegroundColor Green
-    & caddy run --config (Join-Path $PSScriptRoot "Caddyfile") --adapter caddyfile
-    if ($LASTEXITCODE -ne 0) { throw "Caddy wurde mit Exit-Code $LASTEXITCODE beendet." }
-} finally {
-    if ($Backend -and -not $Backend.HasExited) {
-        Stop-Process -Id $Backend.Id -Force
-    }
-}
+  $ready = $false
+  for ($i = 0; $i -lt 40; $i++) { if ($process.HasExited) { throw "Waitress wurde beendet (Exit $($process.ExitCode))." }; try { $response = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$Port/api/version" -TimeoutSec 1; if ($response.StatusCode -eq 200) { $ready = $true; break } } catch { Start-Sleep -Milliseconds 250 } }
+  if (-not $ready) { throw "Backend wurde nicht bereit." }
+  $url = "http://127.0.0.1:$Port/"
+  Write-Host "Mobilfunkverwaltung läuft: $url"
+  if ($OpenBrowser) { Start-Process $url }
+  Wait-Process -Id $process.Id
+} finally { if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force } }

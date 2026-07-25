@@ -3,7 +3,11 @@ Flask>=3.1
 Flask-WTF>=1.2
 SQLAlchemy>=2.0
 openpyxl>=3.1
-# Fuer Kuendigung/Ruecknahme: Word-Vorlage fuellen (PDF erzeugt LibreOffice).
+# Fuer Kuendigung/Ruecknahme: Word-Vorlage fuellen (PDF erzeugen Word bzw.
+# LibreOffice, siehe modules/kuendigung.py).
+# docxtpl ist reines Python und laeuft unveraendert unter Linux und Windows.
 python-docx>=1.2
-# Nur fuer die Desktop-App (Outlook/Word-COM), im Web nicht noetig:
-# pywin32>=310
+docxtpl>=0.20,<1
+# Word- und Outlook-COM unter Windows: PDF-Erzeugung ohne LibreOffice und
+# Mail-Entwuerfe. Unter Linux wird das Paket nicht installiert.
+pywin32>=310; platform_system == "Windows"

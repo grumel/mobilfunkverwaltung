@@ -2,24 +2,34 @@
 kuendigung.py – Kündigungs-/Rücknahme-Schreiben aus Word-Vorlage erzeugen,
 als PDF speichern und als Outlook-Entwurf mit Anhang öffnen.
 
-Voraussetzungen auf dem ausführenden Rechner:
-  - Microsoft Word (für die PDF-Konvertierung über COM)
-  - Microsoft Outlook Desktop (für den E-Mail-Entwurf über COM)
+Das Füllen der Vorlage läuft über docxtpl und ist plattformneutral: Linux und
+Windows verwenden denselben Weg, es wird weder Word noch COM benötigt. Nur die
+Schritte danach sind plattformgebunden:
+  - PDF über `convert_to_pdf_auto`: Windows nimmt das installierte Word,
+    Linux LibreOffice. MOBILFUNK_PDF_ENGINE erzwingt `word` oder `soffice`,
+    MOBILFUNK_SOFFICE erlaubt eine portable LibreOffice-Kopie.
+  - Outlook-Entwurf über COM (`create_outlook_draft`, nur Windows)
 
-Platzhalter in den Vorlagen: {{nummer}} – wird durch die GSM-Nummer ersetzt.
-Das Datum ("Berlin, DD.MM.YYYY") wird automatisch auf das heutige Datum
-aktualisiert.
+Platzhalter in den Vorlagen (Jinja-Syntax):
+  {{ nummer }} – GSM-Nummer
+  {{ datum }}  – heutiges Datum als DD.MM.YYYY
+
+Vorlagen ohne `{{ datum }}` werden weiterhin unterstützt: dort wird ein
+vorhandenes Datum im Format DD.MM.YYYY nachträglich aktualisiert.
 """
 
 import logging
 import os
 import re
+import unicodedata
 from pathlib import Path
 from datetime import datetime, date
 
 import docx
+from docxtpl import DocxTemplate
 
 from modules.paths import DATA_DIR
+from platform_support import is_windows
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +38,18 @@ TEMPLATE_DIR  = BASE_DIR / "Dokumente"
 OUTPUT_DIR    = BASE_DIR / "Kuendigungen"
 
 TEMPLATES = {
-    "kuendigung": TEMPLATE_DIR / "vorlage_kündigung.docx",
-    "ruecknahme": TEMPLATE_DIR / "vorlage_rücknahme.docx",
+    "kuendigung": TEMPLATE_DIR / "vorlage_kuendigung.docx",
+    "ruecknahme": TEMPLATE_DIR / "vorlage_ruecknahme.docx",
+}
+
+# Bis einschließlich v1.0 enthielten die Dateinamen Umlaute. Linux speichert
+# sie als NFC, macOS und einzelne Windows-Werkzeuge als NFD; beim Kopieren des
+# Datenordners zwischen den Systemen schlug der Zugriff dadurch fehl. Die alten
+# Namen bleiben übergangsweise lesbar, damit eine bestehende Installation nach
+# einem Update nicht stehenbleibt.
+LEGACY_TEMPLATES = {
+    "kuendigung": "vorlage_kündigung.docx",
+    "ruecknahme": "vorlage_rücknahme.docx",
 }
 
 SUBJECTS = {
@@ -59,17 +79,6 @@ BODIES = {
 _DATE_RE = re.compile(r"\d{2}\.\d{2}\.\d{4}")
 
 
-def _replace_placeholder_in_paragraph(paragraph, placeholder: str, value: str) -> bool:
-    """Ersetzt einen Platzhalter, auch wenn er über mehrere Word-Runs verteilt ist."""
-    if placeholder not in paragraph.text or not paragraph.runs:
-        return False
-    new_text = paragraph.text.replace(placeholder, value)
-    paragraph.runs[0].text = new_text
-    for r in paragraph.runs[1:]:
-        r.text = ""
-    return True
-
-
 def _update_date_paragraph(paragraph) -> None:
     """Ersetzt ein Datum im Format DD.MM.YYYY durch das heutige Datum."""
     if not paragraph.runs or not _DATE_RE.search(paragraph.text):
@@ -81,29 +90,56 @@ def _update_date_paragraph(paragraph) -> None:
             r.text = ""
 
 
-def generate_letter(kind: str, gsm: str) -> Path:
-    """Füllt die Vorlage aus und speichert sie als neue .docx. Gibt den Pfad zurück."""
+def _update_dates_in_document(path: Path) -> None:
+    """Aktualisiert Datumsangaben in Vorlagen ohne `{{ datum }}`-Platzhalter."""
+    doc = docx.Document(str(path))
+    for p in doc.paragraphs:
+        _update_date_paragraph(p)
+    doc.save(str(path))
+
+
+def resolve_template(kind: str) -> Path:
+    """Liefert den Pfad der Vorlage und akzeptiert übergangsweise den alten Namen."""
     if kind not in TEMPLATES:
         raise ValueError(f"Unbekannter Schreiben-Typ: {kind}")
     template = TEMPLATES[kind]
-    if not template.exists():
-        raise FileNotFoundError(f"Vorlage nicht gefunden: {template}")
+    if template.exists():
+        return template
 
+    legacy_name = LEGACY_TEMPLATES[kind]
+    for form in ("NFC", "NFD"):
+        legacy = template.parent / unicodedata.normalize(form, legacy_name)
+        if legacy.exists():
+            logger.warning(
+                "Alte Vorlage %s verwendet. Bitte in %s umbenennen; die "
+                "Unterstützung der Umlaut-Namen entfällt in einer späteren Version.",
+                legacy.name, template.name,
+            )
+            return legacy
+    raise FileNotFoundError(f"Vorlage nicht gefunden: {template}")
+
+
+def generate_letter(kind: str, gsm: str) -> Path:
+    """Füllt die Vorlage aus und speichert sie als neue .docx. Gibt den Pfad zurück."""
+    template = resolve_template(kind)
     gsm = (gsm or "").strip() or "unbekannt"
-    doc = docx.Document(str(template))
-    for p in doc.paragraphs:
-        _replace_placeholder_in_paragraph(p, "{{nummer}}", gsm)
-        _update_date_paragraph(p)
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for p in cell.paragraphs:
-                    _replace_placeholder_in_paragraph(p, "{{nummer}}", gsm)
 
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    tpl = DocxTemplate(str(template))
+    # docxtpl setzt Platzhalter zusammen, die Word über mehrere Runs verteilt
+    # hat; Absätze und Tabellen werden gleichermaßen erfasst.
+    variables = tpl.get_undeclared_template_variables()
+    tpl.render({"nummer": gsm, "datum": date.today().strftime("%d.%m.%Y")})
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_path = OUTPUT_DIR / f"{kind}_{gsm}_{ts}.docx"
-    doc.save(str(out_path))
+    tpl.save(str(out_path))
+
+    if "datum" not in variables:
+        logger.info("Vorlage %s hat keinen {{ datum }}-Platzhalter; Datum wird "
+                    "ersatzweise über das Format DD.MM.YYYY aktualisiert.", template.name)
+        _update_dates_in_document(out_path)
+
     logger.info("Schreiben erzeugt: %s", out_path.name)
     return out_path
 
@@ -150,18 +186,79 @@ def convert_to_pdf(docx_path: Path) -> Path:
     return pdf_path
 
 
+def find_soffice() -> str:
+    """Sucht LibreOffice. MOBILFUNK_SOFFICE erlaubt eine portable Kopie."""
+    import shutil
+
+    configured = os.environ.get("MOBILFUNK_SOFFICE")
+    if configured:
+        candidate = Path(configured).expanduser()
+        if candidate.is_file():
+            return str(candidate)
+        found = shutil.which(configured)
+        if found:
+            return found
+        logger.warning("MOBILFUNK_SOFFICE zeigt auf %s, dort liegt nichts "
+                       "Ausführbares. Es wird im PATH weitergesucht.", configured)
+    return shutil.which("soffice") or shutil.which("libreoffice") or ""
+
+
+def word_available() -> bool:
+    """Prüft, ob Word über COM ansprechbar ist, ohne Word zu starten."""
+    if not is_windows():
+        return False
+    try:
+        import winreg
+
+        import win32com.client  # noqa: F401  – nur Verfügbarkeit prüfen
+    except ImportError:
+        return False
+    try:
+        winreg.CloseKey(winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, "Word.Application"))
+        return True
+    except OSError:
+        return False
+
+
+def convert_to_pdf_auto(docx_path: Path) -> Path:
+    """Erzeugt das PDF auf dem Weg, der auf diesem System verfügbar ist.
+
+    Windows nutzt das installierte Word, Linux LibreOffice. MOBILFUNK_PDF_ENGINE
+    erzwingt bei Bedarf `word` oder `soffice`.
+    """
+    engine = os.environ.get("MOBILFUNK_PDF_ENGINE", "auto").strip().lower()
+    if engine == "word":
+        return convert_to_pdf(docx_path)
+    if engine == "soffice":
+        return convert_to_pdf_soffice(docx_path)
+    if engine != "auto":
+        raise ValueError(f"Unbekannte PDF-Engine: {engine}")
+
+    if word_available():
+        return convert_to_pdf(docx_path)
+    if find_soffice():
+        return convert_to_pdf_soffice(docx_path)
+    raise RuntimeError(
+        "Keine PDF-Erzeugung möglich: weder Microsoft Word (nur Windows, "
+        "benötigt pywin32) noch LibreOffice gefunden. LibreOffice installieren "
+        "oder eine portable Kopie über MOBILFUNK_SOFFICE angeben."
+    )
+
+
 def convert_to_pdf_soffice(docx_path: Path) -> Path:
     """Konvertiert eine .docx über LibreOffice (headless) zu PDF – für den
     Linux-Server (statt Word-COM). Nutzt ein eigenes, temporäres LibreOffice-
     Profil, damit es nicht mit einer offenen LibreOffice-Sitzung kollidiert."""
-    import shutil
     import subprocess
     import tempfile
 
     docx_path = Path(docx_path).resolve()
-    soffice = shutil.which("soffice") or shutil.which("libreoffice")
+    soffice = find_soffice()
     if not soffice:
-        raise RuntimeError("LibreOffice (soffice) nicht gefunden – bitte installieren.")
+        raise RuntimeError(
+            "LibreOffice (soffice) nicht gefunden. Installation oder eine "
+            "portable Kopie über MOBILFUNK_SOFFICE angeben."
+        )
 
     outdir = docx_path.parent
     with tempfile.TemporaryDirectory(prefix="mobilfunk_soffice_") as profile:
@@ -203,7 +300,7 @@ def create_outlook_draft(pdf_path: Path, subject: str, body: str = "", to: str =
 def create_and_open(kind: str, gsm: str, name: str = "", to: str = "") -> Path:
     """Kompletter Ablauf: Vorlage füllen → PDF erzeugen → Outlook-Entwurf öffnen."""
     docx_path = generate_letter(kind, gsm)
-    pdf_path = convert_to_pdf(docx_path)
+    pdf_path = convert_to_pdf_auto(docx_path)
     gsm_txt = gsm or "unbekannt"
     subject = SUBJECTS[kind].format(gsm=gsm_txt)
     body = BODIES[kind].format(gsm=gsm_txt)
