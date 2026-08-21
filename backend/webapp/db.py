@@ -29,6 +29,14 @@ def ensure_schema():
         cols = {c["name"] for c in insp.get_columns("participants")}
     except Exception:
         return
-    if "overhead" not in cols:
+    # (Spaltenname, Typ/Default). Reihenfolge stabil, additiv, nicht-destruktiv.
+    wanted = [
+        ("overhead", "INTEGER DEFAULT 0"),
+        ("imei", "TEXT"),      # IMEI-Nr. Gerät 1 (aus 'Syno seit' herausgelöst)
+        ("imei2", "TEXT"),     # IMEI-Nr. Gerät 2
+    ]
+    missing = [(n, ddl) for n, ddl in wanted if n not in cols]
+    if missing:
         with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE participants ADD COLUMN overhead INTEGER DEFAULT 0"))
+            for name, ddl in missing:
+                conn.execute(text(f"ALTER TABLE participants ADD COLUMN {name} {ddl}"))

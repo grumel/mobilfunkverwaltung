@@ -9,8 +9,11 @@ const FIELDS = [
   ['sim_nummer', 'SIM-Seriennummer', 'text'], ['rahmenvertrag', 'Rahmenvertrag', 'text'],
   ['startdatum', 'Erstaktivierung', 'date'], ['vertragsbeginn', 'Vertragsbeginn', 'date'],
   ['vertragsende', 'Vertragsende', 'date'], ['kuendigung', 'Kündigung zu', 'date'],
-  ['syno', 'Syno-Gerät 1', 'text'], ['start_syno', 'Syno 1 seit', 'date'],
-  ['syno2', 'Syno-Gerät 2', 'text'], ['start_syno2', 'Syno 2 seit', 'date'],
+]
+// Syno-Geräte: je Gerät eine Zeile mit Gerät · Syno seit · IMEI nebeneinander.
+const SYNO_ROWS = [
+  { geraet: ['syno', 'Syno-Gerät 1'], datum: ['start_syno', 'Syno 1 seit'], imei: ['imei', 'IMEI-Nr. 1'] },
+  { geraet: ['syno2', 'Syno-Gerät 2'], datum: ['start_syno2', 'Syno 2 seit'], imei: ['imei2', 'IMEI-Nr. 2'] },
 ]
 const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 
@@ -129,6 +132,23 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
                 </label>
               ))}
             </div>
+
+            <div className="synogrid">
+              {SYNO_ROWS.map((r) => (
+                <div className="synorow" key={r.geraet[0]}>
+                  <label className="field"><span>{r.geraet[1]}</span>
+                    <input type="text" value={p[r.geraet[0]] || ''} readOnly={!canWrite}
+                           onChange={(e) => set(r.geraet[0], e.target.value)} /></label>
+                  <label className="field"><span>{r.datum[1]}</span>
+                    <input type="date" value={p[r.datum[0]] || ''} readOnly={!canWrite}
+                           onChange={(e) => set(r.datum[0], e.target.value)} /></label>
+                  <label className="field"><span>{r.imei[1]}</span>
+                    <input type="text" value={p[r.imei[0]] || ''} readOnly={!canWrite}
+                           onChange={(e) => set(r.imei[0], e.target.value)} /></label>
+                </div>
+              ))}
+            </div>
+
             {canWrite && (
               <div className="matchrow">
                 <span className="hint-dim">Einzel-Abgleich aus Exportdatei:</span>

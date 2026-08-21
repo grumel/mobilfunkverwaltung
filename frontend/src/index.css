@@ -134,6 +134,10 @@ td.num { text-align:right; font-variant-numeric:tabular-nums; }
 .modal-head h3 { margin:0; font-size:16px; }
 .x { border:0; background:none; font-size:22px; line-height:1; cursor:pointer; color:var(--dim); }
 .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+/* Syno-Geräte: je Zeile Gerät · Syno seit · IMEI nebeneinander */
+.synogrid { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+.synorow { display:grid; grid-template-columns:2fr 1fr 1.5fr; gap:10px 16px; }
+@media (max-width:640px) { .synorow { grid-template-columns:1fr; } }
 .field { display:flex; flex-direction:column; gap:4px; font-size:13px; }
 .field.wide { margin-top:10px; }
 .field > span { color:var(--dim); }
