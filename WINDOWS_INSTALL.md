@@ -24,6 +24,11 @@ Administratorrechte nötig.
 
 ## 2. Code auf den Rechner bringen
 
+Das immer aktuelle Paket liegt als ZIP im GitHub-Release **`windows-latest`**:
+
+- Release-Seite: <https://github.com/grumel/mobilfunkverwaltung/releases/tag/windows-latest>
+- Direkter Download: <https://github.com/grumel/mobilfunkverwaltung/releases/download/windows-latest/mobilfunkverwaltung-windows.zip>
+
 Entweder dieses ZIP entpacken (du liest ja bereits die enthaltene Anleitung),
 **oder** – falls verfügbar – klonen:
 

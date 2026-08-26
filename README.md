@@ -287,6 +287,14 @@ React-SPA-Auslieferung auf einem einzigen Port. Sie benötigt keinen Caddy, kein
 Administratorrechte, keinen Windows-Dienst und kein EXE-/WebView2-Paket.
 Details, Backup und Einschränkungen stehen in [docs/WINDOWS.md](docs/WINDOWS.md).
 
+**Paket herunterladen:** Das immer aktuelle Windows-Paket liegt als ZIP im
+Release [`windows-latest`](https://github.com/grumel/mobilfunkverwaltung/releases/tag/windows-latest)
+– direkter Download:
+<https://github.com/grumel/mobilfunkverwaltung/releases/download/windows-latest/mobilfunkverwaltung-windows.zip>.
+Entpacken und in den entpackten Ordner wechseln (dort liegen `backend\` und
+`frontend\`); die Schnellanleitung liegt als `WINDOWS_INSTALL.md` bei.
+Alternativ das Repository klonen.
+
 Installation und Start in PowerShell:
 
 ```powershell
