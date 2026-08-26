@@ -17,12 +17,14 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = SECRET_KEY
 
-    # Fehlende Spalten (z. B. overhead) nachrüsten, bevor Anfragen kommen.
+    # Fehlende Spalten (z. B. overhead/imei) nachrüsten, bevor Anfragen kommen.
+    # Fehler werden protokolliert (journalctl) und in SCHEMA_STATE festgehalten
+    # (siehe /api/health) – nicht mehr stillschweigend verschluckt.
     try:
         from webapp.db import ensure_schema
         ensure_schema()
     except Exception:
-        pass
+        app.logger.exception("Schema-Migration fehlgeschlagen (ensure_schema)")
 
     # Session-Cookie härten. SameSite=Lax bremst CSRF (das Cookie wird bei
     # Cross-Site-POSTs nicht mitgeschickt) – wichtig, da die JSON-API bewusst

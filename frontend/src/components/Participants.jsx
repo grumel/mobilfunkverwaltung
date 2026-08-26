@@ -10,7 +10,7 @@ const COLS = [
   ['master_id', 'Nr.'], ['gsm', 'GSM'], ['name', 'Name'], ['plant', 'Werk'],
   ['konto', 'Konto'], ['tarif', 'Tarif'], ['sim_nummer', 'SIM-Seriennummer'],
   ['vertragsbeginn', 'Vertragsbeginn'], ['vertragsende', 'Vtg.-Ende'], ['kuendigung', 'Kündigung zu'],
-  ['rahmenvertrag', 'Rahmenvertrag'], ['syno', 'Syno'], ['start_syno', 'Syno seit'],
+  ['rahmenvertrag', 'Rahmenvertrag'], ['syno', 'Syno'], ['start_syno', 'Syno seit'], ['imei', 'IMEI'],
   ['bemerkung', 'Bemerkung'],
 ]
 const NUM = new Set(['master_id', 'konto'])

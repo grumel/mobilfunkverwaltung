@@ -34,10 +34,10 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 # Kurzfassung für Listen
 LIST_FIELDS = ["id", "master_id", "gsm", "name", "plant", "konto", "tarif",
                "sim_nummer", "vertragsbeginn", "vertragsende", "kuendigung",
-               "rahmenvertrag", "syno", "start_syno", "bemerkung", "verified",
+               "rahmenvertrag", "syno", "start_syno", "imei", "bemerkung", "verified",
                "provider", "overhead"]
 # Vollständig für die Detail-/Bearbeiten-Ansicht
-DETAIL_FIELDS = LIST_FIELDS + ["telefon", "startdatum", "imei",
+DETAIL_FIELDS = LIST_FIELDS + ["telefon", "startdatum",
                "syno2", "start_syno2", "imei2", "pruefung_grund", "created_at", "updated_at"]
 # Über die API beschreibbar (master_id + Zeitstempel bleiben außen vor)
 EDITABLE = ["gsm", "name", "plant", "konto", "telefon", "tarif", "sim_nummer",
@@ -246,6 +246,31 @@ def app_version():
 def version():
     # Öffentlich (auch vor Login sichtbar, z. B. auf der Anmeldeseite).
     return jsonify(app_version())
+
+
+@bp.get("/health")
+def health():
+    """Leichter Health-Check für Monitoring (ohne Login). Zeigt, ob DB
+    erreichbar ist und ob die Schema-Migration sauber lief. Details/Fehlertexte
+    stehen bewusst nur im Server-Log (journalctl), nicht in der Antwort."""
+    from sqlalchemy import text as _text
+    from webapp.db import engine as _engine, SCHEMA_STATE
+    db_ok = True
+    try:
+        with _engine.connect() as conn:
+            conn.execute(_text("SELECT 1"))
+    except Exception:
+        db_ok = False
+    schema_ok = SCHEMA_STATE.get("ok")
+    healthy = db_ok and schema_ok is not False
+    body = {
+        "status": "ok" if healthy else "degraded",
+        "db": db_ok,
+        "schema": {"ok": schema_ok, "added": SCHEMA_STATE.get("added", []),
+                   "note": SCHEMA_STATE.get("note")},
+        "version": app_version(),
+    }
+    return jsonify(body), (200 if healthy else 503)
 
 
 # --------------------------------------------------------------------------- #
