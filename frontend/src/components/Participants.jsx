@@ -17,7 +17,7 @@ const NUM = new Set(['master_id', 'konto'])
 const DATE_COLS = new Set(['vertragsbeginn', 'vertragsende', 'kuendigung', 'start_syno'])
 const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 
-export default function Participants({ view, q, user, openTaskPids = [], onChanged }) {
+export default function Participants({ view, q, user, openTaskPids = [], onChanged, onCount }) {
   const canWrite = user.role === 'write' || user.role === 'admin'
   const canDelete = user.role === 'admin'
   const taskSet = useMemo(() => new Set(openTaskPids), [openTaskPids])
@@ -35,9 +35,9 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
 
   const load = useCallback((query) => {
     api.participants(view, query)
-      .then((d) => { setRows(d.participants); setTotal(d.total); setError('') })
+      .then((d) => { setRows(d.participants); setTotal(d.total); setError(''); onCount && onCount(d.total) })
       .catch((e) => setError(e.message))
-  }, [view])
+  }, [view, onCount])
 
   useEffect(() => { setMergeMode(false); setSelected(new Set()) }, [view])
   useEffect(() => { load(q) }, [view, q, load])

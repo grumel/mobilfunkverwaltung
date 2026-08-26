@@ -51,6 +51,9 @@ body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--b
 .globalbar { display:flex; align-items:center; gap:10px; padding:10px 18px;
   background:var(--card); border-bottom:1px solid var(--line); }
 .globalbar .hint-dim { white-space:nowrap; }
+.searchcount { white-space:nowrap; font-size:13px; color:var(--fg);
+  background:var(--head); border:1px solid var(--line); border-radius:8px; padding:4px 10px; }
+.searchcount b { color:var(--accent); font-variant-numeric:tabular-nums; }
 
 /* Liste */
 .wrap { padding:14px 18px; }

@@ -64,6 +64,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
   const [pwOpen, setPwOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [theme, setTheme] = useState(getTheme())
+  const [resultCount, setResultCount] = useState(null)
   const isAdmin = user.role === 'admin'
   const isParticipantsView = PARTICIPANT_VIEWS.has(view)
 
@@ -169,6 +170,9 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
                    placeholder="Name, GSM, Werk, Konto, Tarif oder Bemerkung suchen …"
                    onChange={(e) => setQInput(e.target.value)} />
           </label>
+          {resultCount != null && (
+            <span className="searchcount"><b>{resultCount}</b> Treffer{q ? ' (alle Reiter)' : ''}</span>
+          )}
           <span className="hint-dim">durchsucht alle Reiter, unabhängig vom aktuell gewählten</span>
         </div>
       )}
@@ -176,6 +180,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
         <div className="globalbar">
           <button className="btn" onClick={() => setView('statistik')}>← Statistik</button>
           <span className="hint-dim">Gefiltert: <b>{FILTER_LABELS[view]}</b></span>
+          {resultCount != null && <span className="searchcount"><b>{resultCount}</b> Treffer</span>}
         </div>
       )}
       <main>
@@ -198,7 +203,8 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
             : view === 'einstellungen'
               ? <Settings />
             : <Participants view={view} q={q} user={user}
-                            openTaskPids={summary.open_task_pids} onChanged={refreshSummary} />}
+                            openTaskPids={summary.open_task_pids} onChanged={refreshSummary}
+                            onCount={setResultCount} />}
       </main>
     </div>
   )
