@@ -12,29 +12,44 @@ Codebasis zusammen.
 
 ## Status
 
-Die Monorepo-Migration ist abgeschlossen. Der produktive Stand ist
-`v1.0.0-monorepo` (Commit `3a822f64c9ba0b2d856028939c428ff582cee61f`).
-Phase 2 „Technische Konsolidierung“ erfasst technische Schulden und Testlücken;
-funktionale Änderungen sind ausdrücklich ausgeschlossen.
+Die Monorepo-Migration ist abgeschlossen; Backend, Frontend, Linux-Deployment
+und Windows-Runtime liegen gemeinsam auf `main`. Die Anwendung wird produktiv
+unter Linux betrieben und funktional laufend weiterentwickelt.
 
-- Backend-Historie bis `420fb1d` unter `backend/` übernommen.
-- Frontend-Historie bis `ceaeaf4` unter `frontend/` übernommen.
-- Beide Historien wurden ohne Squash über getrennte Subtree-Merge-Commits
-  erhalten.
-- Backendlogik, React-Oberfläche, REST-API und Datenbankschema wurden durch die
-  Migration nicht verändert.
-- Produktives `main` enthält den geprüften Merge und den Produktionsbericht.
-- Der Cleanup-Arbeitsstand liegt auf `chore/project-cleanup`; Änderungen dort
-  bleiben API-, UI- und Datenbank-neutral.
-- Linux bleibt die produktive Zielplattform mit Gunicorn, Caddy und systemd.
-- Die Windows-Runtime ist implementiert und liegt auf
-  `feature/windows-runtime`. Sie ist eine lokale Einzelplatz-Webanwendung mit
-  Waitress, kein Windows-Dienst und kein EXE-Paket. Linux-Pfade, REST-API,
-  Datenbankschema und React-Oberfläche bleiben unverändert.
-- `feature/windows-runtime` enthält zusätzlich die isolierten
-  Backend-Regressionstests, den Frontend-Integritätscheck und die
-  Performance-Baseline. Der Branch ist ein Fast-Forward auf `main` und wird
-  ausschließlich über einen geprüften Pull Request übernommen.
+- Backend- und Frontend-Historie wurden ohne Squash über Subtree-Merges
+  übernommen; REST-API und Datenbankschema blieben bei der Migration unverändert.
+- Entwicklung und Releases erfolgen ausschließlich aus diesem Monorepository
+  (`origin`), direkt auf `main`. Die Legacy-Repos `mdwWeb`/`mdw-frontend` dienen
+  nur noch als Referenz.
+- Linux ist die produktive Zielplattform (Gunicorn, Caddy, systemd). Die
+  Windows-Runtime ist eine lokale Einzelplatz-Webanwendung mit Waitress (kein
+  Windows-Dienst, kein EXE) und in CI geprüft.
+- Die aktuell laufende Version meldet sich unter `GET /api/version`
+  (fortlaufende Build-Nummer + Commit); ein Health-Check steht unter
+  `GET /api/health`.
+- Schema-Änderungen sind additiv über `ensure_schema()` (beim App-Start);
+  neue Spalten werden nicht-destruktiv nachgerüstet.
+
+## Funktionen
+
+- Teilnehmer je Anbieter (Vodafone, Telekom, O2, Ohne SIM, Frei) plus abgeleitete
+  Ansichten: Prüfungen, Unvollständig, Duplikate und ein **Overhead**-Filter.
+- Globale Suche über alle Reiter mit **Live-Trefferzähler**, sortierbare Spalten
+  und **CSV-Export** der aktuell angezeigten Liste.
+- Bearbeiten/Neu, Rechtsklick-Aktionen (geprüft/offen, Overhead, verschieben,
+  löschen, zu Aufgabe) und **Zusammenführen** mehrerer Einträge.
+- Geräte: Syno-Gerät, „Syno seit" und **IMEI-Nummer** je Slot; **Einzel-Abgleich**
+  einer Export-Datei direkt im Bearbeiten-Dialog.
+- Importe: Vodafone (Vorschau/Bestätigen), Syno (optional mit **Neuanlage**
+  fehlender Teilnehmer) und **Anreicherung** der Syno-Datei vor dem Import.
+- Dokumente: Kündigung/Rücknahme (Word-Vorlage → PDF via LibreOffice/Word) und
+  Neuvertrag – lokal gespeichert und über den Reiter **Dokumente** abrufbar.
+- Aufgaben mit Fälligkeit, **Statistik** mit klickbaren Kennzahlen und
+  **Datenqualitäts**-Überblick, Protokoll- und Audit-Log.
+- Benutzerverwaltung mit Rollen (read/write/admin), eigenes Passwort ändern,
+  **Hell-/Dunkel-Design**, Hilfe-Seite, als App installierbar (PWA-Manifest).
+- Härtung: Login-Bremse, `SameSite`-Cookies, Sicherheits-Header/CSP; Monitoring
+  über `GET /api/health` (DB-Erreichbarkeit + Schema-Status).
 
 ## Architektur
 
@@ -356,6 +371,7 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 - [Linux-Deployment](deploy/linux/INSTALL.md)
 - [Optionale PostgreSQL-Migration](deploy/linux/POSTGRES.md)
 - [Plattformanalyse](deploy/PLATFORM_ANALYSIS.md)
+- [Windows-Installation (Schnellanleitung)](WINDOWS_INSTALL.md)
 - [Windows-Runtime](docs/WINDOWS.md)
 - [Windows-Deployment](deploy/windows/README.md)
 - [Technische Schulden und Testprioritäten](docs/TECH_DEBT.md)
@@ -383,7 +399,9 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 
 ## Bekannte offene Punkte
 
-- `feature/windows-runtime` per Pull Request nach `main` übernehmen.
+- **HTTPS im LAN:** noch nicht aktiv (Zugriff über HTTP). Ohne öffentlichen
+  Domainnamen praktikabel nur über Caddys interne CA plus Import des
+  Root-Zertifikats auf den Client-PCs; abhängig vom finalen Server-Standort/Adresse.
 - Windows-Abnahme auf einem echten Host: Excel-Import, LibreOffice-Export,
   Datei-Locking, Umlaute und lange Pfade.
 - Dediziertes Testkonto für den authentifizierten Smoke-Test bereitstellen.
