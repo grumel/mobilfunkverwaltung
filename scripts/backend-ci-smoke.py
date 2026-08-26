@@ -16,7 +16,7 @@ sys.path.insert(0, str(BACKEND_ROOT))
 
 
 def main() -> None:
-    with tempfile.TemporaryDirectory(prefix="mobilfunk-ci-") as data_dir:
+    with tempfile.TemporaryDirectory(prefix="mobilfunk-ci-", ignore_cleanup_errors=True) as data_dir:
         os.environ["MOBILFUNK_DATA_DIR"] = data_dir
         os.environ["MOBILFUNK_WEBCONFIG_DIR"] = data_dir
         os.environ.setdefault("MOBILFUNK_SECRET", "ci-only-secret")
@@ -58,10 +58,16 @@ def main() -> None:
         assert me.json["user"]["role"] == "admin"
 
         database = Path(data_dir) / "mobilfunk.db"
-        with sqlite3.connect(database) as connection:
+        connection = sqlite3.connect(database)
+        try:
             count = connection.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        finally:
+            connection.close()   # 'with sqlite3.connect' schließt nicht – hier explizit
         assert count == 1
 
+        # Alle Verbindungen lösen, sonst kann Windows das Temp-Verzeichnis nicht
+        # aufräumen (offene DB-Datei -> WinError 32).
+        engine.dispose()
         print("Backend smoke test passed (temporary SQLite database).")
 
 

@@ -75,7 +75,9 @@ def check_letter_generation(data_dir: str) -> None:
     # Vorlagen mit dem alten Umlaut-Namen bleiben übergangsweise lesbar.
     legacy = template_dir / kmod.LEGACY_TEMPLATES["kuendigung"]
     _build_template(legacy, split_runs=True, with_date_tag=True)
-    assert kmod.resolve_template("kuendigung") == legacy
+    # samefile statt ==: robust gegen NFC/NFD-Normalisierung des Umlaut-Namens
+    # (unter Windows weicht die String-Form des Pfades ab, die Datei ist dieselbe).
+    assert kmod.resolve_template("kuendigung").samefile(legacy)
     text = _text_of(kmod.generate_letter("kuendigung", gsm))
     assert f"Betrifft Rufnummer: {gsm}" in text, text
     legacy.unlink()
@@ -166,7 +168,7 @@ def check_pdf_engine_selection() -> None:
 
 
 def main() -> None:
-    with tempfile.TemporaryDirectory(prefix="mobilfunk-regression-") as data_dir:
+    with tempfile.TemporaryDirectory(prefix="mobilfunk-regression-", ignore_cleanup_errors=True) as data_dir:
         os.environ.update(
             MOBILFUNK_DATA_DIR=data_dir,
             MOBILFUNK_WEBCONFIG_DIR=data_dir,
@@ -264,6 +266,9 @@ def main() -> None:
         check_letter_generation(data_dir)
         check_pdf_engine_selection()
 
+        # Verbindungen lösen, sonst kann Windows das Temp-Verzeichnis nicht
+        # aufräumen (offene DB-Datei -> WinError 32).
+        engine.dispose()
         print("Backend regression tests passed (temporary SQLite database).")
 
 

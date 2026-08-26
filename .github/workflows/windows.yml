@@ -8,7 +8,7 @@ on:
       - "backend/**"
       - "frontend/**"
       - "deploy/windows/**"
-      - "scripts/smoke-test-windows.ps1"
+      - "scripts/**"
       - ".github/workflows/windows.yml"
   pull_request:
     branches: [main]
@@ -16,7 +16,7 @@ on:
       - "backend/**"
       - "frontend/**"
       - "deploy/windows/**"
-      - "scripts/smoke-test-windows.ps1"
+      - "scripts/**"
       - ".github/workflows/windows.yml"
 
 permissions:
