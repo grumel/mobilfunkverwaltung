@@ -1170,6 +1170,7 @@ def settings_get():
     if err:
         return err
     cfg = webconfig.load()
+    from webapp.db import engine
     return jsonify(
         db_path=cfg.get("db_path", ""),
         database_url=cfg.get("database_url", ""),
@@ -1177,7 +1178,55 @@ def settings_get():
         default_path=appconfig.DEFAULT_DB_PATH,
         config_file=str(webconfig.config_file()),
         env_override=bool(os.environ.get("DATABASE_URL")),
+        backup_available=engine.url.get_backend_name().startswith("sqlite"),
     )
+
+
+@bp.get("/backup")
+def backup_download():
+    """Konsistentes Backup der SQLite-Datenbank (inkl. WAL) als Download.
+    Nur Admin; nur für SQLite (bei PostgreSQL bitte pg_dump verwenden)."""
+    err = _require_admin()
+    if err:
+        return err
+    from webapp.db import engine
+    if not engine.url.get_backend_name().startswith("sqlite"):
+        return jsonify(error="Backup-Download ist nur für SQLite verfügbar."), 400
+    src_path = engine.url.database
+    if not src_path or not os.path.exists(src_path):
+        return jsonify(error="Datenbankdatei nicht gefunden."), 404
+
+    import io
+    import sqlite3
+    fd, tmp = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        src = sqlite3.connect(src_path)
+        dst = sqlite3.connect(tmp)
+        with dst:
+            src.backup(dst)          # Online-Backup: konsistent, inkl. WAL
+        src.close()
+        dst.close()
+        with open(tmp, "rb") as fh:
+            data = fh.read()
+    finally:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+
+    db = SessionLocal()
+    try:
+        svc.log_audit(db, current_user(), "BACKUP_DOWNLOAD",
+                      f"DB-Backup heruntergeladen ({len(data)} Bytes)")
+        db.commit()
+    finally:
+        db.close()
+
+    from flask import send_file
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return send_file(io.BytesIO(data), mimetype="application/x-sqlite3",
+                     as_attachment=True, download_name=f"mobilfunk_backup_{ts}.db")
 
 
 @bp.put("/settings")

@@ -87,6 +87,7 @@ export const api = {
   // Einstellungen
   getSettings: () => req('/api/settings'),
   saveSettings: (data) => req('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  backupUrl: () => '/api/backup',
 
   // Dokumente (Kündigung/Rücknahme/Neuvertrag – lokal gespeichert)
   documents: () => req('/api/documents'),

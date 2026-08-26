@@ -87,6 +87,18 @@ export default function Settings() {
           </div>
         </form>
       </div>
+
+      {s.backup_available && (
+        <div className="editcard" style={{ marginTop: 14 }}>
+          <h2 className="modal-head" style={{ border: 'none', margin: 0 }}>Sicherung</h2>
+          <p className="hint-dim">Lädt die aktuelle Datenbank als <b>konsistente</b> Sicherungskopie
+             herunter (Online-Backup inkl. laufender Änderungen). Bewahre die Datei an einem
+             sicheren Ort auf; zum Wiederherstellen einfach als <code>mobilfunk.db</code> zurückkopieren.</p>
+          <div className="modal-actions">
+            <a className="btn accent" href={api.backupUrl()} download>Backup herunterladen</a>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
