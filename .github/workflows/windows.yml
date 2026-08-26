@@ -29,8 +29,8 @@ jobs:
     env:
       MOBILFUNK_CSRF: "0"
       MOBILFUNK_SECRET: ci-only-windows-secret
-      MOBILFUNK_DATA_DIR: ${{ runner.temp }}\mobilfunk-data
-      MOBILFUNK_WEBCONFIG_DIR: ${{ runner.temp }}\mobilfunk-data
+      MOBILFUNK_DATA_DIR: ${{ github.workspace }}\mobilfunk-data
+      MOBILFUNK_WEBCONFIG_DIR: ${{ github.workspace }}\mobilfunk-data
       MOBILFUNK_NO_BROWSER: "1"
       MOBILFUNK_PORT: "8000"
     steps:
