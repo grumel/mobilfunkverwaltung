@@ -44,6 +44,12 @@ if (-not (Test-Path $Python) -or -not (Test-Path $Dist) -or -not (Test-Path $Env
   return
 }
 
+# Bei jedem Start sicherstellen, dass Dokumentvorlagen und Test-DB vorhanden
+# sind (fehlende werden ergaenzt, vorhandene nie ueberschrieben).
+try {
+  & (Join-Path $PSScriptRoot "provision-data.ps1") -DataDir $DataDir | Out-Null
+} catch { }
+
 # --- Umgebung laden und Server im Hintergrund starten ----------------
 . $EnvFile
 $env:MOBILFUNK_HOST = "127.0.0.1"

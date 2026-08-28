@@ -9,6 +9,8 @@ if (-not $DataDir) { $base = if ($env:PROGRAMDATA) { $env:PROGRAMDATA } elseif (
 $EnvFile = Join-Path $DataDir "mobilfunk.env.ps1"
 if (-not (Test-Path $Python) -or -not (Test-Path $EnvFile) -or -not (Test-Path (Join-Path $RepositoryRoot "frontend\dist\index.html"))) { throw "Laufzeit fehlt. Zuerst install.ps1 ausführen." }
 . $EnvFile
+# Fehlende Dokumentvorlagen/Test-DB bei jedem Start ergaenzen (idempotent).
+try { & (Join-Path $PSScriptRoot "provision-data.ps1") -DataDir $DataDir | Out-Null } catch { }
 $env:MOBILFUNK_HOST = "127.0.0.1"
 $env:MOBILFUNK_PORT = "$Port"
 $env:MOBILFUNK_NO_BROWSER = "1"

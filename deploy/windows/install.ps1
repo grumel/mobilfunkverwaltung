@@ -32,7 +32,12 @@ if ($NeedBuild) {
 else {
   Write-Host "Fertiger Frontend-Build gefunden – npm/Node nicht noetig."
 }
-New-Item -ItemType Directory -Force -Path $DataDir, (Join-Path $DataDir "logs"), (Join-Path $DataDir "Dokumente"), (Join-Path $DataDir "Kuendigungen"), (Join-Path $DataDir "SynoDateien") | Out-Null
+# Datenordner, Dokumentvorlagen und Test-DB bereitstellen (gemeinsames Skript,
+# damit dieselbe Logik auch beim normalen Start greift).
+$provArgs = @{ RepositoryRoot = $RepositoryRoot; DataDir = $DataDir }
+if ($NoSampleData) { $provArgs.NoSampleData = $true }
+& (Join-Path $PSScriptRoot "provision-data.ps1") @provArgs
+
 $EnvFile = Join-Path $DataDir "mobilfunk.env.ps1"
 if (-not (Test-Path $EnvFile)) {
   $secret = & $Python -c "import secrets; print(secrets.token_hex(32))"
@@ -41,36 +46,6 @@ if (-not (Test-Path $EnvFile)) {
 `$env:MOBILFUNK_WEBCONFIG_DIR = '$($DataDir.Replace("'", "''"))'
 `$env:MOBILFUNK_SECRET = '$secret'
 "@ | Set-Content -Path $EnvFile -Encoding UTF8
-}
-# Test-Datenbank bereitstellen: nur wenn am Zielort noch KEINE DB liegt
-# (eine echte Datenbank wird niemals überschrieben). Mit -NoSampleData abschaltbar.
-$TargetDb = Join-Path $DataDir "mobilfunk.db"
-$SampleDb = Join-Path $PSScriptRoot "mobilfunk.sample.db"
-if (-not $NoSampleData -and -not (Test-Path $TargetDb) -and (Test-Path $SampleDb)) {
-  Copy-Item -Path $SampleDb -Destination $TargetDb
-  Write-Host ""
-  Write-Host "Test-Datenbank eingerichtet: $TargetDb" -ForegroundColor Yellow
-  Write-Host "  Anmeldung: admin / admin  (nur zum Testen!)" -ForegroundColor Yellow
-  Write-Host "  Fuer den Echtbetrieb diese Datei durch die richtige mobilfunk.db" -ForegroundColor Yellow
-  Write-Host "  ersetzen bzw. die Passwoerter aendern." -ForegroundColor Yellow
-}
-elseif (Test-Path $TargetDb) {
-  Write-Host "Vorhandene Datenbank bleibt unveraendert: $TargetDb"
-}
-
-# Dokumentvorlagen (Kuendigung/Ruecknahme) bereitstellen: mitgelieferte .docx
-# nach ...\Dokumente\ kopieren, aber nur wenn dort noch keine gleichnamige liegt
-# (echte, angepasste Vorlagen werden nie ueberschrieben).
-$TemplateSrc = Join-Path $PSScriptRoot "vorlagen"
-$DocDir = Join-Path $DataDir "Dokumente"
-if (Test-Path $TemplateSrc) {
-  foreach ($tpl in (Get-ChildItem -Path $TemplateSrc -Filter *.docx -ErrorAction SilentlyContinue)) {
-    $dest = Join-Path $DocDir $tpl.Name
-    if (-not (Test-Path $dest)) {
-      Copy-Item -Path $tpl.FullName -Destination $dest
-      Write-Host "Dokumentvorlage eingerichtet: $($tpl.Name)"
-    }
-  }
 }
 
 Write-Host "Windows-Laufzeit vorbereitet: $DataDir"
