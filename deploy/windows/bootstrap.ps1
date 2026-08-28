@@ -70,11 +70,16 @@ $word = Test-ComComponent -ProgId "Word.Application"
 $outlook = Test-ComComponent -ProgId "Outlook.Application"
 $soffice = [bool](Get-Command soffice -ErrorAction SilentlyContinue)
 
+# Liegt ein fertiger Frontend-Build im Paket, sind Node/npm (und Git) NICHT
+# mehr Pflicht – dann genuegt Python. Node/npm werden nur zum Bauen gebraucht.
+$HasPrebuiltFrontend = Test-Path (Join-Path $RepositoryRoot "frontend\dist\index.html")
+$BuildTools = -not $HasPrebuiltFrontend
+
 $requirements = @(
-    [pscustomobject]@{ Name = "Python 3.12+"; Ist = $python; Erfuellt = ($python -and $python -ge [version]"3.12"); Pflicht = $true;  Paket = "Python.Python.3.12" }
-    [pscustomobject]@{ Name = "Node.js 20+";  Ist = $node;   Erfuellt = ($node -and $node -ge [version]"20.0");    Pflicht = $true;  Paket = "OpenJS.NodeJS.LTS" }
-    [pscustomobject]@{ Name = "npm";          Ist = $npm;    Erfuellt = [bool]$npm;                                Pflicht = $true;  Paket = "OpenJS.NodeJS.LTS" }
-    [pscustomobject]@{ Name = "Git";          Ist = $git;    Erfuellt = [bool]$git;                                Pflicht = $true;  Paket = "Git.Git" }
+    [pscustomobject]@{ Name = "Python 3.12+"; Ist = $python; Erfuellt = ($python -and $python -ge [version]"3.12"); Pflicht = $true;        Paket = "Python.Python.3.12" }
+    [pscustomobject]@{ Name = "Node.js 20+ (nur fuer Build)";  Ist = $node;   Erfuellt = ($node -and $node -ge [version]"20.0"); Pflicht = $BuildTools; Paket = "OpenJS.NodeJS.LTS" }
+    [pscustomobject]@{ Name = "npm (nur fuer Build)";          Ist = $npm;    Erfuellt = [bool]$npm;                             Pflicht = $BuildTools; Paket = "OpenJS.NodeJS.LTS" }
+    [pscustomobject]@{ Name = "Git (nur ohne ZIP noetig)";     Ist = $git;    Erfuellt = [bool]$git;                             Pflicht = $BuildTools; Paket = "Git.Git" }
     [pscustomobject]@{ Name = "PDF-Erzeugung (Word oder LibreOffice)"; Ist = $null; Erfuellt = ($word -or $soffice); Pflicht = $false; Paket = "TheDocumentFoundation.LibreOffice" }
     [pscustomobject]@{ Name = "Outlook (Mail-Entwuerfe)"; Ist = $null; Erfuellt = $outlook; Pflicht = $false; Paket = "" }
 )
@@ -120,8 +125,10 @@ if ($missing.Count -gt 0) {
     $node = Get-ToolVersion -Command "node"
     $git = Get-ToolVersion -Command "git"
     if (-not $python -or $python -lt [version]"3.12") { $stillMissing += "Python 3.12+" }
-    if (-not $node -or $node -lt [version]"20.0") { $stillMissing += "Node.js 20+" }
-    if (-not $git) { $stillMissing += "Git" }
+    if ($BuildTools) {
+        if (-not $node -or $node -lt [version]"20.0") { $stillMissing += "Node.js 20+" }
+        if (-not $git) { $stillMissing += "Git" }
+    }
     if ($stillMissing.Count -gt 0) {
         throw ("Weiterhin nicht verfuegbar: {0}. Haeufigste Ursache: die Installation hat den PATH erst fuer neue Sitzungen gesetzt. Bitte PowerShell neu oeffnen und bootstrap.ps1 erneut ausfuehren." -f ($stillMissing -join ", "))
     }

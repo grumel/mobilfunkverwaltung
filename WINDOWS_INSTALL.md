@@ -9,10 +9,30 @@ Administratorrechte nötig.
 
 ---
 
+## Schnellstart (empfohlen)
+
+1. **ZIP herunterladen** und entpacken:
+   <https://github.com/grumel/mobilfunkverwaltung/releases/download/windows-latest/mobilfunkverwaltung-windows.zip>
+2. Falls noch nicht vorhanden: **Python 3.12+** installieren
+   (<https://www.python.org/downloads/>, beim Setup „Add Python to PATH" anhaken).
+3. Im entpackten Ordner **`Mobilfunkverwaltung.cmd` doppelklicken.**
+
+Beim ersten Start richtet sich alles selbst ein (einige Minuten), danach öffnet
+sich der Browser unter `http://127.0.0.1:8000/`. Anmelden mit der mitgelieferten
+Test-DB: **`admin` / `admin`** (siehe Abschnitt 4). Jeder weitere Start: einfach
+wieder `Mobilfunkverwaltung.cmd` doppelklicken.
+
+> **Node.js/Git sind nicht nötig** – der fertige Frontend‑Build liegt bereits im
+> ZIP. Es genügt **Python**.
+
+---
+
 ## 1. Voraussetzungen
 
 - Windows 10/11 oder Windows Server 2019+ mit **PowerShell 5.1+**
-- **Python 3.12+**, **Node.js 20 LTS** (inkl. `npm`), **Git**
+- **Python 3.12+** – mehr nicht (der Frontend‑Build ist im ZIP enthalten).
+- Nur wenn du **statt des ZIP klonst** und selbst baust: zusätzlich
+  **Node.js 20 LTS** + **Git**.
 - Optional: **Microsoft Word** (für die PDF‑Erzeugung bei Kündigung/Rücknahme).
   Unter Windows wird Word genutzt – LibreOffice ist **nicht** nötig.
 
@@ -24,43 +44,43 @@ Administratorrechte nötig.
 
 ## 2. Code auf den Rechner bringen
 
-Das immer aktuelle Paket liegt als ZIP im GitHub-Release **`windows-latest`**:
+Das immer aktuelle Paket liegt als ZIP im GitHub-Release **`windows-latest`**
+(inkl. fertigem Frontend‑Build):
 
 - Release-Seite: <https://github.com/grumel/mobilfunkverwaltung/releases/tag/windows-latest>
 - Direkter Download: <https://github.com/grumel/mobilfunkverwaltung/releases/download/windows-latest/mobilfunkverwaltung-windows.zip>
 
-Entweder dieses ZIP entpacken (du liest ja bereits die enthaltene Anleitung),
-**oder** – falls verfügbar – klonen:
+ZIP entpacken und in den entpackten Ordner wechseln (dort, wo `backend\`,
+`frontend\` und `Mobilfunkverwaltung.cmd` liegen).
+
+**Nur für Entwickler** – klonen und selbst bauen (braucht Node.js + Git):
 
 ```powershell
 git clone https://github.com/grumel/mobilfunkverwaltung.git
 cd mobilfunkverwaltung
 ```
 
-Beim ZIP: entpacken und in den entpackten Ordner wechseln (dort, wo `backend\`
-und `frontend\` liegen).
-
 ---
 
-## 3. Voraussetzungen prüfen / installieren
+## 3. Installation
+
+**Einfachster Weg:** `Mobilfunkverwaltung.cmd` doppelklicken – das erledigt
+Installation **und** Start in einem Schritt.
+
+Wer die Schritte lieber manuell ausführt:
 
 ```powershell
-# Nur prüfen, was fehlt (nichts wird installiert):
+# Optional: nur prüfen, was fehlt (nichts wird installiert):
 powershell -ExecutionPolicy Bypass -File .\deploy\windows\bootstrap.ps1 -CheckOnly
 
-# Fehlendes automatisch per winget nachinstallieren und danach installieren:
-powershell -ExecutionPolicy Bypass -File .\deploy\windows\bootstrap.ps1 -Install
-```
-
-Ist alles schon vorhanden, genügt direkt:
-
-```powershell
+# Einrichten (venv + Python-Pakete + Datenordner + Secret):
 powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1
 ```
 
-`install.ps1` legt die virtuelle Umgebung an, installiert die Python‑Pakete,
-baut das React‑Frontend (`npm ci` + `npm run build`) und erstellt den
-Datenordner samt zufälligem Secret. Die Konfigdatei liegt danach unter:
+`install.ps1` legt die virtuelle Umgebung an, installiert die Python‑Pakete und
+erstellt den Datenordner samt zufälligem Secret. Ist ein fertiger Frontend‑Build
+vorhanden (ZIP‑Fall), wird `npm`/Node **übersprungen**; nur beim Bauen aus dem
+Quellcode läuft `npm ci` + `npm run build`. Die Konfigdatei liegt danach unter:
 
 ```
 %PROGRAMDATA%\Mobilfunkverwaltung\mobilfunk.env.ps1

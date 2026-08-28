@@ -5,5 +5,7 @@ deploy/** text eol=lf
 backend/run_webapp.py text eol=lf
 backend/run.py text eol=lf
 *.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
 # Mitgelieferte Test-Datenbank ist binär – niemals Zeilenenden normalisieren
 deploy/windows/mobilfunk.sample.db binary
