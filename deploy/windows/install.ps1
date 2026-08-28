@@ -58,5 +58,20 @@ elseif (Test-Path $TargetDb) {
   Write-Host "Vorhandene Datenbank bleibt unveraendert: $TargetDb"
 }
 
+# Dokumentvorlagen (Kuendigung/Ruecknahme) bereitstellen: mitgelieferte .docx
+# nach ...\Dokumente\ kopieren, aber nur wenn dort noch keine gleichnamige liegt
+# (echte, angepasste Vorlagen werden nie ueberschrieben).
+$TemplateSrc = Join-Path $PSScriptRoot "vorlagen"
+$DocDir = Join-Path $DataDir "Dokumente"
+if (Test-Path $TemplateSrc) {
+  foreach ($tpl in (Get-ChildItem -Path $TemplateSrc -Filter *.docx -ErrorAction SilentlyContinue)) {
+    $dest = Join-Path $DocDir $tpl.Name
+    if (-not (Test-Path $dest)) {
+      Copy-Item -Path $tpl.FullName -Destination $dest
+      Write-Host "Dokumentvorlage eingerichtet: $($tpl.Name)"
+    }
+  }
+}
+
 Write-Host "Windows-Laufzeit vorbereitet: $DataDir"
 Write-Host "Start: powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1"

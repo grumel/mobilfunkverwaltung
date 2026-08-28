@@ -9,3 +9,6 @@ backend/run.py text eol=lf
 *.bat text eol=crlf
 # Mitgelieferte Test-Datenbank ist binär – niemals Zeilenenden normalisieren
 deploy/windows/mobilfunk.sample.db binary
+# Word-Vorlagen sind binär (ZIP-Container) – niemals als Text behandeln
+*.docx binary
+*.dotx binary
