@@ -70,11 +70,20 @@ Datenordner samt zufälligem Secret. Die Konfigdatei liegt danach unter:
 
 ## 4. Datenbank bereitstellen
 
-Auf einem frischen Rechner ist **keine Datenbank** vorhanden – die App legt sie
-nicht selbst an. Ohne DB gibt es keine Benutzer, also kein Login. Lege deshalb
-eine `mobilfunk.db` bereit (z. B. eine Kopie einer bestehenden Datenbank; sie
-enthält Benutzer und Daten). Beim ersten Start ergänzt die App fehlende Spalten
-(z. B. `imei`) automatisch.
+Damit die App **sofort testbar** ist, wird beim Installieren automatisch eine
+**Test-Datenbank** an den Standardort gelegt – **aber nur, wenn dort noch keine
+`mobilfunk.db` existiert** (eine echte Datenbank wird nie überschrieben).
+
+- Anmeldung in der Test-DB: **`admin` / `admin`** (nur zum Testen!). Weitere
+  Benutzer: `schmidt` / `test1234` (Schreiben), `leser` / `test1234` (Lesen).
+- Sie enthält ausgedachte Beispiel‑Teilnehmer, damit die Oberfläche gefüllt ist.
+- **Für den Echtbetrieb** diese Datei durch deine richtige `mobilfunk.db`
+  ersetzen bzw. die Passwörter ändern. Das automatische Einspielen lässt sich mit
+  `install.ps1 -NoSampleData` abschalten.
+
+Für den Produktivbetrieb legst du stattdessen deine eigene `mobilfunk.db` bereit
+(z. B. eine Kopie einer bestehenden Datenbank; sie enthält Benutzer und Daten).
+Beim ersten Start ergänzt die App fehlende Spalten (z. B. `imei`) automatisch.
 
 ### Standardort
 Standardmäßig wird die DB hier erwartet:

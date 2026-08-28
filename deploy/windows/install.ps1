@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param([string]$RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")),
-      [string]$DataDir = "")
+      [string]$DataDir = "",
+      [switch]$NoSampleData)
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 $RepositoryRoot = (Resolve-Path $RepositoryRoot).Path
@@ -28,5 +29,21 @@ if (-not (Test-Path $EnvFile)) {
 `$env:MOBILFUNK_SECRET = '$secret'
 "@ | Set-Content -Path $EnvFile -Encoding UTF8
 }
+# Test-Datenbank bereitstellen: nur wenn am Zielort noch KEINE DB liegt
+# (eine echte Datenbank wird niemals überschrieben). Mit -NoSampleData abschaltbar.
+$TargetDb = Join-Path $DataDir "mobilfunk.db"
+$SampleDb = Join-Path $PSScriptRoot "mobilfunk.sample.db"
+if (-not $NoSampleData -and -not (Test-Path $TargetDb) -and (Test-Path $SampleDb)) {
+  Copy-Item -Path $SampleDb -Destination $TargetDb
+  Write-Host ""
+  Write-Host "Test-Datenbank eingerichtet: $TargetDb" -ForegroundColor Yellow
+  Write-Host "  Anmeldung: admin / admin  (nur zum Testen!)" -ForegroundColor Yellow
+  Write-Host "  Fuer den Echtbetrieb diese Datei durch die richtige mobilfunk.db" -ForegroundColor Yellow
+  Write-Host "  ersetzen bzw. die Passwoerter aendern." -ForegroundColor Yellow
+}
+elseif (Test-Path $TargetDb) {
+  Write-Host "Vorhandene Datenbank bleibt unveraendert: $TargetDb"
+}
+
 Write-Host "Windows-Laufzeit vorbereitet: $DataDir"
 Write-Host "Start: powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1"

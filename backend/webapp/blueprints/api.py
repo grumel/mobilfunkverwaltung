@@ -15,6 +15,7 @@ from datetime import date, datetime, timedelta
 
 from flask import Blueprint, request, jsonify, session
 from sqlalchemy import func, or_, select, case, and_
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from werkzeug.utils import secure_filename
 
 from pathlib import Path
@@ -152,7 +153,15 @@ def login():
     password = data.get("password") or ""
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.username == username, User.active == 1).first()
+        try:
+            user = db.query(User).filter(User.username == username, User.active == 1).first()
+        except (OperationalError, ProgrammingError):
+            # Keine 'users'-Tabelle → es liegt keine gültige Datenbank am
+            # erwarteten Ort (z. B. frische/leere mobilfunk.db). Klare Meldung
+            # statt HTTP 500 – siehe /api/health für den aktuellen DB-Pfad.
+            return jsonify(error=("Keine gültige Datenbank gefunden (Benutzer-Tabelle "
+                                  "fehlt). Bitte die mobilfunk.db am erwarteten Ort "
+                                  "bereitstellen – siehe ⚙ Einstellungen / WINDOWS_INSTALL.md.")), 503
         if user and verify_password(password, user.password_hash):
             _login_fails.pop(ip, None)
             user.last_login = svc.now_str()

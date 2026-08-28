@@ -4,6 +4,7 @@ damit sich vorhandene Benutzer unverändert anmelden können.
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from webapp.db import SessionLocal
 from webapp.models import User
@@ -22,6 +23,12 @@ def login():
             user = (db.query(User)
                       .filter(User.username == username, User.active == 1)
                       .first())
+        except (OperationalError, ProgrammingError):
+            # Keine 'users'-Tabelle → keine gültige Datenbank am erwarteten Ort.
+            # Klare Meldung statt HTTP 500.
+            flash("Keine gültige Datenbank gefunden (Benutzer-Tabelle fehlt). "
+                  "Bitte die mobilfunk.db am erwarteten Ort bereitstellen.")
+            return render_template("login.html")
         finally:
             db.close()
         if user and verify_password(password, user.password_hash):

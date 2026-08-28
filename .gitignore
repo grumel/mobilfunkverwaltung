@@ -20,6 +20,8 @@ dist/
 *.sqlite3
 *.db-shm
 *.db-wal
+# Ausnahme: mitgelieferte Test-Datenbank (wird bewusst getrackt und ins ZIP gepackt)
+!deploy/windows/mobilfunk.sample.db
 logs/
 backups/
 mobilfunk.lock
