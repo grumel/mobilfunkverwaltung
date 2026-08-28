@@ -8,12 +8,14 @@ on:
       - chore/monorepo-migration
     paths:
       - "frontend/**"
+      - "scripts/frontend-regression-check.mjs"
       - ".github/workflows/frontend.yml"
   pull_request:
     branches:
       - main
     paths:
       - "frontend/**"
+      - "scripts/frontend-regression-check.mjs"
       - ".github/workflows/frontend.yml"
 
 permissions:
@@ -46,3 +48,8 @@ jobs:
       - name: Build production frontend
         working-directory: frontend
         run: npm run build
+
+      # Dependency-freier Integritätscheck des Builds: prüft, dass alle im
+      # index.html referenzierten /assets-Dateien tatsächlich existieren.
+      - name: Verify frontend build integrity
+        run: node scripts/frontend-regression-check.mjs
