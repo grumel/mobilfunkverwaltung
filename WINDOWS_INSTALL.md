@@ -17,10 +17,16 @@ Administratorrechte nötig.
    (<https://www.python.org/downloads/>, beim Setup „Add Python to PATH" anhaken).
 3. Im entpackten Ordner **`Mobilfunkverwaltung.cmd` doppelklicken.**
 
-Beim ersten Start richtet sich alles selbst ein (einige Minuten), danach öffnet
-sich der Browser unter `http://127.0.0.1:8000/`. Anmelden mit der mitgelieferten
-Test-DB: **`admin` / `admin`** (siehe Abschnitt 4). Jeder weitere Start: einfach
-wieder `Mobilfunkverwaltung.cmd` doppelklicken.
+Beim ersten Start richtet sich alles selbst ein (einige Minuten, sichtbare
+Konsole). Danach – und bei jedem weiteren Start – erscheint ein **kleines
+Statusfenster** mit farbigem Symbol (orange = startet, grün = läuft), dem Link
+`http://127.0.0.1:8000/`, einem Knopf **„Im Browser öffnen"** und **„Beenden"**.
+Sobald der Status grün ist, öffnet sich der Browser automatisch. Die schwarze
+Konsole bleibt dabei versteckt. Anmelden mit der mitgelieferten Test-DB:
+**`admin` / `admin`** (siehe Abschnitt 4).
+
+> **Beenden:** einfach im Statusfenster auf „Beenden" klicken (oder das Fenster
+> schließen) – der Server im Hintergrund wird dann sauber gestoppt.
 
 > **Node.js/Git sind nicht nötig** – der fertige Frontend‑Build liegt bereits im
 > ZIP. Es genügt **Python**.
