@@ -393,7 +393,8 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 - [Produktionsmigration](docs/PRODUCTION_MIGRATION.md)
 - [Cleanup-Kandidaten](docs/CLEANUP.md)
 - [Linux-Deployment](deploy/linux/INSTALL.md)
-- [Optionale PostgreSQL-Migration](deploy/linux/POSTGRES.md)
+- [PostgreSQL-Migration (Linux-Host)](deploy/linux/POSTGRES.md)
+- [PostgreSQL für mehrere Arbeitsplätze](deploy/POSTGRES_SHARED.md)
 - [Plattformanalyse](deploy/PLATFORM_ANALYSIS.md)
 - [Windows-Installation (Schnellanleitung)](WINDOWS_INSTALL.md)
 - [Windows-Runtime](docs/WINDOWS.md)
@@ -419,7 +420,11 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
    kleine Extraktionen durchführen und jeden Schritt separat deployen.
 4. **Windows-Runtime:** implementiert und in CI geprüft; offen bleibt die
    Abnahme auf einem echten Windows-Host.
-5. **Später:** PostgreSQL als optionaler Skalierungspfad.
+5. **PostgreSQL für Mehrbenutzerbetrieb:** Treiber aktiv, Migration und
+   Verifikation vorhanden und end-to-end getestet. Offen ist nur der Betrieb –
+   einen PostgreSQL-Host aufsetzen und die Migration ausführen, wenn auf
+   gleichzeitigen Mehrfachzugriff umgestellt wird
+   (siehe [`deploy/POSTGRES_SHARED.md`](deploy/POSTGRES_SHARED.md)).
 
 ## Bekannte offene Punkte
 
@@ -435,5 +440,6 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 - `backend-regression-tests.py` und `frontend-regression-check.mjs` laufen
   bisher nur im Windows-Workflow; sie gehören auch in `backend.yml` und
   `frontend.yml`.
-- Optionale PostgreSQL-Nutzung in einem eigenen Arbeitsschritt bewerten.
+- Für Mehrbenutzerbetrieb: PostgreSQL-Host aufsetzen und die (fertige, getestete)
+  Migration ausführen – Ablauf in [`deploy/POSTGRES_SHARED.md`](deploy/POSTGRES_SHARED.md).
 
