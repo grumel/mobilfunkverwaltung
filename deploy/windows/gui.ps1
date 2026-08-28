@@ -9,14 +9,25 @@ param([int]$Port = 8000)
 $ErrorActionPreference = "Stop"
 
 # --- Eigene Konsole verstecken (falls doch eine sichtbar ist) --------
+# Typ script-weit ablegen, damit auch der "Konsole ausblenden"-Knopf ihn nutzt.
 try {
-  $win = Add-Type -PassThru -Name W -Namespace Native -MemberDefinition @'
+  $script:win = Add-Type -PassThru -Name W -Namespace Native -MemberDefinition @'
 [DllImport("kernel32.dll")] public static extern System.IntPtr GetConsoleWindow();
 [DllImport("user32.dll")]   public static extern bool ShowWindow(System.IntPtr hWnd, int nCmdShow);
 '@
-  if ($win -is [array]) { $win = $win[0] }
-  $win::ShowWindow($win::GetConsoleWindow(), 0) | Out-Null   # 0 = SW_HIDE
-} catch { }
+  if ($script:win -is [array]) { $script:win = $script:win[0] }
+} catch { $script:win = $null }
+
+function Hide-Console {
+  if ($script:win) {
+    try {
+      $h = $script:win::GetConsoleWindow()
+      if ($h -ne [System.IntPtr]::Zero) { $script:win::ShowWindow($h, 0) | Out-Null }  # 0 = SW_HIDE
+    } catch { }
+  }
+}
+
+Hide-Console   # gleich beim Start verstecken
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -74,7 +85,7 @@ function Stop-Server {
 # --- Fenster aufbauen ------------------------------------------------
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Mobilfunkverwaltung"
-$form.Size = New-Object System.Drawing.Size(430, 250)
+$form.Size = New-Object System.Drawing.Size(430, 300)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedSingle"
 $form.MaximizeBox = $false
@@ -124,6 +135,14 @@ $btnStop.Location = New-Object System.Drawing.Point(228, 160)
 $btnStop.Size = New-Object System.Drawing.Size(180, 40)
 $btnStop.Add_Click({ $form.Close() }) | Out-Null
 $form.Controls.Add($btnStop)
+
+# Zweite Zeile: PowerShell-/Konsolenfenster manuell ausblenden
+$btnHide = New-Object System.Windows.Forms.Button
+$btnHide.Text = "PowerShell-Fenster ausblenden"
+$btnHide.Location = New-Object System.Drawing.Point(18, 210)
+$btnHide.Size = New-Object System.Drawing.Size(390, 36)
+$btnHide.Add_Click({ Hide-Console }) | Out-Null
+$form.Controls.Add($btnHide)
 
 # --- Statusabfrage per Timer ----------------------------------------
 $script:opened = $false
