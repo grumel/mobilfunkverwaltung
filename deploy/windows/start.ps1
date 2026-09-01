@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param([string]$RepositoryRoot = "", [string]$DataDir = "", [int]$Port = 8000, [switch]$OpenBrowser)
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param([string]$RepositoryRoot = "",
       [string]$DataDir = "",
       [switch]$NoSampleData)
