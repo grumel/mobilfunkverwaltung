@@ -1,9 +1,22 @@
 [CmdletBinding()]
-param([string]$RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")),
+param([string]$RepositoryRoot = "",
       [string]$DataDir = "",
       [switch]$NoSampleData)
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+# $PSScriptRoot ist in Windows PowerShell 5.1 innerhalb des param()-Blocks noch leer,
+# daher erst hier (nach Skriptstart) als Fallback verwenden.
+if (-not $RepositoryRoot) { $RepositoryRoot = Join-Path $PSScriptRoot "..\.." }
+function Invoke-Native {
+  # Fuehrt einen nativen Befehl aus, ohne dass PowerShell dessen stderr-Ausgaben
+  # (Warnungen/Hinweise von pip, npm, ...) als terminierenden Fehler wertet.
+  # Der Erfolg wird stattdessen ueber $LASTEXITCODE geprueft.
+  param([Parameter(Mandatory)][ScriptBlock]$Command, [Parameter(Mandatory)][string]$ErrorMessage)
+  $prevPref = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try { & $Command } finally { $ErrorActionPreference = $prevPref }
+  if ($LASTEXITCODE) { throw $ErrorMessage }
+}
 $RepositoryRoot = (Resolve-Path $RepositoryRoot).Path
 $Backend = Join-Path $RepositoryRoot "backend"
 $Frontend = Join-Path $RepositoryRoot "frontend"
@@ -20,13 +33,15 @@ if ($NeedBuild) {
 }
 $Venv = Join-Path $Backend ".venv"
 $Python = Join-Path $Venv "Scripts\python.exe"
-if (-not (Test-Path $Python)) { & python -m venv $Venv; if ($LASTEXITCODE) { throw "Venv konnte nicht erstellt werden." } }
-& $Python -m pip install -r (Join-Path $Backend "requirements.txt") -r (Join-Path $Backend "requirements-server.txt")
-if ($LASTEXITCODE) { throw "Python-Abhängigkeiten konnten nicht installiert werden." }
+if (-not (Test-Path $Python)) { Invoke-Native -Command { & python -m venv $Venv } -ErrorMessage "Venv konnte nicht erstellt werden." }
+Invoke-Native -Command { & $Python -m pip install -r (Join-Path $Backend "requirements.txt") -r (Join-Path $Backend "requirements-server.txt") } -ErrorMessage "Python-Abhängigkeiten konnten nicht installiert werden."
 if ($NeedBuild) {
   Write-Host "Frontend wird aus dem Quellcode gebaut (kein fertiger Build im Paket) ..."
   Push-Location $Frontend
-  try { & npm ci --no-fund --no-audit; if ($LASTEXITCODE) { throw "npm ci fehlgeschlagen." }; & npm run build; if ($LASTEXITCODE) { throw "Frontend-Build fehlgeschlagen." } }
+  try {
+    Invoke-Native -Command { & npm ci --no-fund --no-audit } -ErrorMessage "npm ci fehlgeschlagen."
+    Invoke-Native -Command { & npm run build } -ErrorMessage "Frontend-Build fehlgeschlagen."
+  }
   finally { Pop-Location }
 }
 else {
@@ -46,6 +61,37 @@ if (-not (Test-Path $EnvFile)) {
 `$env:MOBILFUNK_WEBCONFIG_DIR = '$($DataDir.Replace("'", "''"))'
 `$env:MOBILFUNK_SECRET = '$secret'
 "@ | Set-Content -Path $EnvFile -Encoding UTF8
+}
+
+
+# Desktop-Verknuepfung anlegen, damit die App per Doppelklick gestartet werden kann.
+$StartBat = Join-Path $PSScriptRoot "start.bat"
+if (Test-Path $StartBat) {
+  $IconPng = Join-Path $Frontend "public\icon-512.png"
+  $IconIco = Join-Path $DataDir "mobilfunkverwaltung.ico"
+  if ((Test-Path $IconPng) -and -not (Test-Path $IconIco)) {
+    try {
+      Add-Type -AssemblyName System.Drawing
+      $bitmap = New-Object System.Drawing.Bitmap($IconPng)
+      $resized = New-Object System.Drawing.Bitmap($bitmap, 256, 256)
+      $hIcon = $resized.GetHicon()
+      $icon = [System.Drawing.Icon]::FromHandle($hIcon)
+      $fs = New-Object System.IO.FileStream($IconIco, [System.IO.FileMode]::Create)
+      $icon.Save($fs)
+      $fs.Close()
+      $icon.Dispose(); $resized.Dispose(); $bitmap.Dispose()
+    } catch { Write-Host "Hinweis: Icon konnte nicht erzeugt werden ($_)." -ForegroundColor Yellow }
+  }
+  $Desktop = [Environment]::GetFolderPath("Desktop")
+  $ShortcutPath = Join-Path $Desktop "Mobilfunkverwaltung.lnk"
+  $WshShell = New-Object -ComObject WScript.Shell
+  $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
+  $Shortcut.TargetPath = $StartBat
+  $Shortcut.WorkingDirectory = $PSScriptRoot
+  $Shortcut.IconLocation = if (Test-Path $IconIco) { $IconIco } else { "$env:SystemRoot\System32\shell32.dll,220" }
+  $Shortcut.Description = "Mobilfunkverwaltung starten"
+  $Shortcut.Save()
+  Write-Host "Desktop-Verknuepfung angelegt: $ShortcutPath"
 }
 
 Write-Host "Windows-Laufzeit vorbereitet: $DataDir"

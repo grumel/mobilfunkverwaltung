@@ -1,9 +1,12 @@
 [CmdletBinding()]
-param([string]$RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")),
+param([string]$RepositoryRoot = "",
       [string]$DataDir = "",
       [switch]$NoSampleData)
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+# $PSScriptRoot ist in Windows PowerShell 5.1 innerhalb des param()-Blocks noch leer,
+# daher erst hier (nach Skriptstart) als Fallback verwenden.
+if (-not $RepositoryRoot) { $RepositoryRoot = Join-Path $PSScriptRoot "..\.." }
 
 # =====================================================================
 #  Stellt die DATEN-Seite bereit (schnell, ohne pip/npm): Datenordner,
