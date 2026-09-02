@@ -34,10 +34,15 @@ unter Linux betrieben und funktional laufend weiterentwickelt.
 
 - Teilnehmer je Anbieter (Vodafone, Telekom, O2, Ohne SIM, Frei) plus abgeleitete
   Ansichten: Prüfungen, Unvollständig, Duplikate und ein **Overhead**-Filter.
+- **Archiv**-Reiter: Teilnehmer lassen sich aus jedem Reiter archivieren (Admin)
+  und wieder zurückholen. Archivierte Einträge verschwinden aus ihrem
+  ursprünglichen Reiter und aus der Statistik, bleiben aber über die globale
+  Suche auffindbar und weiterhin voll bearbeitbar; endgültiges Löschen ist aus
+  dem Archiv heraus möglich.
 - Globale Suche über alle Reiter mit **Live-Trefferzähler**, sortierbare Spalten
   und **CSV-Export** der aktuell angezeigten Liste.
-- Bearbeiten/Neu, Rechtsklick-Aktionen (geprüft/offen, Overhead, verschieben,
-  löschen, zu Aufgabe) und **Zusammenführen** mehrerer Einträge.
+- Bearbeiten/Neu, Rechtsklick-Aktionen (geprüft/offen, Overhead, archivieren,
+  verschieben, löschen, zu Aufgabe) und **Zusammenführen** mehrerer Einträge.
 - Geräte: Syno-Gerät, „Syno seit" und **IMEI-Nummer** je Slot; **Einzel-Abgleich**
   einer Export-Datei direkt im Bearbeiten-Dialog.
 - Importe: Vodafone (Vorschau/Bestätigen), Syno (optional mit **Neuanlage**
