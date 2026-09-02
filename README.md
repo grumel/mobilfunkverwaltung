@@ -14,7 +14,9 @@ Codebasis zusammen.
 
 Die Monorepo-Migration ist abgeschlossen; Backend, Frontend, Linux-Deployment
 und Windows-Runtime liegen gemeinsam auf `main`. Die Anwendung wird produktiv
-unter Linux betrieben und funktional laufend weiterentwickelt.
+unter Linux betrieben. Der Funktionsumfang ist vollständig; die Entwicklung
+befindet sich in der **Stabilisierungsphase Richtung finaler Version 1.0**
+(aktuell **1.08 Beta**).
 
 - Backend- und Frontend-Historie wurden ohne Squash über Subtree-Merges
   übernommen; REST-API und Datenbankschema blieben bei der Migration unverändert.
