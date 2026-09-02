@@ -65,7 +65,10 @@ if (-not (Test-Path $EnvFile)) {
 
 
 # Desktop-Verknuepfung anlegen, damit die App per Doppelklick gestartet werden kann.
-$StartBat = Join-Path $PSScriptRoot "start.bat"
+# Ziel ist bewusst Mobilfunkverwaltung.cmd im Projekt-Root (nicht start.bat):
+# das oeffnet das Statusfenster mit Link/"Im Browser oeffnen"/"Beenden"-Knopf
+# (gui.ps1), waehrend start.bat nur eine reine Konsole ohne Oberflaeche startet.
+$StartBat = Join-Path $RepositoryRoot "Mobilfunkverwaltung.cmd"
 if (Test-Path $StartBat) {
   $IconPng = Join-Path $Frontend "public\icon-512.png"
   $IconIco = Join-Path $DataDir "mobilfunkverwaltung.ico"
@@ -87,7 +90,7 @@ if (Test-Path $StartBat) {
   $WshShell = New-Object -ComObject WScript.Shell
   $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
   $Shortcut.TargetPath = $StartBat
-  $Shortcut.WorkingDirectory = $PSScriptRoot
+  $Shortcut.WorkingDirectory = $RepositoryRoot
   $Shortcut.IconLocation = if (Test-Path $IconIco) { $IconIco } else { "$env:SystemRoot\System32\shell32.dll,220" }
   $Shortcut.Description = "Mobilfunkverwaltung starten"
   $Shortcut.Save()
