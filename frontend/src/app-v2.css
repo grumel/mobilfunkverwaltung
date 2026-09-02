@@ -330,6 +330,7 @@ tbody tr.selected { box-shadow:inset 4px 0 var(--app-blue-700); }
 }
 .badge.ok { background:#e8f5ed; border-color:#b9dec7; color:#176536; }
 .badge.open { background:#fff0f1; border-color:#efc5ca; color:#9f2937; }
+.badge.archived { background:#f1f1f3; border-color:#d6d6db; color:#55555c; }
 
 /* Dialoge, Formulare und Rückmeldungen */
 .overlay {

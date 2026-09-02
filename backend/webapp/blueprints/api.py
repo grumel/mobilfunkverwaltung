@@ -36,7 +36,7 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 LIST_FIELDS = ["id", "master_id", "gsm", "name", "plant", "konto", "tarif",
                "sim_nummer", "vertragsbeginn", "vertragsende", "kuendigung",
                "rahmenvertrag", "syno", "start_syno", "imei", "bemerkung", "verified",
-               "provider", "overhead"]
+               "provider", "overhead", "archived"]
 # Vollständig für die Detail-/Bearbeiten-Ansicht
 DETAIL_FIELDS = LIST_FIELDS + ["telefon", "startdatum",
                "syno2", "start_syno2", "imei2", "pruefung_grund", "created_at", "updated_at"]
@@ -80,6 +80,8 @@ def _apply_view(db, view, q):
         query = db.query(P).filter(norm.in_(dup))
     elif view == "overhead":
         query = db.query(P).filter(P.overhead == 1)
+    elif view == "archiv":
+        query = db.query(P).filter(P.archived == 1)
     elif view == "ohne_gsm":
         query = db.query(P).filter(or_(P.gsm.is_(None), P.gsm == ""))
     elif view == "ohne_name":
@@ -111,6 +113,8 @@ def _apply_view(db, view, q):
         query = db.query(P)
     else:
         query = db.query(P).filter(func.coalesce(P.provider, "Vodafone") == "Vodafone")
+    if view != "archiv":
+        query = query.filter(func.coalesce(P.archived, 0) == 0)
     return query.order_by(P.name)
 
 
@@ -616,6 +620,33 @@ def participant_overhead(pid):
         db.close()
 
 
+@bp.post("/participants/<int:pid>/archive")
+def participant_archive(pid):
+    """Archivieren umschalten. Der Provider (Original-Tab) bleibt unverändert –
+    der Teilnehmer verschwindet aus allen anderen Ansichten und erscheint nur
+    noch im Archiv-Filter (sowie weiterhin bei der globalen Suche). Nur Admins
+    dürfen archivieren/wiederherstellen."""
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("admin"):
+        return jsonify(error="Archivieren erfordert Admin-Rechte"), 403
+    db = SessionLocal()
+    try:
+        p = db.get(Participant, pid)
+        if not p:
+            return jsonify(error="nicht gefunden"), 404
+        p.archived = 0 if p.archived else 1
+        p.updated_at = svc.now_str()
+        svc.log_import(db, "ARCHIV", f"ID={pid} archived={p.archived} (API)", participant_id=pid)
+        svc.log_audit(db, current_user(), "ARCHIV",
+                      f"ID={pid} archived={p.archived} (API)",
+                      table_name="participants", record_id=pid)
+        db.commit()
+        return jsonify(id=pid, archived=p.archived)
+    finally:
+        db.close()
+
+
 @bp.post("/participants/<int:pid>/move")
 def participant_move(pid):
     if not current_user():
@@ -834,10 +865,11 @@ def stats():
     db = SessionLocal()
     try:
         def cnt(*crit):
-            qy = db.query(func.count()).select_from(P)
+            qy = db.query(func.count()).select_from(P).filter(func.coalesce(P.archived, 0) == 0)
             for cc in crit:
                 qy = qy.filter(cc)
             return qy.scalar() or 0
+        not_archived = func.coalesce(P.archived, 0) == 0
         has_syno = or_(and_(P.syno.isnot(None), P.syno != ""),
                        and_(P.syno2.isnot(None), P.syno2 != ""))
         tiles = {
@@ -853,11 +885,12 @@ def stats():
         }
         werk = func.coalesce(P.plant, "(kein Werk)")
         werke = [{"werk": w, "n": n} for w, n in
-                 db.query(werk, func.count()).group_by(werk).order_by(func.count().desc()).all()]
+                 db.query(werk, func.count()).filter(not_archived)
+                   .group_by(werk).order_by(func.count().desc()).all()]
         ablauf = [{"name": n, "gsm": g, "plant": pl, "vertragsende": ve, "provider": pr}
                   for n, g, pl, ve, pr in
                   db.query(P.name, P.gsm, P.plant, P.vertragsende, P.provider)
-                    .filter(P.vertragsende >= today, P.vertragsende <= in90)
+                    .filter(not_archived, P.vertragsende >= today, P.vertragsende <= in90)
                     .order_by(P.vertragsende).all()]
     finally:
         db.close()
@@ -874,7 +907,7 @@ def dataquality():
     db = SessionLocal()
     try:
         def cnt(*crit):
-            qy = db.query(func.count()).select_from(P)
+            qy = db.query(func.count()).select_from(P).filter(func.coalesce(P.archived, 0) == 0)
             for cc in crit:
                 qy = qy.filter(cc)
             return qy.scalar() or 0

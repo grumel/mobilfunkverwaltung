@@ -20,6 +20,7 @@ const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 export default function Participants({ view, q, user, openTaskPids = [], onChanged, onCount }) {
   const canWrite = user.role === 'write' || user.role === 'admin'
   const canDelete = user.role === 'admin'
+  const canArchive = user.role === 'admin'
   const taskSet = useMemo(() => new Set(openTaskPids), [openTaskPids])
 
   const [rows, setRows] = useState([])
@@ -199,9 +200,11 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
                     onClick={() => handleRowClick(r)}
                     onDoubleClick={() => !mergeMode && setEditId(r.id)}
                     onContextMenu={(e) => { if (mergeMode) return; e.preventDefault(); setMenu({ x: e.pageX, y: e.pageY, row: r }) }}>
-                  <td>{r.verified === 1
-                    ? <span className="badge ok">geprüft</span>
-                    : <span className="badge open">offen</span>}</td>
+                  <td>{r.archived === 1
+                    ? <span className="badge archived">archiviert</span>
+                    : r.verified === 1
+                      ? <span className="badge ok">geprüft</span>
+                      : <span className="badge open">offen</span>}</td>
                   {COLS.map(([k]) => (
                     <td key={k} className={NUM.has(k) ? 'num' : ''}>
                       {r[k] === null || r[k] === '' || r[k] === undefined
@@ -238,6 +241,14 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
               {PROVIDERS.filter((p) => p !== menu.row.provider).map((p) => (
                 <div key={p} className="ctx-item" onClick={() => act(() => api.move(menu.row.id, p))}>→ nach {p}</div>
               ))}
+            </>
+          )}
+          {canArchive && (
+            <>
+              <div className="ctx-sep" />
+              <div className="ctx-item" onClick={() => act(() => api.archive(menu.row.id))}>
+                {menu.row.archived ? 'Aus Archiv wiederherstellen' : 'Archivieren'}
+              </div>
             </>
           )}
           {canDelete && (

@@ -45,6 +45,7 @@ def ensure_schema():
         ("overhead", "INTEGER DEFAULT 0"),
         ("imei", "TEXT"),      # IMEI-Nr. Gerät 1 (aus 'Syno seit' herausgelöst)
         ("imei2", "TEXT"),     # IMEI-Nr. Gerät 2
+        ("archived", "INTEGER DEFAULT 0"),
     ]
     missing = [(n, ddl) for n, ddl in wanted if n not in cols]
     try:
