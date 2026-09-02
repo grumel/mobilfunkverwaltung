@@ -29,7 +29,7 @@ const DERIVED = [
   ['overhead', 'Overhead'],
 ]
 
-const PARTICIPANT_VIEWS = new Set([...PROVIDERS, ...DERIVED].map(([k]) => k))
+const PARTICIPANT_VIEWS = new Set([...PROVIDERS, ...DERIVED].map(([k]) => k).concat('archiv'))
 
 function SignalMark() {
   return (
@@ -146,6 +146,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
             Aufgaben{summary.open_tasks > 0 && <span className="badgecount">{summary.open_tasks}</span>}
           </button>
           <button className={'tab' + (view === 'statistik' ? ' active' : '')} aria-current={view === 'statistik' ? 'page' : undefined} onClick={() => setView('statistik')}>Statistik</button>
+          <button className={'tab' + (view === 'archiv' ? ' active' : '')} aria-current={view === 'archiv' ? 'page' : undefined} onClick={() => setView('archiv')}>Archiv</button>
           <button className={'tab' + (view === 'protokoll' ? ' active' : '')} aria-current={view === 'protokoll' ? 'page' : undefined} onClick={() => setView('protokoll')}>Protokoll</button>
           <button className={'tab' + (view === 'dokumente' ? ' active' : '')} aria-current={view === 'dokumente' ? 'page' : undefined} onClick={() => setView('dokumente')}>Dokumente</button>
           {isAdmin && (

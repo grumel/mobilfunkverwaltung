@@ -241,6 +241,7 @@ def main() -> None:
         assert client.post("/api/login", json={"username": "reader", "password": "reader-pass"}).status_code == 200
         assert client.post("/api/participants", json={"name": "Denied"}).status_code == 403
         assert client.post("/api/participants/1/tasks", json={"kommentar": "Denied"}).status_code == 403
+        assert client.post("/api/participants/1/archive").status_code == 403
 
         assert client.post("/api/logout").status_code == 200
         assert client.post("/api/login", json={"username": "admin", "password": "admin-pass"}).status_code == 200
@@ -251,6 +252,15 @@ def main() -> None:
         assert client.post(f"/api/participants/{participant_id}/verify").status_code == 200
         assert client.post(f"/api/participants/{participant_id}/overhead").status_code == 200
         assert client.post(f"/api/participants/{participant_id}/move", json={"provider": "Telekom"}).status_code == 200
+        archived = client.post(f"/api/participants/{participant_id}/archive")
+        assert archived.status_code == 200 and archived.json["archived"] == 1
+        # archivierter Eintrag verschwindet aus dem Provider-View, taucht im Archiv-View auf
+        telekom_view = client.get("/api/participants?view=telekom")
+        assert all(p["id"] != participant_id for p in telekom_view.json["participants"])
+        archiv_view = client.get("/api/participants?view=archiv")
+        assert any(p["id"] == participant_id for p in archiv_view.json["participants"])
+        restored = client.post(f"/api/participants/{participant_id}/archive")
+        assert restored.status_code == 200 and restored.json["archived"] == 0
         task = client.post(f"/api/participants/{participant_id}/tasks", json={"kommentar": "CRUD Task"})
         assert task.status_code == 201, task.get_data(as_text=True)
         task_id = task.json["id"]
