@@ -1,7 +1,10 @@
-[CmdletBinding()]
-param([string]$RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")), [string]$DataDir = "", [int]$Port = 8000, [switch]$OpenBrowser)
+﻿[CmdletBinding()]
+param([string]$RepositoryRoot = "", [string]$DataDir = "", [int]$Port = 8000, [switch]$OpenBrowser)
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+# $PSScriptRoot ist in Windows PowerShell 5.1 innerhalb des param()-Blocks noch leer,
+# daher erst hier (nach Skriptstart) als Fallback verwenden.
+if (-not $RepositoryRoot) { $RepositoryRoot = Join-Path $PSScriptRoot "..\.." }
 $RepositoryRoot = (Resolve-Path $RepositoryRoot).Path
 $Backend = Join-Path $RepositoryRoot "backend"
 $Python = Join-Path $Backend ".venv\Scripts\python.exe"
