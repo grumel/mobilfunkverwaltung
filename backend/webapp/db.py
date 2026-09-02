@@ -25,6 +25,16 @@ Base = declarative_base()
 SCHEMA_STATE = {"ok": None, "added": [], "error": None, "note": None}
 
 
+def _is_duplicate_column(exc):
+    """True, wenn der Fehler bedeutet „Spalte existiert bereits".
+
+    Tritt auf, wenn ein zweiter Worker/Prozess dieselbe Spalte zeitgleich
+    angelegt hat (Wettlauf beim Start mehrerer gunicorn-Worker). Deckt SQLite
+    (`duplicate column name`) und PostgreSQL (`already exists`) ab."""
+    msg = str(exc).lower()
+    return "duplicate column" in msg or "already exists" in msg
+
+
 def ensure_schema():
     """Leichte Migration: fehlende Spalten nachrüsten (SQLite + PostgreSQL).
     Läuft beim App-Start; bei frischer DB (Tabelle fehlt noch) passiert nichts.
@@ -48,12 +58,22 @@ def ensure_schema():
         ("archived", "INTEGER DEFAULT 0"),
     ]
     missing = [(n, ddl) for n, ddl in wanted if n not in cols]
+    added = []
     try:
-        if missing:
-            with engine.begin() as conn:
-                for name, ddl in missing:
+        # Jede Spalte in EIGENER Transaktion nachrüsten. Legt ein anderer Worker
+        # dieselbe Spalte zeitgleich an, ist „existiert schon" kein echter Fehler
+        # (idempotent) – wir überspringen sie und machen mit der nächsten weiter.
+        # Nur echte Fehler (gesperrte/nicht schreibbare DB o. Ä.) werden gemeldet.
+        for name, ddl in missing:
+            try:
+                with engine.begin() as conn:
                     conn.execute(text(f"ALTER TABLE participants ADD COLUMN {name} {ddl}"))
-        SCHEMA_STATE.update(ok=True, added=[n for n, _ in missing], error=None, note=None)
+                added.append(name)
+            except Exception as exc:
+                if _is_duplicate_column(exc):
+                    continue
+                raise
+        SCHEMA_STATE.update(ok=True, added=added, error=None, note=None)
     except Exception as exc:
-        SCHEMA_STATE.update(ok=False, added=[], error=str(exc), note=None)
+        SCHEMA_STATE.update(ok=False, added=added, error=str(exc), note=None)
         raise
