@@ -99,6 +99,14 @@ def ensure_schema():
         # Eigene Tabelle, eigener try/except-Block wäre unnötig doppelt; die
         # Helper-Funktion schluckt eine fehlende Tabelle bereits selbst.
         added += _ensure_columns("users", [("notes", "TEXT")])
+        # audit_log – ausführliches Änderungsprotokoll mit Einzel-Rücknahme.
+        added += _ensure_columns("audit_log", [
+            ("changes", "TEXT"),
+            ("snapshot", "TEXT"),
+            ("undo_op", "TEXT"),
+            ("reverted_at", "TEXT"),
+            ("revert_of_id", "INTEGER"),
+        ])
         SCHEMA_STATE.update(ok=True, added=added, error=None, note=None)
     except Exception as exc:
         SCHEMA_STATE.update(ok=False, added=added, error=str(exc), note=None)

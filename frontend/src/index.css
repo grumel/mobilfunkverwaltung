@@ -237,3 +237,12 @@ tr.done td { color:var(--dim); }
 .meta { margin:10px 0; font-size:13px; color:var(--dim); border:1px solid var(--line);
   border-radius:8px; padding:8px 12px; background:var(--head); }
 .meta b { color:var(--fg); }
+
+/* Änderungsprotokoll: Feld-Diff und Einzel-Rücknahme */
+.difflist { margin:0; padding:0; list-style:none; font-size:12px; }
+.difflist li { white-space:normal; }
+.difffield { display:inline-block; min-width:90px; color:var(--dim); font-family:monospace; }
+.btn.small { padding:3px 10px; font-size:12px; }
+.muted { color:var(--dim); font-size:12px; }
+tr.reverted { opacity:.55; text-decoration:line-through; }
+tr.reverted .btn { text-decoration:none; }

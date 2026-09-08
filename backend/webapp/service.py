@@ -4,6 +4,7 @@ Provider-Definitionen, Datums-Konvertierung, Protokoll-Helfer (import_log /
 audit_log) und kleine Teilnehmer-Operationen. DB-neutral (SQLite/PostgreSQL).
 """
 
+import json
 import re
 from datetime import datetime
 
@@ -90,6 +91,55 @@ def log_audit(db, user, aktion, details="", table_name=None, record_id=None):
                     username=(user or {}).get("username"),
                     aktion=aktion, details=details,
                     table_name=table_name, record_id=record_id))
+
+
+# --- Ausführliches Änderungsprotokoll mit Einzel-Rücknahme -------------------
+
+def participant_snapshot(p) -> dict:
+    """Kompletter Zustand einer Teilnehmer-Zeile als serialisierbares Dict."""
+    return {c.name: getattr(p, c.name) for c in Participant.__table__.columns}
+
+
+def _describe_changes(changes: dict) -> str:
+    """Menschenlesbarer Diff-Text, z. B. tarif: 'A' → 'B'; plant: — → 'Werk'."""
+    def fmt(v):
+        if v is None or v == "":
+            return "—"
+        return f"'{v}'"
+    return "; ".join(f"{f}: {fmt(old)} → {fmt(new)}" for f, (old, new) in changes.items())
+
+
+def diff_fields(before: dict, after: dict) -> dict:
+    """Liefert {feld: [alt, neu]} nur für tatsächlich geänderte Felder."""
+    changes = {}
+    for f, new in after.items():
+        old = before.get(f)
+        if old != new:
+            changes[f] = [old, new]
+    return changes
+
+
+def log_change(db, user, aktion, table_name, record_id, details=None,
+               changes=None, snapshot=None, undo_op=None, revert_of_id=None):
+    """Schreibt einen ausführlichen Audit-Eintrag.
+
+    `undo_op` bestimmt, was das Rückgängigmachen dieses Eintrags tut:
+      - "restore_fields": setzt die Alt-Werte aus `changes` zurück
+      - "delete_row":     entfernt die Zeile `record_id`
+      - "insert_row":     stellt die Zeile aus `snapshot` wieder her
+    """
+    if details is None:
+        details = _describe_changes(changes) if changes else ""
+    db.add(AuditLog(
+        zeitpunkt=now_str(),
+        user_id=(user or {}).get("id"),
+        username=(user or {}).get("username"),
+        aktion=aktion, details=details,
+        table_name=table_name, record_id=record_id,
+        changes=json.dumps(changes, ensure_ascii=False) if changes else None,
+        snapshot=json.dumps(snapshot, ensure_ascii=False, default=str) if snapshot else None,
+        undo_op=undo_op, revert_of_id=revert_of_id,
+    ))
 
 
 def next_master_id(db) -> int:
