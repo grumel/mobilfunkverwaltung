@@ -1146,6 +1146,27 @@ def _import_db_module():
     return import_adapter
 
 
+def _summarize_import(result) -> str:
+    """Lesbare Kurzfassung eines Import-Ergebnisses (nur Zähler)."""
+    if isinstance(result, dict):
+        parts = [f"{k}={v}" for k, v in result.items()
+                 if isinstance(v, int) and not isinstance(v, bool)]
+        return ", ".join(parts) or str(result)
+    return str(result)
+
+
+def _log_import_audit(quelle, filename, result):
+    """Import-Ereignis zusätzlich ins Audit-Log (ohne Einzel-Rücknahme)."""
+    db = SessionLocal()
+    try:
+        svc.log_audit(db, current_user(), "IMPORT",
+                      f"{quelle}-Import '{filename}': {_summarize_import(result)}",
+                      table_name="participants")
+        db.commit()
+    finally:
+        db.close()
+
+
 def _save_upload():
     f = request.files.get("file")
     if not f or not f.filename:
@@ -1197,6 +1218,7 @@ def import_vodafone_confirm():
     finally:
         try: os.unlink(path)
         except OSError: pass
+    _log_import_audit("Vodafone", filename, result)
     return jsonify(result=result, filename=filename)
 
 
@@ -1220,6 +1242,7 @@ def import_syno():
     finally:
         try: os.unlink(path)
         except OSError: pass
+    _log_import_audit("Syno", filename, result)
     return jsonify(result=result, filename=filename)
 
 

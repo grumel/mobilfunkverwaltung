@@ -264,6 +264,7 @@ td.logdetails { white-space:normal; word-break:break-word; max-width:520px; }
 .tag-update, .tag-provider, .tag-verified, .tag-overhead, .tag-archiv {
   background:var(--selected); color:var(--link); border-color:transparent; }
 .tag-revert { background:var(--warn-bg); color:var(--fg); border-color:var(--line); }
+.tag-import { background:var(--track); color:var(--dim); border-color:var(--line); }
 
 /* Feld-Diff: eine Zeile je Feld, klar ausgerichtet */
 .difflist { margin:6px 0 0; padding:0; list-style:none; font-size:13px;

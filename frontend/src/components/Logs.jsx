@@ -31,6 +31,7 @@ function actionLabel(aktion) {
     INSERT: 'Angelegt', UPDATE: 'Geändert', DELETE: 'Gelöscht',
     VERIFIED: 'Geprüft', OVERHEAD: 'Overhead', ARCHIV: 'Archiv',
     PROVIDER: 'Provider', REVERT: 'Rücknahme', MERGE: 'Zusammengeführt',
+    IMPORT: 'Importiert',
   }
   return map[aktion] || aktion
 }
