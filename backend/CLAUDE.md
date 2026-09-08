@@ -50,7 +50,7 @@ Session-Secret: `MOBILFUNK_SECRET` oder persistenter Zufallswert
   Unter Windows startet Waitress, unter Linux bleibt dies der lokale
   Entwicklungsstart. `run_webapp.py` bleibt als kompatibler Alias erhalten.
 - **Windows/lokal, Backend:** `run_webapp.bat` → http://127.0.0.1:5001 (Flask-Dev-Server).
-- **Windows/lokal, Frontend:** im `mdw-frontend`-Repo `npm run dev` → http://localhost:5173
+- **Windows/lokal, Frontend:** im `frontend/`-Verzeichnis `npm run dev` → http://localhost:5173
   (Vite-Dev-Proxy leitet `/api` an Port 5001 weiter, dadurch same-origin/kein CORS).
 - **Server (Linux, Port 80):** siehe `deploy/linux/INSTALL.md` bzw.
   `deploy/linux/install.sh`
