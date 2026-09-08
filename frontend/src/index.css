@@ -238,20 +238,43 @@ tr.done td { color:var(--dim); }
   border-radius:8px; padding:8px 12px; background:var(--head); }
 .meta b { color:var(--fg); }
 
-/* Änderungsprotokoll: Feld-Diff und Einzel-Rücknahme */
-.difflist { margin:0; padding:0; list-style:none; font-size:12px; }
-.difflist li { white-space:normal; }
-.difffield { display:inline-block; min-width:90px; color:var(--dim); font-family:monospace; }
-.btn.small { padding:3px 10px; font-size:12px; }
-.muted { color:var(--dim); font-size:12px; }
-tr.reverted { opacity:.55; text-decoration:line-through; }
-tr.reverted .btn { text-decoration:none; }
-/* Breite Spalten umbrechen, damit die Tabelle nicht über den Rand läuft */
-td.logdetails { white-space:normal; word-break:break-word; max-width:320px; }
-td.logchanges { white-space:normal; word-break:break-word; max-width:260px; }
-/* Aktions-Spalte rechts fixieren, damit der "Rückgängig"-Knopf immer sichtbar ist */
-th.logaction, td.logaction { position:sticky; right:0; white-space:nowrap; text-align:right;
-  background:var(--card); box-shadow:-8px 0 8px -8px rgba(0,0,0,.35); }
-thead th.logaction { background:var(--head); }
-tbody tr:nth-child(even) td.logaction { background:var(--zebra); }
-tbody tr:hover td.logaction { background:var(--hover); }
+.muted { color:var(--dim); font-size:13px; }
+/* Protokoll-Details dürfen umbrechen */
+td.logdetails { white-space:normal; word-break:break-word; max-width:520px; }
+
+/* Änderungsprotokoll als lesbare Karten mit Einzel-Rücknahme */
+.auditlist { display:flex; flex-direction:column; gap:8px; }
+.auditcard { display:flex; align-items:flex-start; gap:12px; background:var(--card);
+  border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+.auditcard.reverted { opacity:.6; }
+.auditmain { flex:1 1 auto; min-width:0; }
+.auditside { flex:0 0 auto; display:flex; align-items:center; }
+.audithead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px; }
+.auditwhen { color:var(--dim); font-variant-numeric:tabular-nums; }
+.auditwho { color:var(--dim); }
+.auditdetails { margin-top:4px; font-size:13px; color:var(--fg); }
+.auditcard.reverted .auditdetails { text-decoration:line-through; }
+
+/* Aktions-Marke, farblich nach Art der Änderung */
+.tag { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px;
+  font-weight:700; letter-spacing:.02em; background:var(--btn-bg); color:var(--dim);
+  border:1px solid var(--line); white-space:nowrap; }
+.tag-insert { background:var(--ok-bg); color:var(--ok-fg); border-color:transparent; }
+.tag-delete { background:var(--open-bg); color:var(--open-fg); border-color:transparent; }
+.tag-update, .tag-provider, .tag-verified, .tag-overhead, .tag-archiv {
+  background:var(--selected); color:var(--link); border-color:transparent; }
+.tag-revert { background:var(--warn-bg); color:var(--fg); border-color:var(--line); }
+
+/* Feld-Diff: eine Zeile je Feld, klar ausgerichtet */
+.difflist { margin:6px 0 0; padding:0; list-style:none; font-size:13px;
+  display:flex; flex-direction:column; gap:2px; }
+.difflist li { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.difffield { min-width:120px; color:var(--dim); font-family:monospace; font-size:12px; }
+.diffold { color:var(--dim); text-decoration:line-through; }
+.diffarrow { color:var(--dim); }
+.diffnew { color:var(--fg); }
+
+.badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+  background:var(--btn-bg); border:1px solid var(--line); }
+.btn.danger { color:var(--accent); border-color:var(--accent); font-weight:600; white-space:nowrap; }
+.btn.danger:hover { background:var(--open-bg); }

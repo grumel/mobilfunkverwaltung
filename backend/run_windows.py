@@ -39,7 +39,15 @@ class SpaApplication:
             return [b"Frontend build not found"]
         content_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
         body = candidate.read_bytes()
-        start_response("200 OK", [("Content-Type", content_type), ("Content-Length", str(len(body)))])
+        headers = [("Content-Type", content_type), ("Content-Length", str(len(body)))]
+        # Gehashte Assets (index-XXXX.js/.css) sind unveränderlich und dürfen lange
+        # gecacht werden; die SPA-Shell (index.html) niemals, damit nach einem
+        # Update sofort die neuen Asset-Verweise geladen werden (wie im Caddyfile).
+        if candidate.name == "index.html":
+            headers.append(("Cache-Control", "no-cache, no-store, must-revalidate"))
+        elif "/assets/" in path:
+            headers.append(("Cache-Control", "public, max-age=31536000, immutable"))
+        start_response("200 OK", headers)
         return [body]
 
 
