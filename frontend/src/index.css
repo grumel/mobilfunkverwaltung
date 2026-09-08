@@ -246,3 +246,12 @@ tr.done td { color:var(--dim); }
 .muted { color:var(--dim); font-size:12px; }
 tr.reverted { opacity:.55; text-decoration:line-through; }
 tr.reverted .btn { text-decoration:none; }
+/* Breite Spalten umbrechen, damit die Tabelle nicht über den Rand läuft */
+td.logdetails { white-space:normal; word-break:break-word; max-width:320px; }
+td.logchanges { white-space:normal; word-break:break-word; max-width:260px; }
+/* Aktions-Spalte rechts fixieren, damit der "Rückgängig"-Knopf immer sichtbar ist */
+th.logaction, td.logaction { position:sticky; right:0; white-space:nowrap; text-align:right;
+  background:var(--card); box-shadow:-8px 0 8px -8px rgba(0,0,0,.35); }
+thead th.logaction { background:var(--head); }
+tbody tr:nth-child(even) td.logaction { background:var(--zebra); }
+tbody tr:hover td.logaction { background:var(--hover); }

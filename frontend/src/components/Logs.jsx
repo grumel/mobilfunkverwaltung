@@ -67,7 +67,7 @@ export default function Logs({ kind, user }) {
                 <th>Aktion</th>
                 <th>Details</th>
                 {isAudit && <th>Änderung</th>}
-                {isAudit && isAdmin && <th></th>}
+                {isAudit && isAdmin && <th className="logaction"></th>}
               </tr>
             </thead>
             <tbody>
@@ -76,10 +76,10 @@ export default function Logs({ kind, user }) {
                   <td>{r.zeitpunkt ? fmtDate(r.zeitpunkt) : '—'}</td>
                   <td>{(isAudit ? r.username : r.quelle) || '—'}</td>
                   <td>{r.aktion || '—'}</td>
-                  <td>{r.details || '—'}</td>
-                  {isAudit && <td>{renderChanges(r.changes) || '—'}</td>}
+                  <td className="logdetails">{r.details || '—'}</td>
+                  {isAudit && <td className="logchanges">{renderChanges(r.changes) || '—'}</td>}
                   {isAudit && isAdmin && (
-                    <td>
+                    <td className="logaction">
                       {r.reverted_at ? (
                         <span className="muted" title={`Zurückgenommen am ${r.reverted_at}`}>zurückgenommen</span>
                       ) : r.undo_op ? (
