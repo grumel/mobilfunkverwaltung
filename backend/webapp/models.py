@@ -54,6 +54,7 @@ class User(Base):
     last_login      = Column(Text)
     created_at      = Column(Text)
     windows_login   = Column(Text)
+    notes           = Column(Text)  # persönliches Notizfeld (Frontend-Knopf "Notizen")
 
 
 class Task(Base):

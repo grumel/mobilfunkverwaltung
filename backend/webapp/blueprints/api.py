@@ -230,6 +230,43 @@ def me_change_password():
         db.close()
 
 
+@bp.get("/me/notes")
+def me_notes_get():
+    """Eigene Notizen laden (persönliches Notizfeld, jeder angemeldete Benutzer)."""
+    u = current_user()
+    if not u:
+        return jsonify(error="nicht angemeldet"), 401
+    db = SessionLocal()
+    try:
+        row = db.get(User, u["id"])
+        return jsonify(notes=(row.notes or "") if row else "")
+    finally:
+        db.close()
+
+
+@bp.put("/me/notes")
+def me_notes_save():
+    """Eigene Notizen speichern. Kein Audit-Log-Eintrag – reines Scratchpad,
+    kein sicherheitsrelevanter Vorgang, wird per Auto-Save häufig aufgerufen."""
+    u = current_user()
+    if not u:
+        return jsonify(error="nicht angemeldet"), 401
+    data = request.get_json(silent=True) or {}
+    notes = data.get("notes")
+    if not isinstance(notes, str):
+        return jsonify(error="notes muss ein Text sein."), 400
+    db = SessionLocal()
+    try:
+        row = db.get(User, u["id"])
+        if not row:
+            return jsonify(error="Benutzer nicht gefunden."), 404
+        row.notes = notes
+        db.commit()
+        return jsonify(ok=True)
+    finally:
+        db.close()
+
+
 _VERSION_CACHE = None
 
 

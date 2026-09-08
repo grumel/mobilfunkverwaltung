@@ -16,6 +16,7 @@ export default function HelpModal({ onClose }) {
             <li>Anmeldung mit denselben Zugangsdaten wie in der Desktop-App.</li>
             <li><b>Lesen</b>: nur ansehen. <b>Schreiben</b>: bearbeiten/importieren. <b>Admin</b>: zusätzlich Benutzer &amp; Einstellungen.</li>
             <li>Oben rechts <b>Passwort</b>: eigenes Passwort ändern. <b>Abmelden</b>: Sitzung beenden.</li>
+            <li><b>Notizen</b>: persönliches Notizfeld, nur für dich sichtbar, speichert automatisch beim Tippen.</li>
           </ul>
 
           <h4>Reiter &amp; Suche</h4>

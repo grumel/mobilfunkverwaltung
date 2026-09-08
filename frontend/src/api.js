@@ -37,6 +37,8 @@ export const api = {
   version: () => req('/api/version'),
   changeMyPassword: (current_password, new_password) =>
     req('/api/me/password', { method: 'POST', body: JSON.stringify({ current_password, new_password }) }),
+  getMyNotes: () => req('/api/me/notes'),
+  saveMyNotes: (notes) => req('/api/me/notes', { method: 'PUT', body: JSON.stringify({ notes }) }),
   login: (username, password) =>
     req('/api/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => req('/api/logout', { method: 'POST' }),

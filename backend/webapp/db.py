@@ -35,6 +35,32 @@ def _is_duplicate_column(exc):
     return "duplicate column" in msg or "already exists" in msg
 
 
+def _ensure_columns(table, wanted):
+    """Rüstet fehlende Spalten einer einzelnen Tabelle nach (siehe ensure_schema).
+    Gibt die Liste tatsächlich hinzugefügter Spalten zurück; fehlt die Tabelle
+    selbst (z. B. frische DB), wird das leise übersprungen (kein Fehler)."""
+    try:
+        cols = {c["name"] for c in inspect(engine).get_columns(table)}
+    except Exception:
+        return []
+    missing = [(n, ddl) for n, ddl in wanted if n not in cols]
+    added = []
+    # Jede Spalte in EIGENER Transaktion nachrüsten. Legt ein anderer Worker
+    # dieselbe Spalte zeitgleich an, ist „existiert schon" kein echter Fehler
+    # (idempotent) – wir überspringen sie und machen mit der nächsten weiter.
+    # Nur echte Fehler (gesperrte/nicht schreibbare DB o. Ä.) werden gemeldet.
+    for name, ddl in missing:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
+            added.append(name)
+        except Exception as exc:
+            if _is_duplicate_column(exc):
+                continue
+            raise
+    return added
+
+
 def ensure_schema():
     """Leichte Migration: fehlende Spalten nachrüsten (SQLite + PostgreSQL).
     Läuft beim App-Start; bei frischer DB (Tabelle fehlt noch) passiert nichts.
@@ -60,10 +86,6 @@ def ensure_schema():
     missing = [(n, ddl) for n, ddl in wanted if n not in cols]
     added = []
     try:
-        # Jede Spalte in EIGENER Transaktion nachrüsten. Legt ein anderer Worker
-        # dieselbe Spalte zeitgleich an, ist „existiert schon" kein echter Fehler
-        # (idempotent) – wir überspringen sie und machen mit der nächsten weiter.
-        # Nur echte Fehler (gesperrte/nicht schreibbare DB o. Ä.) werden gemeldet.
         for name, ddl in missing:
             try:
                 with engine.begin() as conn:
@@ -73,6 +95,10 @@ def ensure_schema():
                 if _is_duplicate_column(exc):
                     continue
                 raise
+        # users.notes – persönliches Notizfeld (Frontend-Knopf "Notizen").
+        # Eigene Tabelle, eigener try/except-Block wäre unnötig doppelt; die
+        # Helper-Funktion schluckt eine fehlende Tabelle bereits selbst.
+        added += _ensure_columns("users", [("notes", "TEXT")])
         SCHEMA_STATE.update(ok=True, added=added, error=None, note=None)
     except Exception as exc:
         SCHEMA_STATE.update(ok=False, added=added, error=str(exc), note=None)

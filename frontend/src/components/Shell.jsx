@@ -10,6 +10,7 @@ import Users from './Users.jsx'
 import Documents from './Documents.jsx'
 import PasswordModal from './PasswordModal.jsx'
 import HelpModal from './HelpModal.jsx'
+import NotesModal from './NotesModal.jsx'
 import UnmatchedDevices from './UnmatchedDevices.jsx'
 import { getTheme, toggleTheme } from '../theme.js'
 
@@ -63,6 +64,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
   const [q, setQ] = useState('')
   const [pwOpen, setPwOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
   const [theme, setTheme] = useState(getTheme())
   const [resultCount, setResultCount] = useState(null)
   const isAdmin = user.role === 'admin'
@@ -113,6 +115,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
           {theme === 'dark' ? '☀' : '☾'}
         </IconButton>
         <button className="shell-v2-action" onClick={() => setHelpOpen(true)}>Hilfe</button>
+        <button className="shell-v2-action" onClick={() => setNotesOpen(true)}>Notizen</button>
         <button className="shell-v2-action" onClick={() => setPwOpen(true)}>Passwort</button>
         {isAdmin && (
           <>
@@ -129,6 +132,7 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
                        onDone={() => { setPwOpen(false); onPwDone && onPwDone() }} />
       )}
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+      {notesOpen && <NotesModal onClose={() => setNotesOpen(false)} />}
 
       <header className="topbar">
         <nav className="tabs" aria-label="Hauptnavigation">
