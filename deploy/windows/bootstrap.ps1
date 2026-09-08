@@ -1,5 +1,5 @@
 [CmdletBinding(SupportsShouldProcess)]
-param([string]$RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")),
+param([string]$RepositoryRoot = "",
       [string]$DataDir = "",
       [switch]$Install,
       [switch]$CheckOnly)
@@ -11,7 +11,11 @@ Set-StrictMode -Version Latest
 # Signatur: es wird nichts ausgefuehrt, was eine Softwarerichtlinie blockieren
 # koennte, ausser diesem Skript selbst.
 
+# $PSScriptRoot ist in Windows PowerShell 5.1 innerhalb des param()-Blocks noch leer,
+# daher erst hier (nach Skriptstart) als Fallback verwenden.
+if (-not $RepositoryRoot) { $RepositoryRoot = Join-Path $PSScriptRoot "..\.." }
 $RepositoryRoot = (Resolve-Path $RepositoryRoot).Path
+. (Join-Path $PSScriptRoot "common.ps1")
 
 function Get-ToolVersion {
     <#  Liefert die Version eines Kommandozeilenwerkzeugs oder $null.
@@ -74,9 +78,13 @@ $soffice = [bool](Get-Command soffice -ErrorAction SilentlyContinue)
 # mehr Pflicht – dann genuegt Python. Node/npm werden nur zum Bauen gebraucht.
 $HasPrebuiltFrontend = Test-Path (Join-Path $RepositoryRoot "frontend\dist\index.html")
 $BuildTools = -not $HasPrebuiltFrontend
+# Liegt zusaetzlich ein vorinstalliertes Python-Bundle im Paket (Release-ZIP,
+# siehe scripts/publish-windows-zip.sh), ist auch Python selbst nicht mehr
+# Pflicht – dann braucht der Zielrechner ausser Windows nichts vorinstalliert.
+$HasBundledPython = Test-BundledPython (Join-Path $RepositoryRoot "backend")
 
 $requirements = @(
-    [pscustomobject]@{ Name = "Python 3.12+"; Ist = $python; Erfuellt = ($python -and $python -ge [version]"3.12"); Pflicht = $true;        Paket = "Python.Python.3.12" }
+    [pscustomobject]@{ Name = "Python 3.12+"; Ist = $python; Erfuellt = ($HasBundledPython -or ($python -and $python -ge [version]"3.12")); Pflicht = -not $HasBundledPython; Paket = "Python.Python.3.12" }
     [pscustomobject]@{ Name = "Node.js 20+ (nur fuer Build)";  Ist = $node;   Erfuellt = ($node -and $node -ge [version]"20.0"); Pflicht = $BuildTools; Paket = "OpenJS.NodeJS.LTS" }
     [pscustomobject]@{ Name = "npm (nur fuer Build)";          Ist = $npm;    Erfuellt = [bool]$npm;                             Pflicht = $BuildTools; Paket = "OpenJS.NodeJS.LTS" }
     [pscustomobject]@{ Name = "Git (nur ohne ZIP noetig)";     Ist = $git;    Erfuellt = [bool]$git;                             Pflicht = $BuildTools; Paket = "Git.Git" }
@@ -93,6 +101,7 @@ foreach ($item in $requirements) {
     Write-Host ("{0} {1}{2}" -f $mark, $item.Name, $version)
 }
 Write-Host ""
+if ($HasBundledPython) { Write-Host "Python-Bundle im Paket gefunden (backend\python-embed) - System-Python wird nicht benoetigt." }
 if ($word) { Write-Host "Word gefunden: PDF wird ueber Word erzeugt, LibreOffice ist nicht noetig." }
 elseif ($soffice) { Write-Host "Kein Word, aber LibreOffice gefunden: PDF wird darueber erzeugt." }
 else { Write-Warning "Weder Word noch LibreOffice: Kuendigung und Ruecknahme lassen sich als .docx erzeugen, aber nicht als PDF." }
@@ -124,7 +133,7 @@ if ($missing.Count -gt 0) {
     $python = Get-ToolVersion -Command "python"
     $node = Get-ToolVersion -Command "node"
     $git = Get-ToolVersion -Command "git"
-    if (-not $python -or $python -lt [version]"3.12") { $stillMissing += "Python 3.12+" }
+    if (-not $HasBundledPython -and (-not $python -or $python -lt [version]"3.12")) { $stillMissing += "Python 3.12+" }
     if ($BuildTools) {
         if (-not $node -or $node -lt [version]"20.0") { $stillMissing += "Node.js 20+" }
         if (-not $git) { $stillMissing += "Git" }

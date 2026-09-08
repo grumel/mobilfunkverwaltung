@@ -35,7 +35,8 @@ Add-Type -AssemblyName System.Drawing
 # --- Pfade -----------------------------------------------------------
 $RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $Backend = Join-Path $RepositoryRoot "backend"
-$Python  = Join-Path $Backend ".venv\Scripts\python.exe"
+. (Join-Path $PSScriptRoot "common.ps1")
+$Python  = Resolve-BackendPython $Backend
 $RunPy   = Join-Path $Backend "run_windows.py"
 $Dist    = Join-Path $RepositoryRoot "frontend\dist\index.html"
 $base    = if ($env:PROGRAMDATA) { $env:PROGRAMDATA } elseif ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $HOME }

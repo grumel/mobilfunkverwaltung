@@ -7,7 +7,8 @@ Set-StrictMode -Version Latest
 if (-not $RepositoryRoot) { $RepositoryRoot = Join-Path $PSScriptRoot "..\.." }
 $RepositoryRoot = (Resolve-Path $RepositoryRoot).Path
 $Backend = Join-Path $RepositoryRoot "backend"
-$Python = Join-Path $Backend ".venv\Scripts\python.exe"
+. (Join-Path $PSScriptRoot "common.ps1")
+$Python = Resolve-BackendPython $Backend
 if (-not $DataDir) { $base = if ($env:PROGRAMDATA) { $env:PROGRAMDATA } elseif ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $HOME }; $DataDir = Join-Path $base "Mobilfunkverwaltung" }
 $EnvFile = Join-Path $DataDir "mobilfunk.env.ps1"
 if (-not (Test-Path $Python) -or -not (Test-Path $EnvFile) -or -not (Test-Path (Join-Path $RepositoryRoot "frontend\dist\index.html"))) { throw "Laufzeit fehlt. Zuerst install.ps1 ausführen." }

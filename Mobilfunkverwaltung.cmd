@@ -1,18 +1,30 @@
 @echo off
 rem =====================================================================
 rem  Mobilfunkverwaltung - Ein-Klick-Start fuer Windows
-rem  Doppelklick genuegt. Beim ersten Mal wird automatisch installiert
-rem  (virtuelle Umgebung + Python-Pakete, sichtbare Konsole). Danach
-rem  oeffnet sich ein schlankes Statusfenster mit Link und Beenden-Knopf;
-rem  die Konsole bleibt versteckt.
-rem  Voraussetzung: Python 3.12+ ist installiert. Node.js wird NICHT
-rem  gebraucht - der Frontend-Build liegt bereits im Paket.
+rem  Doppelklick genuegt. Aus dem Release-ZIP ist nichts vorauszusetzen:
+rem  Python und alle Abhaengigkeiten liegen als fertiges Bundle bereits
+rem  im Paket, ebenso der fertige Frontend-Build - Node.js wird nicht
+rem  gebraucht. Nur bei einem Checkout aus dem Quellcode (git clone)
+rem  installiert der erste Start selbst eine virtuelle Umgebung samt
+rem  Python-Paketen (sichtbare Konsole, kann einige Minuten dauern;
+rem  dafuer ist dann Python 3.12+ selbst vorausgesetzt). Danach oeffnet
+rem  sich ein schlankes Statusfenster mit Link und Beenden-Knopf; die
+rem  Konsole bleibt versteckt.
 rem =====================================================================
 setlocal
 cd /d "%~dp0"
 set "PS=powershell -NoProfile -ExecutionPolicy Bypass"
 
-rem Ist die Laufzeit schon eingerichtet? (venv + Frontend-Build vorhanden)
+rem Ist die Laufzeit schon eingerichtet?
+rem Bei mitgeliefertem Bundle (Release-ZIP oder ein per Hand kopierter/
+rem geteilter Ordner: backend\python-embed) IMMER install.ps1 durchlaufen
+rem lassen - das ist ohne pip/npm sehr schnell (nur Datenordner/Secret/
+rem Verknuepfung) und stellt sicher, dass jeder Rechner seine EIGENE
+rem Ersteinrichtung unter %PROGRAMDATA% bekommt, auch wenn der Ordner
+rem samt fertigem Bundle von einem anderen PC kopiert wurde.
+if exist "backend\python-embed\python.exe" goto install
+rem Quellcode-Checkout ohne Bundle: die (langsame) venv/pip-Installation
+rem nur beim allerersten Start ausfuehren.
 if not exist "backend\.venv\Scripts\python.exe" goto install
 if not exist "frontend\dist\index.html" goto install
 goto window

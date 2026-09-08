@@ -13,38 +13,39 @@ Administratorrechte nötig.
 
 1. **ZIP herunterladen** und entpacken:
    <https://github.com/grumel/mobilfunkverwaltung/releases/download/windows-latest/mobilfunkverwaltung-windows.zip>
-2. Falls noch nicht vorhanden: **Python 3.12+** installieren
-   (<https://www.python.org/downloads/>, beim Setup „Add Python to PATH" anhaken).
-3. Im entpackten Ordner **`Mobilfunkverwaltung.cmd` doppelklicken.**
+2. Im entpackten Ordner **`Mobilfunkverwaltung.cmd` doppelklicken.**
 
-Beim ersten Start richtet sich alles selbst ein (einige Minuten, sichtbare
-Konsole). Danach – und bei jedem weiteren Start – erscheint ein **kleines
-Statusfenster** mit farbigem Symbol (orange = startet, grün = läuft), dem Link
-`http://127.0.0.1:8000/`, einem Knopf **„Im Browser öffnen"** und **„Beenden"**.
-Sobald der Status grün ist, öffnet sich der Browser automatisch. Die schwarze
-Konsole bleibt dabei versteckt. Anmelden mit der mitgelieferten Test-DB:
-**`admin` / `admin`** (siehe Abschnitt 4).
+Das war's – **nichts vorab zu installieren**: Python und alle Abhängigkeiten
+liegen als fertiges Bundle bereits im ZIP. Beim allerersten Start richtet sich
+nur noch der Datenordner ein (Sekunden, sichtbare Konsole). Danach – und bei
+jedem weiteren Start – erscheint ein **kleines Statusfenster** mit farbigem
+Symbol (orange = startet, grün = läuft), dem Link `http://127.0.0.1:8000/`,
+einem Knopf **„Im Browser öffnen"** und **„Beenden"**. Sobald der Status grün
+ist, öffnet sich der Browser automatisch. Die schwarze Konsole bleibt dabei
+versteckt. Anmelden mit der mitgelieferten Test-DB: **`admin` / `admin`**
+(siehe Abschnitt 4).
 
 > **Beenden:** einfach im Statusfenster auf „Beenden" klicken (oder das Fenster
 > schließen) – der Server im Hintergrund wird dann sauber gestoppt.
 
-> **Node.js/Git sind nicht nötig** – der fertige Frontend‑Build liegt bereits im
-> ZIP. Es genügt **Python**.
+> **Python, Node.js und Git sind nicht nötig** – der fertige Frontend‑Build und
+> ein vorinstalliertes Python-Bundle liegen bereits im ZIP.
 
 ---
 
 ## 1. Voraussetzungen
 
-- Windows 10/11 oder Windows Server 2019+ mit **PowerShell 5.1+**
-- **Python 3.12+** – mehr nicht (der Frontend‑Build ist im ZIP enthalten).
+- Windows 10/11 oder Windows Server 2019+ mit **PowerShell 5.1+** – mehr nicht
+  (Python-Bundle und Frontend‑Build sind im ZIP enthalten).
 - Nur wenn du **statt des ZIP klonst** und selbst baust: zusätzlich
-  **Node.js 20 LTS** + **Git**.
+  **Python 3.12+**, **Node.js 20 LTS** + **Git**.
 - Optional: **Microsoft Word** (für die PDF‑Erzeugung bei Kündigung/Rücknahme).
   Unter Windows wird Word genutzt – LibreOffice ist **nicht** nötig.
 
-> **Hinweis für gesperrte Firmen‑PCs:** Die Runtime startet `python.exe` bzw.
-> PowerShell‑Skripte lokal. Auf einem per Gruppenrichtlinie (SRP) gesperrten
-> Rechner kann das blockiert sein. Zum Testen einen normalen PC verwenden.
+> **Hinweis für gesperrte Firmen‑PCs:** Die Runtime startet `python.exe` (aus
+> dem mitgelieferten Bundle) bzw. PowerShell‑Skripte lokal. Auf einem per
+> Gruppenrichtlinie (SRP) gesperrten Rechner kann das blockiert sein. Zum
+> Testen einen normalen PC verwenden.
 
 ---
 
@@ -79,14 +80,18 @@ Wer die Schritte lieber manuell ausführt:
 # Optional: nur prüfen, was fehlt (nichts wird installiert):
 powershell -ExecutionPolicy Bypass -File .\deploy\windows\bootstrap.ps1 -CheckOnly
 
-# Einrichten (venv + Python-Pakete + Datenordner + Secret):
+# Einrichten (Datenordner + Secret, ggf. venv + Python-Pakete):
 powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1
 ```
 
-`install.ps1` legt die virtuelle Umgebung an, installiert die Python‑Pakete und
-erstellt den Datenordner samt zufälligem Secret. Ist ein fertiger Frontend‑Build
-vorhanden (ZIP‑Fall), wird `npm`/Node **übersprungen**; nur beim Bauen aus dem
-Quellcode läuft `npm ci` + `npm run build`. Die Konfigdatei liegt danach unter:
+`install.ps1` erstellt den Datenordner samt zufälligem Secret. Ist ein
+vorinstalliertes Python-Bundle vorhanden (ZIP‑Fall, `backend\python-embed`),
+wird das direkt verwendet – **kein venv, kein pip-Install, kein Internet
+nötig**. Nur beim Bauen aus dem Quellcode legt es zusätzlich eine virtuelle
+Umgebung an und installiert die Python‑Pakete per pip. Genauso mit dem
+Frontend: ist ein fertiger Build vorhanden (ZIP‑Fall), wird `npm`/Node
+**übersprungen**; nur beim Bauen aus dem Quellcode läuft `npm ci` +
+`npm run build`. Die Konfigdatei liegt danach unter:
 
 ```
 %PROGRAMDATA%\Mobilfunkverwaltung\mobilfunk.env.ps1
@@ -175,7 +180,9 @@ statt abzustürzen.
 - **Skriptaufruf schlägt sofort fehl:** Die Ausführungsrichtlinie ist per
   Gruppenrichtlinie gesetzt; `-ExecutionPolicy Bypass` greift dann nicht. Dann
   müssen die Skripte signiert oder von der IT freigegeben werden.
-- **`python`/`node`/`npm` nicht gefunden:** `bootstrap.ps1 -Install` ausführen
-  oder manuell installieren, neues PowerShell‑Fenster öffnen.
+- **`python`/`node`/`npm` nicht gefunden:** betrifft nur den Quellcode-Checkout
+  (kein ZIP – dort ist Python bereits als Bundle enthalten). `bootstrap.ps1
+  -Install` ausführen oder manuell installieren, neues PowerShell‑Fenster
+  öffnen.
 - **Login nicht möglich:** Es liegt keine (gültige) `mobilfunk.db` am erwarteten
   Ort – siehe Abschnitt 4.

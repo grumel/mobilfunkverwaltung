@@ -9,8 +9,11 @@ Caddy und die unveränderten Linux-Pfade.
 
 ## Voraussetzungen und Start
 
-- Windows 10/11 oder Windows Server 2019+
-- Python 3.12+, Node.js 20 LTS, npm, Git und PowerShell 5.1+
+- Windows 10/11 oder Windows Server 2019+, PowerShell 5.1+
+- Aus dem Release-ZIP genügt das – Python und der Frontend-Build liegen als
+  fertiges Bundle bereits im Paket (siehe `scripts/publish-windows-zip.sh`).
+  Nur bei einem Checkout aus dem Quellcode zusätzlich: Python 3.12+,
+  Node.js 20 LTS, npm und Git.
 - Microsoft Word für den PDF-Export, Outlook für Mail-Entwürfe
 
 ## PDF-Erzeugung

@@ -298,9 +298,13 @@ Details, Backup und Einschränkungen stehen in [docs/WINDOWS.md](docs/WINDOWS.md
 Release [`windows-latest`](https://github.com/grumel/mobilfunkverwaltung/releases/tag/windows-latest)
 – direkter Download:
 <https://github.com/grumel/mobilfunkverwaltung/releases/download/windows-latest/mobilfunkverwaltung-windows.zip>.
-Entpacken und in den entpackten Ordner wechseln (dort liegen `backend\` und
-`frontend\`); die Schnellanleitung liegt als `WINDOWS_INSTALL.md` bei.
-Alternativ das Repository klonen.
+Das ZIP enthält neben dem fertigen Frontend-Build auch ein vorinstalliertes
+Python-Bundle (`backend/python-embed`, erzeugt von
+`scripts/publish-windows-zip.sh`) – auf dem Zielrechner ist **nichts
+vorauszusetzen** außer Windows selbst. Entpacken und in den entpackten Ordner
+wechseln (dort liegen `backend\` und `frontend\`); die Schnellanleitung liegt
+als `WINDOWS_INSTALL.md` bei. Alternativ das Repository klonen (dann sind
+Python 3.12+, Node.js und Git wie gewohnt selbst nötig).
 
 Installation und Start in PowerShell:
 
@@ -311,17 +315,22 @@ powershell -ExecutionPolicy Bypass -File .\deploy\windows\start.ps1
 
 `bootstrap.ps1` prüft Python, Node.js, Git, Word und Outlook, installiert
 fehlende Werkzeuge auf Wunsch per winget — nach Möglichkeit ohne
-Administratorrechte — und ruft anschließend `install.ps1` auf. Mit `-CheckOnly`
-gibt es nur den Bericht. Eine Setup-EXE gibt es bewusst nicht: unsignierte
-Installationsprogramme werden in verwalteten Netzen blockiert.
+Administratorrechte — und ruft anschließend `install.ps1` auf. Liegt das
+Python-Bundle vor (ZIP-Fall), gilt Python selbst nicht mehr als Pflicht. Mit
+`-CheckOnly` gibt es nur den Bericht. Eine Setup-EXE gibt es bewusst nicht:
+unsignierte Installationsprogramme werden in verwalteten Netzen blockiert.
 
-`install.ps1` legt Venv, Abhängigkeiten, Frontend-Build, Datenordner und eine
-Environment-Datei mit frisch erzeugtem Secret an. `start.ps1` startet Waitress
-auf <http://127.0.0.1:8000/> und wartet, bis `/api/version` antwortet; mit
-`-OpenBrowser` wird zusätzlich der Browser geöffnet. Weiter stehen
-`stop.ps1`, `update.ps1`, `backup.ps1`, `start-dev.ps1` und `uninstall.ps1`
-bereit. `uninstall.ps1` entfernt nur Venv, Frontend-Build und Caches im
-Checkout; Datenbank, Dokumente und Secret bleiben unangetastet.
+`install.ps1` legt Datenordner und Environment-Datei mit frisch erzeugtem
+Secret an. Ist das Python-Bundle vorhanden, wird direkt damit gearbeitet —
+kein Venv, kein `pip install`, kein Internetzugriff nötig; sonst legt es wie
+bisher Venv und Abhängigkeiten selbst an (Quellcode-Checkout). Ebenso beim
+Frontend: fertiger Build vorhanden → `npm`/Node übersprungen, sonst gebaut.
+`start.ps1` startet Waitress auf <http://127.0.0.1:8000/> und wartet, bis
+`/api/version` antwortet; mit `-OpenBrowser` wird zusätzlich der Browser
+geöffnet. Weiter stehen `stop.ps1`, `update.ps1`, `backup.ps1`,
+`start-dev.ps1` und `uninstall.ps1` bereit. `uninstall.ps1` entfernt nur Venv
+bzw. Python-Bundle, Frontend-Build und Caches im Checkout; Datenbank,
+Dokumente und Secret bleiben unangetastet.
 
 Standardpfade:
 

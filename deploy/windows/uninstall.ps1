@@ -23,6 +23,7 @@ if (Test-Path $stop) {
 
 $targets = @(
   (Join-Path $RepositoryRoot "backend\.venv"),
+  (Join-Path $RepositoryRoot "backend\python-embed"),
   (Join-Path $RepositoryRoot "frontend\dist"),
   (Join-Path $RepositoryRoot "frontend\node_modules")
 )

@@ -7,6 +7,9 @@ __pycache__/
 .ruff_cache/
 .venv/
 venv/
+# Vorinstalliertes Python-Bundle fuer die Windows-Runtime (nur im
+# Release-ZIP, von scripts/publish-windows-zip.sh erzeugt).
+backend/python-embed/
 
 # Node / Vite
 node_modules/
