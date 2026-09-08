@@ -30,6 +30,9 @@ backups/
 mobilfunk.lock
 .env
 
+# Claude Code (persoenliche Einstellungen, nicht geteilt)
+.claude/settings.local.json
+
 # IDE / Betriebssystem
 .vscode/
 .idea/
