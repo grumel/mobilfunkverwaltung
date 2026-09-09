@@ -1276,6 +1276,9 @@ def syno_enrich_upload():
     f.save(str(original))          # Original hochgeladen und gespeichert
     try:
         summary = syno_enrich.run_syno_enrich(original)
+    except syno_enrich.EnrichInputError as exc:
+        # Eingabe ungeeignet – es wurde bewusst nichts verändert.
+        return jsonify(error=str(exc)), 400
     except Exception as exc:
         return jsonify(error=f"Anreicherung fehlgeschlagen: {exc}"), 400
     enriched = Path(summary["out_path"])
@@ -1283,8 +1286,10 @@ def syno_enrich_upload():
     db = SessionLocal()
     try:
         details = (f"Original={original.name} → {enriched.name}; "
-                   f"GSM ergänzt={summary['fixed_gsm']}, GSM korrigiert={summary['changed_gsm']}, "
-                   f"Namen ergänzt={summary['fixed_name']}, ohne Treffer={summary['no_match']}")
+                   f"Zeilen={summary['rows_total']}; sicher: GSM ergänzt={summary['fixed_gsm']}, "
+                   f"GSM korrigiert={summary['changed_gsm']}, Namen={summary['fixed_name']}; "
+                   f"unsicher: Vorschlag={summary['vorschlag']}, mehrdeutig={summary['mehrdeutig']}, "
+                   f"ohne Treffer={summary['no_match']}")
         svc.log_import(db, "SYNO_ANREICHERN", details + " (API)")
         svc.log_audit(db, current_user(), "SYNO_ANREICHERN", details)
         db.commit()
@@ -1293,7 +1298,8 @@ def syno_enrich_upload():
 
     return jsonify(original=original.name, enriched=enriched.name,
                    summary={k: summary[k] for k in
-                            ("fixed_gsm", "changed_gsm", "fixed_name", "no_match")})
+                            ("rows_total", "fixed_gsm", "changed_gsm", "fixed_name",
+                             "vorschlag", "mehrdeutig", "no_match", "unsicher")})
 
 
 @bp.get("/syno/file/<path:name>")
