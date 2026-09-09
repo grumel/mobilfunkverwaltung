@@ -365,6 +365,14 @@ def _write_fields(p, data):
         p.provider = "Vodafone"
 
 
+# Felder, deren Vorher-/Nachher-Zustand für das Änderungsprotokoll verglichen wird.
+DIFF_FIELDS = EDITABLE + ["verified", "overhead", "archived"]
+
+
+def _diff_state(p):
+    return {f: getattr(p, f) for f in DIFF_FIELDS}
+
+
 @bp.post("/participants")
 def participant_create():
     if not current_user():
@@ -384,8 +392,9 @@ def participant_create():
         db.add(p)
         db.flush()
         svc.log_import(db, "INSERT", f"ID={p.id} GSM={p.gsm} (API)", participant_id=p.id)
-        svc.log_audit(db, current_user(), "INSERT", f"Teilnehmer '{p.name or p.id}' angelegt (API)",
-                      table_name="participants", record_id=p.id)
+        svc.log_change(db, current_user(), "INSERT", "participants", p.id,
+                       details=f"Teilnehmer '{p.name or p.id}' angelegt",
+                       snapshot=svc.participant_snapshot(p), undo_op="delete_row")
         db.commit()
         return jsonify(participant=_dict(p, DETAIL_FIELDS)), 201
     finally:
@@ -601,11 +610,15 @@ def participant_update(pid):
         p = db.get(Participant, pid)
         if not p:
             return jsonify(error="nicht gefunden"), 404
+        before = _diff_state(p)
         _write_fields(p, data)
         p.updated_at = svc.now_str()
+        changes = svc.diff_fields(before, _diff_state(p))
         svc.log_import(db, "UPDATE", f"ID={pid} (API)", participant_id=pid)
-        svc.log_audit(db, current_user(), "UPDATE", f"Teilnehmer '{p.name or pid}' geändert (API)",
-                      table_name="participants", record_id=pid)
+        if changes:
+            svc.log_change(db, current_user(), "UPDATE", "participants", pid,
+                           details=f"'{p.name or pid}': " + svc._describe_changes(changes),
+                           changes=changes, undo_op="restore_fields")
         db.commit()
         return jsonify(participant=_dict(p, DETAIL_FIELDS))
     finally:
@@ -623,9 +636,13 @@ def participant_verify(pid):
         p = db.get(Participant, pid)
         if not p:
             return jsonify(error="nicht gefunden"), 404
+        old = p.verified
         p.verified = 0 if p.verified else 1
         p.updated_at = svc.now_str()
         svc.log_import(db, "VERIFIED", f"ID={pid} verified={p.verified} (API)", participant_id=pid)
+        svc.log_change(db, current_user(), "VERIFIED", "participants", pid,
+                       details=f"Geprüft-Status: {old or 0} → {p.verified}",
+                       changes={"verified": [old, p.verified]}, undo_op="restore_fields")
         db.commit()
         return jsonify(id=pid, verified=p.verified)
     finally:
@@ -645,12 +662,13 @@ def participant_overhead(pid):
         p = db.get(Participant, pid)
         if not p:
             return jsonify(error="nicht gefunden"), 404
+        old = p.overhead
         p.overhead = 0 if p.overhead else 1
         p.updated_at = svc.now_str()
         svc.log_import(db, "OVERHEAD", f"ID={pid} overhead={p.overhead} (API)", participant_id=pid)
-        svc.log_audit(db, current_user(), "OVERHEAD",
-                      f"ID={pid} overhead={p.overhead} (API)",
-                      table_name="participants", record_id=pid)
+        svc.log_change(db, current_user(), "OVERHEAD", "participants", pid,
+                       details=f"Overhead: {old or 0} → {p.overhead}",
+                       changes={"overhead": [old, p.overhead]}, undo_op="restore_fields")
         db.commit()
         return jsonify(id=pid, overhead=p.overhead)
     finally:
@@ -672,12 +690,13 @@ def participant_archive(pid):
         p = db.get(Participant, pid)
         if not p:
             return jsonify(error="nicht gefunden"), 404
+        old = p.archived
         p.archived = 0 if p.archived else 1
         p.updated_at = svc.now_str()
         svc.log_import(db, "ARCHIV", f"ID={pid} archived={p.archived} (API)", participant_id=pid)
-        svc.log_audit(db, current_user(), "ARCHIV",
-                      f"ID={pid} archived={p.archived} (API)",
-                      table_name="participants", record_id=pid)
+        svc.log_change(db, current_user(), "ARCHIV", "participants", pid,
+                       details=f"Archiviert: {old or 0} → {p.archived}",
+                       changes={"archived": [old, p.archived]}, undo_op="restore_fields")
         db.commit()
         return jsonify(id=pid, archived=p.archived)
     finally:
@@ -702,8 +721,9 @@ def participant_move(pid):
         p.provider = provider
         p.updated_at = svc.now_str()
         svc.log_import(db, "PROVIDER", f"ID={pid} {old} → {provider} (API)", participant_id=pid)
-        svc.log_audit(db, current_user(), "PROVIDER", f"ID={pid} {old} → {provider} (API)",
-                      table_name="participants", record_id=pid)
+        svc.log_change(db, current_user(), "PROVIDER", "participants", pid,
+                       details=f"Provider: '{old}' → '{provider}'",
+                       changes={"provider": [old, provider]}, undo_op="restore_fields")
         db.commit()
         return jsonify(id=pid, provider=provider)
     finally:
@@ -722,10 +742,12 @@ def participant_delete(pid):
         if not p:
             return jsonify(error="nicht gefunden"), 404
         name = p.name or f"ID {pid}"
+        snap = svc.participant_snapshot(p)
         db.delete(p)
         svc.log_import(db, "DELETE", f"ID={pid} {name} gelöscht (API)", participant_id=pid)
-        svc.log_audit(db, current_user(), "DELETE", f"Teilnehmer '{name}' gelöscht (API)",
-                      table_name="participants", record_id=pid)
+        svc.log_change(db, current_user(), "DELETE", "participants", pid,
+                       details=f"Teilnehmer '{name}' gelöscht",
+                       snapshot=snap, undo_op="insert_row")
         db.commit()
         return jsonify(ok=True, id=pid)
     finally:
@@ -995,7 +1017,8 @@ def unmatched_devices():
 
 IMPORTLOG_FIELDS = ["id", "zeitpunkt", "quelle", "aktion", "details", "participant_id"]
 AUDITLOG_FIELDS = ["id", "zeitpunkt", "user_id", "username", "aktion", "details",
-                   "table_name", "record_id"]
+                   "table_name", "record_id", "changes", "undo_op",
+                   "reverted_at", "revert_of_id"]
 
 
 @bp.get("/logs/import")
@@ -1019,11 +1042,86 @@ def logs_audit():
         return jsonify(error="keine Berechtigung"), 403
     db = SessionLocal()
     try:
-        rows = db.query(AuditLog).order_by(AuditLog.zeitpunkt.desc()).limit(500).all()
+        rows = db.query(AuditLog).order_by(AuditLog.id.desc()).limit(500).all()
         out = [_dict(r, AUDITLOG_FIELDS) for r in rows]
     finally:
         db.close()
     return jsonify(logs=out, total=len(out))
+
+
+@bp.post("/audit/<int:aid>/undo")
+def audit_undo(aid):
+    """Nimmt eine einzelne protokollierte Änderung zurück (nur Admin).
+
+    Die Rücknahme ist selbst ein neuer, wieder umkehrbarer Audit-Eintrag
+    (Aktion REVERT). `undo_op` des Ausgangseintrags bestimmt das Vorgehen.
+    Nur Teilnehmer-Änderungen sind rücknehmbar; Zusammenführen/Importe werden
+    ausführlich geloggt, aber nicht per Ein-Klick zurückgenommen.
+    """
+    if not current_user():
+        return jsonify(error="nicht angemeldet"), 401
+    if not can("admin"):
+        return jsonify(error="Rückgängigmachen erfordert Admin-Rechte"), 403
+    import json as _json
+    db = SessionLocal()
+    try:
+        entry = db.get(AuditLog, aid)
+        if not entry:
+            return jsonify(error="Protokolleintrag nicht gefunden"), 404
+        if entry.table_name != "participants" or not entry.undo_op:
+            return jsonify(error="Dieser Eintrag ist nicht rücknehmbar."), 400
+        if entry.reverted_at:
+            return jsonify(error=f"Bereits zurückgenommen am {entry.reverted_at}."), 409
+
+        user = current_user()
+        pid = entry.record_id
+        op = entry.undo_op
+
+        if op == "restore_fields":
+            changes = _json.loads(entry.changes or "{}")
+            p = db.get(Participant, pid)
+            if not p:
+                return jsonify(error="Datensatz existiert nicht mehr – Rücknahme nicht möglich."), 409
+            reverse = {}
+            for field, (old, new) in changes.items():
+                reverse[field] = [getattr(p, field), old]  # aktueller → alter Wert
+                setattr(p, field, old)
+            p.updated_at = svc.now_str()
+            svc.log_change(db, user, "REVERT", "participants", pid,
+                           details=f"Rücknahme von #{aid}: " + svc._describe_changes(reverse),
+                           changes=reverse, undo_op="restore_fields", revert_of_id=aid)
+
+        elif op == "delete_row":
+            # Ursprung war ein Anlegen → Rücknahme entfernt die Zeile wieder.
+            p = db.get(Participant, pid)
+            if not p:
+                return jsonify(error="Datensatz existiert nicht mehr."), 409
+            snap = svc.participant_snapshot(p)
+            db.delete(p)
+            svc.log_change(db, user, "REVERT", "participants", pid,
+                           details=f"Rücknahme von #{aid}: Anlegen zurückgenommen (Zeile gelöscht)",
+                           snapshot=snap, undo_op="insert_row", revert_of_id=aid)
+
+        elif op == "insert_row":
+            # Ursprung war ein Löschen → Rücknahme stellt die Zeile wieder her.
+            snap = _json.loads(entry.snapshot or "{}")
+            if db.get(Participant, snap.get("id")):
+                return jsonify(error="Datensatz existiert bereits – Wiederherstellung nicht nötig."), 409
+            p = Participant(**{c.name: snap.get(c.name) for c in Participant.__table__.columns})
+            db.add(p)
+            db.flush()
+            svc.log_change(db, user, "REVERT", "participants", p.id,
+                           details=f"Rücknahme von #{aid}: '{p.name or p.id}' wiederhergestellt",
+                           undo_op="delete_row", revert_of_id=aid)
+        else:
+            return jsonify(error=f"Unbekannte Rücknahme-Art: {op}"), 400
+
+        entry.reverted_at = svc.now_str()
+        svc.log_import(db, "REVERT", f"Audit #{aid} zurückgenommen (API)", participant_id=pid)
+        db.commit()
+        return jsonify(ok=True, reverted=aid)
+    finally:
+        db.close()
 
 
 # --------------------------------------------------------------------------- #
@@ -1046,6 +1144,27 @@ def _import_db_module():
         return None
     from webapp import import_adapter
     return import_adapter
+
+
+def _summarize_import(result) -> str:
+    """Lesbare Kurzfassung eines Import-Ergebnisses (nur Zähler)."""
+    if isinstance(result, dict):
+        parts = [f"{k}={v}" for k, v in result.items()
+                 if isinstance(v, int) and not isinstance(v, bool)]
+        return ", ".join(parts) or str(result)
+    return str(result)
+
+
+def _log_import_audit(quelle, filename, result):
+    """Import-Ereignis zusätzlich ins Audit-Log (ohne Einzel-Rücknahme)."""
+    db = SessionLocal()
+    try:
+        svc.log_audit(db, current_user(), "IMPORT",
+                      f"{quelle}-Import '{filename}': {_summarize_import(result)}",
+                      table_name="participants")
+        db.commit()
+    finally:
+        db.close()
 
 
 def _save_upload():
@@ -1099,6 +1218,7 @@ def import_vodafone_confirm():
     finally:
         try: os.unlink(path)
         except OSError: pass
+    _log_import_audit("Vodafone", filename, result)
     return jsonify(result=result, filename=filename)
 
 
@@ -1122,6 +1242,7 @@ def import_syno():
     finally:
         try: os.unlink(path)
         except OSError: pass
+    _log_import_audit("Syno", filename, result)
     return jsonify(result=result, filename=filename)
 
 

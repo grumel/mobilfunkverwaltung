@@ -99,6 +99,7 @@ export const api = {
   // Protokoll / Audit
   importLog: () => req('/api/logs/import'),
   auditLog: () => req('/api/logs/audit'),
+  auditUndo: (id) => req(`/api/audit/${id}/undo`, { method: 'POST' }),
 
   // Benutzerverwaltung (nur Admin)
   users: () => req('/api/users'),

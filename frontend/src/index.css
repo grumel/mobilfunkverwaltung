@@ -237,3 +237,45 @@ tr.done td { color:var(--dim); }
 .meta { margin:10px 0; font-size:13px; color:var(--dim); border:1px solid var(--line);
   border-radius:8px; padding:8px 12px; background:var(--head); }
 .meta b { color:var(--fg); }
+
+.muted { color:var(--dim); font-size:13px; }
+/* Protokoll-Details dürfen umbrechen */
+td.logdetails { white-space:normal; word-break:break-word; max-width:520px; }
+
+/* Änderungsprotokoll als lesbare Karten mit Einzel-Rücknahme */
+.auditlist { display:flex; flex-direction:column; gap:8px; }
+.auditcard { display:flex; align-items:flex-start; gap:12px; background:var(--card);
+  border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+.auditcard.reverted { opacity:.6; }
+.auditmain { flex:1 1 auto; min-width:0; }
+.auditside { flex:0 0 auto; display:flex; align-items:center; }
+.audithead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px; }
+.auditwhen { color:var(--dim); font-variant-numeric:tabular-nums; }
+.auditwho { color:var(--dim); }
+.auditdetails { margin-top:4px; font-size:13px; color:var(--fg); }
+.auditcard.reverted .auditdetails { text-decoration:line-through; }
+
+/* Aktions-Marke, farblich nach Art der Änderung */
+.tag { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px;
+  font-weight:700; letter-spacing:.02em; background:var(--btn-bg); color:var(--dim);
+  border:1px solid var(--line); white-space:nowrap; }
+.tag-insert { background:var(--ok-bg); color:var(--ok-fg); border-color:transparent; }
+.tag-delete { background:var(--open-bg); color:var(--open-fg); border-color:transparent; }
+.tag-update, .tag-provider, .tag-verified, .tag-overhead, .tag-archiv {
+  background:var(--selected); color:var(--link); border-color:transparent; }
+.tag-revert { background:var(--warn-bg); color:var(--fg); border-color:var(--line); }
+.tag-import { background:var(--track); color:var(--dim); border-color:var(--line); }
+
+/* Feld-Diff: eine Zeile je Feld, klar ausgerichtet */
+.difflist { margin:6px 0 0; padding:0; list-style:none; font-size:13px;
+  display:flex; flex-direction:column; gap:2px; }
+.difflist li { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.difffield { min-width:120px; color:var(--dim); font-family:monospace; font-size:12px; }
+.diffold { color:var(--dim); text-decoration:line-through; }
+.diffarrow { color:var(--dim); }
+.diffnew { color:var(--fg); }
+
+.badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px;
+  background:var(--btn-bg); border:1px solid var(--line); }
+.btn.danger { color:var(--accent); border-color:var(--accent); font-weight:600; white-space:nowrap; }
+.btn.danger:hover { background:var(--open-bg); }
