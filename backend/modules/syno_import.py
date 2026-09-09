@@ -119,7 +119,9 @@ def run_syno_import(filepath: str | Path, db_module=None, create_missing=False) 
     matched_gsm   = 0
     matched_name  = 0
     unmatched     = 0
-    skipped       = 0
+    rows_total    = 0   # Datenzeilen mit Inhalt (Vollständigkeitsprüfung)
+    empty_rows    = 0   # echte Leerzeilen (ohne GSM/Name/Syno)
+    error_rows    = 0   # Zeilen mit Ausnahme (in 'Nicht zugeordnet' abgelegt)
     duplicate     = 0   # Gerät war bereits eingetragen
     slots_full    = 0   # beide Geräte-Slots belegt
     created_new   = 0   # neu angelegte Teilnehmer (create_missing)
@@ -151,8 +153,9 @@ def run_syno_import(filepath: str | Path, db_module=None, create_missing=False) 
             start_syno = normalize_date(raw_date)
 
             if not syno and not gsm and not raw_name:
-                skipped += 1
+                empty_rows += 1
                 continue
+            rows_total += 1
 
             def _apply_device(pid: int, quelle_aktion: str, kontext: str) -> str:
                 """Gerät in freien Slot eintragen und Ergebnis protokollieren."""
@@ -161,9 +164,21 @@ def run_syno_import(filepath: str | Path, db_module=None, create_missing=False) 
                     dbm.log_import(conn, "Syno", quelle_aktion,
                                   f"ID={pid} {kontext} Syno={syno}")
                 elif res == "full":
+                    # Beide Geräte-Slots belegt: das Gerät NICHT verlieren, sondern
+                    # zur Prüfung in 'Nicht zugeordnet' ablegen (sonst stille Lücke).
+                    dbm.insert_unmatched_device(conn, {
+                        "quelle":     "Syno-Slots-belegt",
+                        "gsm":        gsm,
+                        "benutzer":   raw_name,
+                        "geraet":     syno,
+                        "startdatum": start_syno,
+                    })
+                    dbm.log_import(conn, "Syno", "SLOTS_BELEGT",
+                        f"ID={pid} {kontext} – beide Geräte-Slots belegt, "
+                        f"Gerät '{syno}' in 'Nicht zugeordnet' abgelegt")
                     log_lines.append(
                         f"SLOTS BELEGT: ID={pid} {kontext} – Gerät '{syno}' "
-                        f"nicht eingetragen (beide Geräte-Slots belegt)"
+                        f"in 'Nicht zugeordnet' abgelegt (beide Slots belegt)"
                     )
                 return res
 
@@ -272,16 +287,31 @@ def run_syno_import(filepath: str | Path, db_module=None, create_missing=False) 
                 except Exception as exc2:
                     logger.error("Zeile %s konnte nicht zur Prüfung abgelegt "
                                  "werden: %s", row_num, exc2)
-                skipped += 1
+                error_rows += 1
+
+        # Vollständigkeitsprüfung: jede Datenzeile muss genau einem Ergebnis
+        # zugeordnet sein. Alles landet in der DB oder in 'Nicht zugeordnet' –
+        # nichts wird still übersprungen.
+        accounted = (matched_gsm + matched_name + duplicate + slots_full
+                     + created_new + unmatched + error_rows)
+        unaccounted = rows_total - accounted
 
         summary = (
-            f"Syno-Import abgeschlossen: {matched_gsm} GSM-Matches, "
-            f"{matched_name} Name-Matches, {created_new} neu angelegt, "
-            f"{duplicate} bereits vorhanden, {slots_full} ohne freien Slot, "
-            f"{unmatched} nicht zugeordnet, {skipped} übersprungen, {len(errors)} Fehler"
+            f"Syno-Import abgeschlossen: {rows_total} Datenzeilen – "
+            f"{matched_gsm} GSM-Matches, {matched_name} Name-Matches, "
+            f"{created_new} neu angelegt, {duplicate} bereits vorhanden, "
+            f"{slots_full} Slots belegt (in 'Nicht zugeordnet'), "
+            f"{unmatched} nicht zugeordnet, {error_rows} Fehler; "
+            f"{empty_rows} Leerzeilen übersprungen"
         )
         dbm.log_import(conn, "Syno", "SUMMARY", summary)
         log_lines.append(summary)
+        if unaccounted != 0:
+            warn = (f"WARNUNG: {unaccounted} Zeile(n) konnten keinem Ergebnis "
+                    f"zugeordnet werden – bitte prüfen (interne Zählabweichung).")
+            errors.append(warn)
+            log_lines.append(warn)
+            dbm.log_import(conn, "Syno", "WARN", warn)
 
     if errors:
         log_lines.append("--- Fehler (zur Prüfung in 'Nicht zugeordnet') ---")
@@ -289,13 +319,17 @@ def run_syno_import(filepath: str | Path, db_module=None, create_missing=False) 
 
     logger.info(summary)
     return {
+        "rows_total":   rows_total,
         "matched_gsm":  matched_gsm,
         "matched_name": matched_name,
         "neu_angelegt": created_new,
         "duplicate":    duplicate,
         "slots_full":   slots_full,
         "unmatched":    unmatched,
-        "skipped":      skipped,
+        "empty_rows":   empty_rows,
+        "error_rows":   error_rows,
+        "unaccounted":  unaccounted,
+        "skipped":      empty_rows + error_rows,   # rückwärtskompatibel
         "errors":       errors,
         "log_lines":    log_lines,
     }

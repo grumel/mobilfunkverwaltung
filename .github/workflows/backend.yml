@@ -9,6 +9,7 @@ on:
     paths:
       - "backend/**"
       - "scripts/backend-ci-smoke.py"
+      - "scripts/backend-regression-tests.py"
       - ".github/workflows/backend.yml"
   pull_request:
     branches:
@@ -16,6 +17,7 @@ on:
     paths:
       - "backend/**"
       - "scripts/backend-ci-smoke.py"
+      - "scripts/backend-regression-tests.py"
       - ".github/workflows/backend.yml"
 
 permissions:
@@ -53,3 +55,9 @@ jobs:
       # SQLite-Datenbank und prüft App-Factory, Login und Session-API.
       - name: Run isolated backend smoke test
         run: python scripts/backend-ci-smoke.py
+
+      # Regressionstests gegen temporäre SQLite-Fixtures: Auth, Rollen, CRUD,
+      # Uploads, Path-Traversal, Schreiben-Erzeugung (docxtpl) und die
+      # PDF-Engine-Auswahl. Ohne Word/LibreOffice lauffähig.
+      - name: Run isolated backend regression tests
+        run: python scripts/backend-regression-tests.py

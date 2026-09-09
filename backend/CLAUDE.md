@@ -16,9 +16,9 @@ nichts installiert. Es sind **personenbezogene Daten** (Namen, Rufnummern) →
 - **Zwei Frontends, ein Backend:** die klassische Jinja-Oberfläche (Server-gerendert,
   `webapp/templates/`) läuft **parallel** zur neuen **JSON-API** (`webapp/blueprints/api.py`,
   Präfix `/api`, Session-Auth, CSRF-exempt). Das eigentliche Frontend ist inzwischen
-  **React** — eigenes Repo **github.com/grumel/mdw-frontend** (Vite), spricht nur die
-  API an. Die Jinja-UI existiert noch, ist im Produktiv-Deployment aber nicht mehr
-  über Port 80 eingebunden (siehe „Starten" unten).
+  **React** und liegt in **diesem Monorepo** unter `frontend/` (Vite), spricht nur
+  die API an. Die Jinja-UI existiert noch, ist im Produktiv-Deployment aber nicht
+  mehr über Port 80 eingebunden (siehe „Starten" unten).
 - **SQLAlchemy** (DB-neutral): SQLite jetzt, **PostgreSQL-fähig** (echt gegen
   lokales Postgres 17 verifiziert, nicht nur theoretisch). Modelle in
   `webapp/models.py` passend zum bestehenden Schema.
@@ -50,18 +50,18 @@ Session-Secret: `MOBILFUNK_SECRET` oder persistenter Zufallswert
   Unter Windows startet Waitress, unter Linux bleibt dies der lokale
   Entwicklungsstart. `run_webapp.py` bleibt als kompatibler Alias erhalten.
 - **Windows/lokal, Backend:** `run_webapp.bat` → http://127.0.0.1:5001 (Flask-Dev-Server).
-- **Windows/lokal, Frontend:** im `mdw-frontend`-Repo `npm run dev` → http://localhost:5173
+- **Windows/lokal, Frontend:** im `frontend/`-Verzeichnis `npm run dev` → http://localhost:5173
   (Vite-Dev-Proxy leitet `/api` an Port 5001 weiter, dadurch same-origin/kein CORS).
 - **Server (Linux, Port 80):** siehe `deploy/linux/INSTALL.md` bzw.
   `deploy/linux/install.sh`
   (idempotent, macht auch Updates). Topologie: **Caddy** auf Port 80 → `/api/*` zu
-  **gunicorn** (127.0.0.1:8000, Backend-Repo `/opt/mobilfunk-web`), alles andere
-  liefert Caddy als **statisches React-Bundle** (`/opt/mobilfunk-frontend/dist`,
-  gebaut aus dem Frontend-Repo). **Wichtig:** Kein fertiges Windows-Verzeichnis
-  kopierbar — `.venv/` und `node_modules/` sind plattformgebunden; beide Repos
-  werden auf dem Server geklont und dort gebaut (macht der Installer automatisch).
-  Die alte Jinja-UI bleibt im Backend erreichbar, aber nur direkt auf
-  `127.0.0.1:8000` (nicht über Port 80 geroutet).
+  **gunicorn** (127.0.0.1:8000), alles andere liefert Caddy als **statisches
+  React-Bundle** (`frontend/dist`). Alles liegt im Monorepo unter
+  `/opt/mobilfunkverwaltung`; schreibbare Daten getrennt unter `/var/lib/mobilfunk`.
+  **Wichtig:** Kein fertiges Windows-Verzeichnis kopierbar — `.venv/` und
+  `node_modules/` sind plattformgebunden; das Repo wird auf dem Server geklont und
+  dort gebaut (macht der Installer automatisch). Die alte Jinja-UI bleibt im Backend
+  erreichbar, aber nur direkt auf `127.0.0.1:8000` (nicht über Port 80 geroutet).
 
 ## Sicherheit / Härtung
 - **CSRF-Schutz** aktiv (Flask-WTF) für alle POST-Formulare und JS-Aktionen;
@@ -98,11 +98,12 @@ Immer gegen eine **Kopie** der echten DB, nie gegen das Original:
   gegen Postgres getestet, **echter Vodafone-Import direkt gegen Postgres**
   (328 aktualisiert, per SQL gegengeprüft). SQLite-Pfad dabei unverändert
   (Regressionstest: identisches Ergebnis wie vorher).
-- Offen (Details siehe **ROADMAP.md**): **ThinkPad-Server aufsetzen (Phase 1)**
-  ist der einzige noch verbleibende Schritt vor dem Linux-Betrieb. Danach optional:
-  HTTPS, PostgreSQL im Betrieb aktivieren (nur bei Bedarf), alte Jinja-Templates
-  irgendwann entfernen.
-- Repos auf GitHub: **github.com/grumel/mdwWeb** (Backend, Remote `origin`,
-  Branch `main`) und **github.com/grumel/mdw-frontend** (React-Frontend, eigenes
-  Repo, eigene `CLAUDE.md`/README). Desktop-App separat:
-  github.com/grumel/mobilfunkverwaltung.
+- Stand: Die Anwendung läuft **produktiv unter Linux**. Offen (Details siehe
+  Haupt-`README.md` und **ROADMAP.md**): HTTPS im LAN, Abnahme der Windows-Runtime
+  auf einem echten Host, PostgreSQL für den Mehrbenutzerbetrieb in Betrieb nehmen
+  (Treiber aktiv, Migration und Verifikation vorhanden und getestet – siehe
+  `deploy/POSTGRES_SHARED.md`), alte Jinja-Templates irgendwann entfernen.
+- Repo auf GitHub: **github.com/grumel/mobilfunkverwaltung** (Monorepo mit
+  `backend/` und `frontend/`, Remote `origin`, Branch `main`). Die getrennten
+  Legacy-Repos **mdwWeb** (Backend) und **mdw-frontend** (React) dienen nur noch
+  als Referenz; Entwicklung und Releases laufen ausschließlich aus dem Monorepo.

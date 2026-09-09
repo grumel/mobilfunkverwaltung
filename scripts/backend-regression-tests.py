@@ -103,6 +103,49 @@ def check_letter_generation(data_dir: str) -> None:
     template.unlink()
 
 
+def check_change_log_and_undo(client) -> None:
+    """Ausführliches Änderungsprotokoll und Einzel-Rücknahme (Admin-Session)."""
+    import json
+
+    def audit():
+        return client.get("/api/logs/audit").json["logs"]
+
+    def find(rows, pid, aktion):
+        return next(a for a in rows if a["record_id"] == pid and a["aktion"] == aktion)
+
+    # Anlegen → INSERT-Eintrag mit undo_op delete_row.
+    created = client.post("/api/participants",
+                          json={"name": "Undo Fixture", "gsm": "491702222222", "tarif": "Alt"})
+    assert created.status_code == 201
+    pid = created.json["participant"]["id"]
+    ins = find(audit(), pid, "INSERT")
+    assert ins["undo_op"] == "delete_row", ins
+
+    # Feld ändern → Diff [alt, neu] wird geloggt.
+    assert client.put(f"/api/participants/{pid}", json={"tarif": "Neu"}).status_code == 200
+    upd = find(audit(), pid, "UPDATE")
+    assert json.loads(upd["changes"])["tarif"] == ["Alt", "Neu"], upd["changes"]
+    assert upd["undo_op"] == "restore_fields"
+
+    # Rücknahme der Feldänderung → tarif wieder "Alt".
+    assert client.post(f"/api/audit/{upd['id']}/undo").status_code == 200
+    assert client.get(f"/api/participants/{pid}").json["participant"]["tarif"] == "Alt"
+    # Zweite Rücknahme desselben Eintrags ist blockiert.
+    assert client.post(f"/api/audit/{upd['id']}/undo").status_code == 409
+
+    # Löschen → Rücknahme stellt die Zeile mit gleicher ID wieder her.
+    assert client.delete(f"/api/participants/{pid}").status_code == 200
+    dele = find(audit(), pid, "DELETE")
+    assert dele["undo_op"] == "insert_row"
+    assert client.post(f"/api/audit/{dele['id']}/undo").status_code == 200
+    back = client.get(f"/api/participants/{pid}")
+    assert back.status_code == 200 and back.json["participant"]["name"] == "Undo Fixture"
+
+    # Anlegen rückgängig → Zeile ist wieder weg.
+    assert client.post(f"/api/audit/{ins['id']}/undo").status_code == 200
+    assert client.get(f"/api/participants/{pid}").status_code == 404
+
+
 def check_pdf_engine_selection() -> None:
     """Auswahl des PDF-Wegs, ohne Word oder LibreOffice zu benötigen."""
     from modules import kuendigung as kmod
@@ -241,6 +284,8 @@ def main() -> None:
         assert client.post("/api/login", json={"username": "reader", "password": "reader-pass"}).status_code == 200
         assert client.post("/api/participants", json={"name": "Denied"}).status_code == 403
         assert client.post("/api/participants/1/tasks", json={"kommentar": "Denied"}).status_code == 403
+        # Rückgängigmachen ist Admin-Sache – Leser bekommt 403.
+        assert client.post("/api/audit/1/undo").status_code == 403
         assert client.post("/api/participants/1/archive").status_code == 403
 
         assert client.post("/api/logout").status_code == 200
@@ -261,6 +306,9 @@ def main() -> None:
         assert any(p["id"] == participant_id for p in archiv_view.json["participants"])
         restored = client.post(f"/api/participants/{participant_id}/archive")
         assert restored.status_code == 200 and restored.json["archived"] == 0
+
+        check_change_log_and_undo(client)
+
         task = client.post(f"/api/participants/{participant_id}/tasks", json={"kommentar": "CRUD Task"})
         assert task.status_code == 201, task.get_data(as_text=True)
         task_id = task.json["id"]

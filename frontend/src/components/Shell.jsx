@@ -151,7 +151,6 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
           </button>
           <button className={'tab' + (view === 'statistik' ? ' active' : '')} aria-current={view === 'statistik' ? 'page' : undefined} onClick={() => setView('statistik')}>Statistik</button>
           <button className={'tab' + (view === 'archiv' ? ' active' : '')} aria-current={view === 'archiv' ? 'page' : undefined} onClick={() => setView('archiv')}>Archiv</button>
-          <button className={'tab' + (view === 'protokoll' ? ' active' : '')} aria-current={view === 'protokoll' ? 'page' : undefined} onClick={() => setView('protokoll')}>Protokoll</button>
           <button className={'tab' + (view === 'dokumente' ? ' active' : '')} aria-current={view === 'dokumente' ? 'page' : undefined} onClick={() => setView('dokumente')}>Dokumente</button>
           {isAdmin && (
             <>
@@ -197,8 +196,6 @@ export default function Shell({ user, onLogout, version, forcePw, onPwDone }) {
               ? <Documents />
             : view === 'unmatched'
               ? <UnmatchedDevices user={user} onBack={() => setView('statistik')} />
-            : view === 'protokoll'
-              ? <Logs kind="import" user={user} />
             : view === 'audit'
               ? <Logs kind="audit" user={user} />
             : view === 'import'

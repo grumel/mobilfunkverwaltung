@@ -106,3 +106,10 @@ class AuditLog(Base):
     details    = Column(Text)
     table_name = Column(Text)
     record_id  = Column(Integer)
+    # Ausführliches Änderungsprotokoll mit Einzel-Rücknahme:
+    changes      = Column(Text)     # JSON {feld: [alt, neu], …} – Feld-Diff
+    snapshot     = Column(Text)     # JSON der kompletten Zeile (für Löschen/Wiederherstellen)
+    undo_op      = Column(Text)     # was das Rückgängigmachen dieses Eintrags tut:
+                                    # "restore_fields" | "delete_row" | "insert_row"
+    reverted_at  = Column(Text)     # gesetzt, sobald dieser Eintrag zurückgenommen wurde
+    revert_of_id = Column(Integer)  # ID des Eintrags, den dieser Eintrag zurücknimmt
