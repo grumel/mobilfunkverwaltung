@@ -4,8 +4,12 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = resolve(new URL('..', import.meta.url).pathname)
+// fileURLToPath statt new URL(...).pathname: Unter Windows liefert .pathname
+// einen fuehrenden Schraegstrich vor dem Laufwerksbuchstaben (z. B.
+// "/C:/..."), was existsSync/resolve nicht als gueltigen Pfad erkennen.
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const frontend = join(root, 'frontend')
 const index = join(frontend, 'dist', 'index.html')
 

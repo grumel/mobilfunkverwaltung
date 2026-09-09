@@ -15,7 +15,11 @@ sys.path.insert(0, str(ROOT / "backend"))
 
 
 def main() -> None:
-    with tempfile.TemporaryDirectory(prefix="mobilfunk-perf-") as data_dir:
+    # ignore_cleanup_errors: unter Windows haelt SQLAlchemy die sqlite-Datei
+    # per offener Engine-Verbindung gesperrt, wodurch das automatische
+    # Aufraeumen des Temp-Verzeichnisses sonst mit PermissionError abbricht
+    # (die eigentliche Messung ist davon nicht betroffen).
+    with tempfile.TemporaryDirectory(prefix="mobilfunk-perf-", ignore_cleanup_errors=True) as data_dir:
         os.environ.update(
             MOBILFUNK_DATA_DIR=data_dir,
             MOBILFUNK_WEBCONFIG_DIR=data_dir,
