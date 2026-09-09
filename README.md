@@ -54,7 +54,8 @@ befindet sich in der **Stabilisierungsphase Richtung finaler Version 1.0**
 - Aufgaben mit Fälligkeit, **Statistik** mit klickbaren Kennzahlen und
   **Datenqualitäts**-Überblick, Protokoll- und Audit-Log.
 - Benutzerverwaltung mit Rollen (read/write/admin), eigenes Passwort ändern,
-  **Hell-/Dunkel-Design**, Hilfe-Seite, als App installierbar (PWA-Manifest).
+  persönliches **Notizfeld** (Auto-Save), **Hell-/Dunkel-Design**, Hilfe-Seite,
+  als App installierbar (PWA-Manifest).
 - Härtung: Login-Bremse, `SameSite`-Cookies, Sicherheits-Header/CSP; Monitoring
   über `GET /api/health` (DB-Erreichbarkeit + Schema-Status).
 
