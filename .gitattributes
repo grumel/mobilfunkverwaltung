@@ -12,3 +12,5 @@ deploy/windows/mobilfunk.sample.db binary
 # Word-Vorlagen sind binär (ZIP-Container) – niemals als Text behandeln
 *.docx binary
 *.dotx binary
+# PDFs sind binär – Zeilenenden-Normalisierung wuerde sie beschaedigen
+*.pdf binary
