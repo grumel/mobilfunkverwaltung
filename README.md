@@ -390,6 +390,7 @@ Produktionsumstellung stehen in [docs/MIGRATION.md](docs/MIGRATION.md).
 
 ## Dokumentation
 
+- [Benutzerhandbuch](docs/ANLEITUNG.md) ([PDF](docs/ANLEITUNG.pdf)) – Installation, Start und Benutzung für Endanwender
 - [Monorepo-Migration](docs/MIGRATION.md)
 - [Produktionsmigration](docs/PRODUCTION_MIGRATION.md)
 - [Cleanup-Kandidaten](docs/CLEANUP.md)
