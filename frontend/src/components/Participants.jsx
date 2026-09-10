@@ -16,6 +16,13 @@ const COLS = [
 const NUM = new Set(['master_id', 'konto'])
 const DATE_COLS = new Set(['vertragsbeginn', 'vertragsende', 'kuendigung', 'start_syno'])
 const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
+// Deckt sich bewusst mit EDITABLE in webapp/blueprints/api.py: genau die
+// Felder, die im Bearbeiten-Dialog sichtbar sind – beim Kopieren einer Zeile
+// werden nur diese uebernommen (keine id/master_id/verified/archived/…).
+const COPY_FIELDS = ['gsm', 'name', 'plant', 'konto', 'telefon', 'tarif', 'sim_nummer',
+  'rahmenvertrag', 'startdatum', 'vertragsbeginn', 'vertragsende', 'kuendigung',
+  'syno', 'start_syno', 'imei', 'syno2', 'start_syno2', 'imei2',
+  'bemerkung', 'pruefung_grund', 'provider']
 
 export default function Participants({ view, q, user, openTaskPids = [], onChanged, onCount }) {
   const canWrite = user.role === 'write' || user.role === 'admin'
@@ -28,6 +35,7 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
   const [error, setError] = useState('')
   const [menu, setMenu] = useState(null)
   const [editId, setEditId] = useState(undefined)
+  const [copyInitial, setCopyInitial] = useState(null)
   const [mergeMode, setMergeMode] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [sort, setSort] = useState({ key: 'name', dir: 1 })
@@ -51,6 +59,19 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
   async function act(fn) {
     setMenu(null)
     try { await fn(); load(q); onChanged && onChanged() } catch (e) { toastError(e.message) }
+  }
+
+  async function copyRow(row) {
+    setMenu(null)
+    try {
+      // Volle Detailfelder laden (die Zeile in der Liste kennt z. B. Telefon,
+      // zweites Syno-Geraet oder Pruefungsnotiz nicht).
+      const d = await api.participant(row.id)
+      const initial = {}
+      for (const k of COPY_FIELDS) initial[k] = d.participant[k]
+      setCopyInitial(initial)
+      setEditId(null)
+    } catch (e) { toastError(e.message) }
   }
 
   function addTask(row) {
@@ -226,6 +247,7 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
           <div className="ctx-item" onClick={() => { setEditId(menu.row.id); setMenu(null) }}>Bearbeiten</div>
           {canWrite && (
             <>
+              <div className="ctx-item" onClick={() => copyRow(menu.row)}>Kopieren (als neuer Teilnehmer)</div>
               <div className="ctx-sep" />
               <div className="ctx-item" onClick={() => addTask(menu.row)}>Zu Aufgabe …</div>
               <div className="ctx-item" onClick={() => act(() => api.verify(menu.row.id))}>
@@ -265,9 +287,9 @@ export default function Participants({ view, q, user, openTaskPids = [], onChang
       )}
 
       {editId !== undefined && (
-        <EditModal id={editId} canWrite={canWrite}
-                   onClose={() => setEditId(undefined)}
-                   onSaved={() => { setEditId(undefined); load(q) }} />
+        <EditModal id={editId} canWrite={canWrite} initial={editId === null ? copyInitial : undefined}
+                   onClose={() => { setEditId(undefined); setCopyInitial(null) }}
+                   onSaved={() => { setEditId(undefined); setCopyInitial(null); load(q) }} />
       )}
 
       {neuvertrag && (

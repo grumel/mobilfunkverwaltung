@@ -17,9 +17,11 @@ const SYNO_ROWS = [
 ]
 const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 
-export default function EditModal({ id, canWrite, onClose, onSaved }) {
+export default function EditModal({ id, canWrite, initial, onClose, onSaved }) {
   const isNew = id === null
-  const [p, setP] = useState(isNew ? { provider: 'Vodafone', verified: 1 } : null)
+  // `initial` befuellt ein neues Formular vorab (z. B. beim Kopieren einer
+  // bestehenden Zeile) statt komplett leer zu starten.
+  const [p, setP] = useState(isNew ? { provider: 'Vodafone', verified: 1, ...initial } : null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [pos, setPos] = useState({ x: 0, y: 0 })
@@ -112,7 +114,7 @@ export default function EditModal({ id, canWrite, onClose, onSaved }) {
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}
             style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}>
         <div className="modal-head" onMouseDown={startDrag}>
-          <h3>{isNew ? 'Neuer Teilnehmer' : ('Bearbeiten: ' + ((p && p.name) || ('ID ' + id)))}</h3>
+          <h3>{isNew ? (initial ? 'Neuer Teilnehmer (Kopie)' : 'Neuer Teilnehmer') : ('Bearbeiten: ' + ((p && p.name) || ('ID ' + id)))}</h3>
           <button type="button" className="x" aria-label="Dialog schließen" onClick={onClose}>×</button>
         </div>
         {error && <div className="flash">{error}</div>}
