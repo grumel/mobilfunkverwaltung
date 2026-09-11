@@ -14,6 +14,7 @@ class Participant(Base):
     id             = Column(Integer, primary_key=True)
     master_id      = Column(Integer)
     gsm            = Column(Text)
+    pin            = Column(Text)   # SIM-PIN, unabhaengig von der GSM-Nummer
     name           = Column(Text)
     plant          = Column(Text)
     konto          = Column(Text)

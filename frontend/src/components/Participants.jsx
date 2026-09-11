@@ -19,7 +19,7 @@ const PROVIDERS = ['Vodafone', 'Telekom', 'O2', 'Ohne SIM', 'Frei']
 // Deckt sich bewusst mit EDITABLE in webapp/blueprints/api.py: genau die
 // Felder, die im Bearbeiten-Dialog sichtbar sind – beim Kopieren einer Zeile
 // werden nur diese uebernommen (keine id/master_id/verified/archived/…).
-const COPY_FIELDS = ['gsm', 'name', 'plant', 'konto', 'telefon', 'tarif', 'sim_nummer',
+const COPY_FIELDS = ['gsm', 'pin', 'name', 'plant', 'konto', 'telefon', 'tarif', 'sim_nummer',
   'rahmenvertrag', 'startdatum', 'vertragsbeginn', 'vertragsende', 'kuendigung',
   'syno', 'start_syno', 'imei', 'syno2', 'start_syno2', 'imei2',
   'bemerkung', 'pruefung_grund', 'provider']

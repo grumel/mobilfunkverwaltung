@@ -82,6 +82,7 @@ def ensure_schema():
         ("imei", "TEXT"),      # IMEI-Nr. Gerät 1 (aus 'Syno seit' herausgelöst)
         ("imei2", "TEXT"),     # IMEI-Nr. Gerät 2
         ("archived", "INTEGER DEFAULT 0"),
+        ("pin", "TEXT"),       # SIM-PIN, eigenes Feld neben der GSM-Nummer
     ]
     missing = [(n, ddl) for n, ddl in wanted if n not in cols]
     added = []

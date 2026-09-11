@@ -38,10 +38,10 @@ LIST_FIELDS = ["id", "master_id", "gsm", "name", "plant", "konto", "tarif",
                "rahmenvertrag", "syno", "start_syno", "imei", "bemerkung", "verified",
                "provider", "overhead", "archived"]
 # Vollständig für die Detail-/Bearbeiten-Ansicht
-DETAIL_FIELDS = LIST_FIELDS + ["telefon", "startdatum",
+DETAIL_FIELDS = LIST_FIELDS + ["telefon", "startdatum", "pin",
                "syno2", "start_syno2", "imei2", "pruefung_grund", "created_at", "updated_at"]
 # Über die API beschreibbar (master_id + Zeitstempel bleiben außen vor)
-EDITABLE = ["gsm", "name", "plant", "konto", "telefon", "tarif", "sim_nummer",
+EDITABLE = ["gsm", "name", "plant", "konto", "telefon", "tarif", "sim_nummer", "pin",
             "rahmenvertrag", "startdatum", "vertragsbeginn", "vertragsende",
             "kuendigung", "syno", "start_syno", "imei", "syno2", "start_syno2", "imei2",
             "bemerkung", "pruefung_grund", "provider"]

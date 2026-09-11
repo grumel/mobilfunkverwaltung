@@ -3,13 +3,17 @@ import { api } from '../api'
 import { loadWerkKonto } from '../werkkonto.js'
 import { toastOk, toastError } from '../toast.jsx'
 
+// GSM-Nummer und PIN stehen bewusst als eigene Zeile oben (siehe GSM_PIN_ROW
+// unten im Formular) statt in dieser Liste - damit sie garantiert nebeneinander
+// erscheinen, unabhaengig davon, wie sich die restliche Feldliste veraendert.
 const FIELDS = [
-  ['gsm', 'GSM-Nummer', 'text'], ['name', 'Name', 'text'], ['plant', 'Werk (Plant)', 'text'],
+  ['name', 'Name', 'text'], ['plant', 'Werk (Plant)', 'text'],
   ['konto', 'Konto', 'text'], ['telefon', 'Telefon (alt)', 'text'], ['tarif', 'Tarif', 'text'],
   ['sim_nummer', 'SIM-Seriennummer', 'text'], ['rahmenvertrag', 'Rahmenvertrag', 'text'],
   ['startdatum', 'Erstaktivierung', 'date'], ['vertragsbeginn', 'Vertragsbeginn', 'date'],
   ['vertragsende', 'Vertragsende', 'date'], ['kuendigung', 'Kündigung zu', 'date'],
 ]
+const GSM_PIN_ROW = [['gsm', 'GSM-Nummer', 'text'], ['pin', 'PIN', 'text']]
 // Syno-Geräte: je Gerät eine Zeile mit Gerät · Syno seit · IMEI nebeneinander.
 const SYNO_ROWS = [
   { geraet: ['syno', 'Syno-Gerät 1'], datum: ['start_syno', 'Syno 1 seit'], imei: ['imei', 'IMEI-Nr. 1'] },
@@ -120,6 +124,14 @@ export default function EditModal({ id, canWrite, initial, onClose, onSaved }) {
         {error && <div className="flash">{error}</div>}
         {!p ? <p className="hint-dim">Lädt…</p> : (
           <>
+            <div className="grid" style={{ marginBottom: 12 }}>
+              {GSM_PIN_ROW.map(([k, l, t]) => (
+                <label className="field" key={k}><span>{l}</span>
+                  <input type={t === 'date' ? 'date' : 'text'} value={p[k] || ''}
+                         readOnly={!canWrite} onChange={(e) => setField(k, e.target.value)} />
+                </label>
+              ))}
+            </div>
             <div className="grid">
               <label className="field"><span>Register (Provider)</span>
                 <select value={p.provider || 'Vodafone'} disabled={!canWrite}
